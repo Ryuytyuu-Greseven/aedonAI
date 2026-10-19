@@ -1,0 +1,134 @@
+[
+  {
+    "id": "prop_001",
+    "name": "Sunrise Valley Residences",
+    "location": "Whitefield, Bangalore",
+    "price": 8500000,
+    "type": "3BHK Apartment",
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "sqft": 1850,
+    "highlights": ["Gated community", "Swimming pool", "Clubhouse", "24/7 security", "Power backup"],
+    "shortPitch": "A premium 3BHK in Whitefield at 85 lakhs — ready to move in, with a clubhouse and pool.",
+    "fullDescription": "Sunrise Valley is a gated community of 200 apartments in the heart of Whitefield, Bangalore's main IT hub. The 1850 sqft apartment has an open-plan living area, a modular kitchen, and two covered car parks. The project includes a 10,000 sqft clubhouse with a gym, swimming pool, and indoor games. It is walking distance from major tech parks and Phoenix Marketcity. Possession is immediate.",
+    "amenities": [
+      { "name": "Swimming pool", "description": "A full-size pool inside the clubhouse, open year-round for residents." },
+      { "name": "Clubhouse & gym", "description": "10,000 sqft clubhouse with a fully equipped gym and indoor games room." },
+      { "name": "24/7 security", "description": "Gated entry with round-the-clock security staff and CCTV coverage." },
+      { "name": "Power backup", "description": "100% power backup for common areas and individual apartments." },
+      { "name": "Covered parking", "description": "Two covered car parks included with every apartment." }
+    ],
+    "nearbyFacilities": [
+      { "category": "mall", "name": "Phoenix Marketcity", "distance": "10 minutes by car" },
+      { "category": "metro", "name": "Whitefield tech corridor connectivity", "distance": "Walking distance to major tech parks" },
+      { "category": "school", "name": "Whitefield Global School", "distance": "1.5 km" },
+      { "category": "hospital", "name": "Columbia Asia Whitefield", "distance": "3 km" },
+      { "category": "restaurant", "name": "Whitefield main road dining strip", "distance": "5 minutes by car" }
+    ]
+  },
+  {
+    "id": "prop_002",
+    "name": "Green Crest Villas",
+    "location": "Sarjapur Road, Bangalore",
+    "price": 12500000,
+    "type": "4BHK Villa",
+    "bedrooms": 4,
+    "bathrooms": 4,
+    "sqft": 2800,
+    "highlights": ["Independent villa", "Private garden", "Vastu compliant", "Solar panels", "EV charging"],
+    "shortPitch": "A spacious 4BHK independent villa in Sarjapur at 1.25 crore — private garden, solar power, and EV charging point included.",
+    "fullDescription": "Green Crest offers 60 independent villas on a 15-acre gated layout in Sarjapur. Each villa comes with a private garden of 600 sqft, a solar power system, and two EV charging points. The project is Vastu-compliant and RERA registered. It is 5 minutes from Infosys and Wipro campuses and has a dedicated school bus route to three CBSE schools.",
+    "amenities": [
+      { "name": "Private garden", "description": "A 600 sqft private garden with every villa — space for kids, pets, or a home garden." },
+      { "name": "Solar power system", "description": "Rooftop solar panels that meaningfully cut down common-area electricity bills." },
+      { "name": "EV charging", "description": "Two dedicated EV charging points per villa, ready for electric vehicles." },
+      { "name": "Vastu-compliant layout", "description": "Every villa is designed to Vastu principles for the entrance, kitchen, and bedrooms." },
+      { "name": "Gated 15-acre layout", "description": "A low-density, secure layout of just 60 villas spread across 15 acres." }
+    ],
+    "nearbyFacilities": [
+      { "category": "school", "name": "Three CBSE schools on the dedicated bus route", "distance": "10-15 minutes by school bus" },
+      { "category": "other", "name": "Infosys & Wipro campuses", "distance": "5 minutes by car" },
+      { "category": "park", "name": "Community park within the layout", "distance": "On-site" },
+      { "category": "hospital", "name": "Sarjapur Road multispeciality clinics", "distance": "4 km" },
+      { "category": "mall", "name": "Sarjapur Road retail strip", "distance": "8 minutes by car" }
+    ]
+  },
+  {
+    "id": "prop_003",
+    "name": "Metro Heights",
+    "location": "Hebbal, Bangalore",
+    "price": 5500000,
+    "type": "2BHK Apartment",
+    "bedrooms": 2,
+    "bathrooms": 2,
+    "sqft": 1200,
+    "highlights": ["Metro connectivity", "Zero stamp duty offer", "Home loan assistance", "Corner unit available"],
+    "shortPitch": "A well-connected 2BHK in Hebbal at 55 lakhs — 200 metres from the metro, with zero stamp duty on this month.",
+    "fullDescription": "Metro Heights is a mid-rise development just 200 metres from Hebbal metro station. The 1200 sqft 2BHK features engineered wooden flooring, smart-home switches, and wide city views from the 8th floor. There is a zero stamp duty offer valid this month. Builder-tied home loans are available at 8.5% for pre-approved buyers.",
+    "amenities": [
+      { "name": "Smart-home switches", "description": "App-controlled lighting and switches throughout the apartment." },
+      { "name": "Engineered wooden flooring", "description": "Premium wooden flooring across the living and bedroom areas." },
+      { "name": "City-view corner unit", "description": "Corner units on the 8th floor with wide, unobstructed city views." },
+      { "name": "Builder home-loan tie-up", "description": "Pre-approved home loans at 8.5% through the builder's banking partners." }
+    ],
+    "nearbyFacilities": [
+      { "category": "metro", "name": "Hebbal Metro Station", "distance": "200 metres, 3 minutes on foot" },
+      { "category": "hospital", "name": "Baptist Hospital", "distance": "3 km" },
+      { "category": "mall", "name": "Esteem Mall, Hebbal", "distance": "2 km" },
+      { "category": "school", "name": "Hebbal area CBSE schools", "distance": "2-3 km" },
+      { "category": "restaurant", "name": "Hebbal flyover dining strip", "distance": "5 minutes by car" }
+    ]
+  },
+  {
+    "id": "prop_004",
+    "name": "Meadow Park Township",
+    "location": "Electronic City, Bangalore",
+    "price": 6800000,
+    "type": "3BHK Apartment",
+    "bedrooms": 3,
+    "bathrooms": 2,
+    "sqft": 1600,
+    "highlights": ["RERA certified", "School and hospital inside complex", "Free car park", "Price locked 30 days"],
+    "shortPitch": "A 3BHK township apartment in Electronic City at 68 lakhs — RERA certified, with a school and hospital right inside the complex.",
+    "fullDescription": "Meadow Park is a self-contained township spread over 50 acres in Electronic City Phase 2. The 3BHK has a 1600 sqft carpet area with large balconies on both sides. The township hosts a CBSE school, a multispeciality hospital, and a 2-km jogging track within the campus. Currently offering a 30-day price lock for any bookings made this month.",
+    "amenities": [
+      { "name": "In-campus CBSE school", "description": "A CBSE school right inside the township — no daily school run needed." },
+      { "name": "In-campus multispeciality hospital", "description": "A full multispeciality hospital on campus for everyday and emergency care." },
+      { "name": "2-km jogging track", "description": "A dedicated jogging and walking track winding through the 50-acre township." },
+      { "name": "Free covered car park", "description": "One covered car park included at no extra cost with every apartment." },
+      { "name": "Large dual balconies", "description": "Balconies on both sides of the apartment for cross-ventilation and light." }
+    ],
+    "nearbyFacilities": [
+      { "category": "school", "name": "Township CBSE school", "distance": "Inside the complex" },
+      { "category": "hospital", "name": "Township multispeciality hospital", "distance": "Inside the complex" },
+      { "category": "park", "name": "2-km jogging & walking track", "distance": "Inside the complex" },
+      { "category": "other", "name": "Electronic City Phase 1 & 2 tech parks", "distance": "10 minutes by car" },
+      { "category": "mall", "name": "Electronic City retail hubs", "distance": "3 km" }
+    ]
+  },
+  {
+    "id": "prop_005",
+    "name": "The Loft Studios",
+    "location": "Koramangala, Bangalore",
+    "price": 3200000,
+    "type": "1BHK Studio Apartment",
+    "bedrooms": 1,
+    "bathrooms": 1,
+    "sqft": 620,
+    "highlights": ["Prime location", "Fully furnished option", "High rental yield ~5%", "Smart home features"],
+    "shortPitch": "A modern 1BHK studio in Koramangala at 32 lakhs — fully furnished option available, with a rental yield of around 5 percent.",
+    "fullDescription": "The Loft Studios is a boutique 80-unit development in the heart of Koramangala. Studios come in both fully-furnished and shell options. Smart home features include app-controlled locks, AC, and lighting. Koramangala commands some of the highest rental yields in Bangalore at 4.5 to 5.5 percent annually. Ready for possession in Q1 next year.",
+    "amenities": [
+      { "name": "Fully furnished option", "description": "Move-in-ready furnished units, or a shell option if you'd rather furnish it yourself." },
+      { "name": "Smart home features", "description": "App-controlled door locks, AC, and lighting throughout the studio." },
+      { "name": "Boutique 80-unit scale", "description": "A smaller, boutique development rather than a large high-rise — quieter and more personal." }
+    ],
+    "nearbyFacilities": [
+      { "category": "restaurant", "name": "Koramangala's cafe and restaurant strip", "distance": "Walking distance" },
+      { "category": "mall", "name": "Forum Mall, Koramangala", "distance": "2 km" },
+      { "category": "metro", "name": "Koramangala area connectivity to Silk Board & MG Road", "distance": "10-15 minutes by car" },
+      { "category": "hospital", "name": "St. John's Medical College Hospital", "distance": "3 km" },
+      { "category": "park", "name": "National Games Village Park", "distance": "1.5 km" }
+    ]
+  }
+]
