@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Establish the global visual foundation for the LyreAI builder. All colors, spacing, typography, and layout tokens are defined once as CSS custom properties and Angular-level global styles. No component may redeclare a value already available as a token. The system must support a user-toggled Dark and Light mode that propagates instantly across the entire application.
+Establish the global visual foundation for the AedonAI builder. All colors, spacing, typography, and layout tokens are defined once as CSS custom properties and Angular-level global styles. No component may redeclare a value already available as a token. The system must support a user-toggled Dark and Light mode that propagates instantly across the entire application.
 
 ---
 
@@ -52,11 +52,11 @@ The system SHALL provide a persistent toggle that switches between Dark and Ligh
 
 ### Requirement: Angular Material / CDK Integration
 
-The system SHALL integrate Angular's global styles (reset, typography) and, if a component library is used, override its theme tokens to align with the LyreAI design tokens. No inline `style` attributes shall be used on host elements.
+The system SHALL integrate Angular's global styles (reset, typography) and, if a component library is used, override its theme tokens to align with the AedonAI design tokens. No inline `style` attributes shall be used on host elements.
 
 #### Scenario: Component library theming
 - **WHEN** a component from the library is rendered
-- **THEN** its colors and fonts match the active LyreAI theme tokens without per-component overrides
+- **THEN** its colors and fonts match the active AedonAI theme tokens without per-component overrides
 
 ---
 

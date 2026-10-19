@@ -2,7 +2,7 @@ import { Injectable, signal } from '@angular/core';
 
 export type Theme = 'light' | 'dark';
 
-const STORAGE_KEY = 'lyreai-theme';
+const STORAGE_KEY = 'aedonai-theme';
 
 @Injectable({ providedIn: 'root' })
 export class ThemeService {

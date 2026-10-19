@@ -12,7 +12,7 @@
     <script>
       (function () {
         var t = null;
-        try { t = localStorage.getItem('lyreai-theme'); } catch (e) {}
+        try { t = localStorage.getItem('aedonai-theme'); } catch (e) {}
         if (t !== 'dark' && t !== 'light') {
           t = window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
         }

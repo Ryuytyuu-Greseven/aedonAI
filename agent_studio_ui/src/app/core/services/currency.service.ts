@@ -2,7 +2,7 @@ import { Injectable, signal } from '@angular/core';
 
 export type CurrencyCode = 'USD' | 'INR' | 'AED';
 
-const STORAGE_KEY = 'lyreai-currency';
+const STORAGE_KEY = 'aedonai-currency';
 
 // Fixed conversion rates from the canonical storage currency (USD). Mock values —
 // swap for live rates once a rates feed is wired up.

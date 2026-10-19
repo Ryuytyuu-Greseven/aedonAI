@@ -3,7 +3,7 @@
   "version": 1,
   "newProjectRoot": "projects",
   "projects": {
-    "lyreai-builder": {
+    "aedonai-builder": {
       "projectType": "application",
       "schematics": {},
       "root": "",
@@ -13,7 +13,7 @@
         "build": {
           "builder": "@angular-devkit/build-angular:application",
           "options": {
-            "outputPath": "dist/lyreai-builder",
+            "outputPath": "dist/aedonai-builder",
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [
@@ -67,10 +67,10 @@
           "builder": "@angular-devkit/build-angular:dev-server",
           "configurations": {
             "production": {
-              "buildTarget": "lyreai-builder:build:production"
+              "buildTarget": "aedonai-builder:build:production"
             },
             "development": {
-              "buildTarget": "lyreai-builder:build:development"
+              "buildTarget": "aedonai-builder:build:development"
             }
           },
           "defaultConfiguration": "development"

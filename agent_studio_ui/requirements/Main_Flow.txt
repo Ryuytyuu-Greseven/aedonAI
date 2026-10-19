@@ -1,4 +1,4 @@
-# Functional Requirements to build Lyre Ai Builder Mode:
+# Functional Requirements to build AedonAI Builder Mode:
 
 1) Navbar should be at the Right side of the screen. Just like edge browser, and it should be opened on hover and closed on coming out of it.
 2) Keep the dark/light theme switch at the top right side.

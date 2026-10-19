@@ -1,6 +1,6 @@
 ## Context
 
-The backend (`lyreai_agent_builder_server`, separate repo, already implemented) models an agent's lifecycle as `draft → staged → live` with a side branch `live ⇄ disabled`, backed by three Mongo collections (`agents`, `live agents`, `agent_histories`) and these endpoints on `/agents`:
+The backend (`aedonai_agent_builder_server`, separate repo, already implemented) models an agent's lifecycle as `draft → staged → live` with a side branch `live ⇄ disabled`, backed by three Mongo collections (`agents`, `live agents`, `agent_histories`) and these endpoints on `/agents`:
 
 - `POST /:id/stage` — `draft` → `staged` only; increments `current_stage_version`; clears `preview_hash`.
 - `POST /:id/preview` — `staged` only (409 otherwise); computes and stores `preview_hash` from `{greeting, behavior_prompt, behavior_notes}`.

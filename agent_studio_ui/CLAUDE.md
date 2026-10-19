@@ -1,4 +1,4 @@
-# LyreAI Builder Config
+# AedonAI Builder Config
 
 This repository uses the **OpenSpec** framework (`openspec` CLI v1.4.1) to manage feature development through structured, spec-driven changes.
 

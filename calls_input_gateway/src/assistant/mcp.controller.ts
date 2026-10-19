@@ -17,7 +17,7 @@ export class McpController {
   constructor() {
     this.server = new Server(
       {
-        name: 'lyre-ai-hr-mcp-server',
+        name: 'aedonai-hr-mcp-server',
         version: '1.0.0',
       },
       {

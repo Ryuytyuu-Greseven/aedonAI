@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Each node in a LyreAI agent maps directly to a LangGraph node in the agent's execution graph. Node Management covers creating, editing, deleting, and configuring individual nodes — including the system prompt that governs the node's LLM behaviour and the subset of tools assigned to that node. Node data is part of the agent JSON and is persisted through the Agent Builder's save mechanism.
+Each node in a AedonAI agent maps directly to a LangGraph node in the agent's execution graph. Node Management covers creating, editing, deleting, and configuring individual nodes — including the system prompt that governs the node's LLM behaviour and the subset of tools assigned to that node. Node data is part of the agent JSON and is persisted through the Agent Builder's save mechanism.
 
 ---
 

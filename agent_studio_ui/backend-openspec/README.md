@@ -1,6 +1,6 @@
 # Backend OpenSpec
 
-This folder is a backend implementation reference for LyreAI Builder. The frontend (`../src`) is fully built against **mock services** — every "API call" today is an in-memory `Observable` with a simulated network delay (`of(...).pipe(delay(300))`). Nothing here is aspirational: every endpoint below is derived directly from a mock method that already exists, is already wired into a real screen, and has already been exercised end-to-end in a browser. Implementing these contracts and swapping the mocks for real `HttpClient` calls should require **no frontend contract changes** — only the internals of the Angular services in `src/app/core/services/*.service.ts` change (delete the in-memory array + `delay()`, add an `HttpClient` call).
+This folder is a backend implementation reference for AedonAI Builder. The frontend (`../src`) is fully built against **mock services** — every "API call" today is an in-memory `Observable` with a simulated network delay (`of(...).pipe(delay(300))`). Nothing here is aspirational: every endpoint below is derived directly from a mock method that already exists, is already wired into a real screen, and has already been exercised end-to-end in a browser. Implementing these contracts and swapping the mocks for real `HttpClient` calls should require **no frontend contract changes** — only the internals of the Angular services in `src/app/core/services/*.service.ts` change (delete the in-memory array + `delay()`, add an `HttpClient` call).
 
 ## Why a separate folder from `../openspec`
 

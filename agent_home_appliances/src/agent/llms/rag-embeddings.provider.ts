@@ -13,7 +13,7 @@ config();
  * consistent with itself).
  *
  * The Pinecone knowledge base, by contrast, is written by a DIFFERENT
- * service (`lyreai_agent_builder_server`), always via Vertex AI. The model
+ * service (`aedonai_agent_builder_server`), always via Vertex AI. The model
  * name here MUST match that service's embedding model exactly (dimensions
  * coinciding is not enough — see vectorsearch.md §1) — override via
  * VERTEX_AI_EMBEDDING_MODEL if that service isn't on the `text-embedding-004`

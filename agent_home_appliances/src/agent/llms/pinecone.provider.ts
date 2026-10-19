@@ -5,7 +5,7 @@ config();
 
 /**
  * Metadata shape written by the knowledge-base writer service
- * (`lyreai_agent_builder_server`) — see vectorsearch.md §2. This server only
+ * (`aedonai_agent_builder_server`) — see vectorsearch.md §2. This server only
  * ever reads it; the shape is fixed by the writer and must not be changed
  * here.
  */

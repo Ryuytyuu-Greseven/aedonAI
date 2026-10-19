@@ -4,7 +4,7 @@ import { Observable, catchError, map, of, tap, throwError } from 'rxjs';
 import { AuthSession, LoginCredentials } from '../models/auth.model';
 import { ApiService } from '../http/api.service';
 
-const STORAGE_KEY = 'lyreai_auth_session';
+const STORAGE_KEY = 'aedonai_auth_session';
 
 const GENERIC_ERROR = 'Something went wrong. Please try again.';
 

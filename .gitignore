@@ -1,0 +1,59 @@
+# Environment / secrets (root and all sub folders)
+.env
+.env*
+**/.env
+**/.env*
+!**/.env.example
+!**/.env.sample
+*.pem
+*.key
+service-account*.json
+*-credentials.json
+
+# Dependencies (root and all sub folders)
+node_modules/
+**/node_modules/
+.pnp
+.pnp.js
+bower_components/
+
+# Build output
+dist/
+build/
+out/
+tmp/
+temp/
+.angular/
+.nest/
+*.tsbuildinfo
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Test / coverage
+coverage/
+.nyc_output/
+
+# Caches
+.cache/
+.eslintcache
+.npm/
+.firebase/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor / IDE
+.idea/
+.vscode/*
+!.vscode/extensions.json
+*.swp
+*.swo
+*~

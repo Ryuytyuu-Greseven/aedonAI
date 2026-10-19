@@ -2,7 +2,7 @@
 
 - [x] 1.1 Create `src/app/core/models/auth.model.ts` with `AuthSession` (`email`, `token`) and `LoginCredentials` (`email`, `password`) types.
 - [x] 1.2 Create `src/app/core/services/auth.service.ts`: `login(credentials): Observable<AuthSession>` (mock API via `of(...).pipe(delay(300))`, validates against `test@test.com` / `admin123`, else `throwError`), `logout(): void`, `isAuthenticated()` signal/observable, `restoreSession()` read from `localStorage` on construction.
-- [x] 1.3 Persist/clear session under `localStorage` key `lyreai_auth_session` on login/logout.
+- [x] 1.3 Persist/clear session under `localStorage` key `aedonai_auth_session` on login/logout.
 
 ## 2. Route Guard
 

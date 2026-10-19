@@ -2,7 +2,7 @@
 
 ## Purpose
 
-`lyreai_agent_builder_server` (this repo) **creates and stores** knowledge
+`aedonai_agent_builder_server` (this repo) **creates and stores** knowledge
 base embeddings in Pinecone — see `src/knowledge-bases/embeddings/` and
 `src/repos/knowledge-base-embeddings.repository.ts`. It does **not** query
 them; there is no retrieval/search code here today.

@@ -5,7 +5,7 @@ export const MOCK_AGENT_TEMPLATES: AgentTemplate[] = [
     template_id: 'template-real-estate-sales',
     name: 'Real Estate Sales',
     description: 'Calls prospective buyers, qualifies interest, and books property viewings.',
-    default_greeting: "Hi, this is Lyre calling on behalf of our real estate team — do you have a moment to chat about your property search?",
+    default_greeting: "Hi, this is AedonAI calling on behalf of our real estate team — do you have a moment to chat about your property search?",
     default_prompt:
       'Qualify the caller’s budget, preferred location, and timeline. Offer to schedule a viewing and answer basic questions about listings.',
     default_behavior: 'Friendly, consultative, and persistent without being pushy. Always ends with a clear next step.',

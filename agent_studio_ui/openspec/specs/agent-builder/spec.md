@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The Agent Builder is the primary workspace for creating and editing a LyreAI agent. It acts as the shell that ties together Node Management, the Flow Editor, Tools Management, Version History, and the Testing Console into a single cohesive experience. The builder is responsible for the agent-level configuration (name, voice enablement) and for producing and saving the canonical agent JSON.
+The Agent Builder is the primary workspace for creating and editing a AedonAI agent. It acts as the shell that ties together Node Management, the Flow Editor, Tools Management, Version History, and the Testing Console into a single cohesive experience. The builder is responsible for the agent-level configuration (name, voice enablement) and for producing and saving the canonical agent JSON.
 
 ---
 

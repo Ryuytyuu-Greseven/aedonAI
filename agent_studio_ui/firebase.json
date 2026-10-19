@@ -1,6 +1,6 @@
 {
   "hosting": {
-    "public": "dist/lyreai-builder/browser",
+    "public": "dist/aedonai-builder/browser",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
     "rewrites": [
       {

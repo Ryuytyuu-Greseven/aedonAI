@@ -2,7 +2,7 @@
 
 ## Purpose
 
-Tools in LyreAI are reusable function definitions that nodes can invoke during LLM execution (equivalent to LangGraph tool bindings). Tools Management provides a dedicated workspace — separate from node editing — where users can create, configure, edit, and delete tools at the agent level. All tools created belong to the agent and are stored in the top-level `tools` array of the agent JSON.
+Tools in AedonAI are reusable function definitions that nodes can invoke during LLM execution (equivalent to LangGraph tool bindings). Tools Management provides a dedicated workspace — separate from node editing — where users can create, configure, edit, and delete tools at the agent level. All tools created belong to the agent and are stored in the top-level `tools` array of the agent JSON.
 
 ---
 

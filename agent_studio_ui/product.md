@@ -1,4 +1,4 @@
-We are developing Lyre Ai, a voice agents builidng product. 
+We are developing AedonAI, a voice agents builidng product. 
 This project is for frontend, not backend. 
 Lets use Angular as Frontend along with css. Use global variables, global classes, do no need to repeat the class, colors, variables and all.
 Make the product switchable between Dark/Light Mode.

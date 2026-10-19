@@ -2,7 +2,7 @@
 
 - [x] 1.1 Add `role: 'admin' | 'sales_agent'` to `AuthSession` in `src/app/core/models/auth.model.ts`.
 - [x] 1.2 Add a `SalesAgentAccount` model (email, enabled/disabled, createdAt) in `src/app/core/models`.
-- [x] 1.3 Create a mock auth/admin data store (in-memory + `localStorage`-backed, separate storage key from the session) seeded with `test@test.com`/`admin123` (`sales_agent`) and `admin@lyreai.test`/`admin123` (`admin`).
+- [x] 1.3 Create a mock auth/admin data store (in-memory + `localStorage`-backed, separate storage key from the session) seeded with `test@test.com`/`admin123` (`sales_agent`) and `admin@aedonai.test`/`admin123` (`admin`).
 - [x] 1.4 Wire `ApiService.login()` to resolve against the mock store (matching the real `POST /api/auth/login` response shape plus `role`), simulating latency and rejecting disabled accounts.
 - [x] 1.5 Add `ApiService` methods (mock-backed) for: create sales agent account, list sales agent accounts, disable/enable a sales agent account — matching the endpoint shapes documented in task 6.
 

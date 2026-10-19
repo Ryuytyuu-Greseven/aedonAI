@@ -7,7 +7,7 @@ import {
 } from '../schemas/connected-pages.schema';
 
 /**
- * Read-only — this collection is owned by lyreai_agent_builder_server /
+ * Read-only — this collection is owned by aedonai_agent_builder_server /
  * meta-adapter (see connected-pages.schema.ts's doc comment); this repo
  * only ever looks it up, never writes to it.
  */
