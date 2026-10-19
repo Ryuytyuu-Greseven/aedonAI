@@ -1,0 +1,41 @@
+<header class="nav" [class.scrolled]="scrolled() || menuOpen()">
+  <div class="container nav-inner">
+    <app-logo />
+
+    <nav class="links" [class.open]="menuOpen()" aria-label="Main">
+      <div class="dropdown" (mouseenter)="solutionsOpen.set(true)" (mouseleave)="solutionsOpen.set(false)">
+        <button type="button" class="link" [attr.aria-expanded]="solutionsOpen()" (click)="solutionsOpen.set(!solutionsOpen())">
+          Solutions <i class="fa-solid fa-chevron-down caret" [class.up]="solutionsOpen()"></i>
+        </button>
+        <div class="menu" [class.show]="solutionsOpen()">
+          @for (s of solutions; track s.slug) {
+            <a class="menu-item" [routerLink]="['/solutions', s.slug]">
+              <span class="icon-tile sm"><i class="fa-solid {{ s.icon }}"></i></span>
+              <span>
+                <strong>{{ s.name }}</strong>
+                <small>{{ s.direction }} · {{ s.outcomes[0] }}</small>
+              </span>
+            </a>
+          }
+          <a class="menu-all" routerLink="/solutions">View all solutions <i class="fa-solid fa-arrow-right"></i></a>
+        </div>
+      </div>
+      <a class="link" routerLink="/platform" routerLinkActive="active">Platform</a>
+      <a class="link" routerLink="/pricing" routerLinkActive="active">Pricing</a>
+      <a class="link" routerLink="/" fragment="faq">FAQ</a>
+      <a class="btn btn-primary btn-sm mobile-only" routerLink="/contact">Book a demo</a>
+    </nav>
+
+    <div class="actions">
+      <button type="button" class="icon-btn" (click)="themeService.toggle()"
+        [attr.aria-label]="themeService.theme() === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'">
+        <i class="fa-solid" [class.fa-sun]="themeService.theme() === 'dark'" [class.fa-moon]="themeService.theme() === 'light'"></i>
+      </button>
+      <a class="btn btn-ghost btn-sm desktop-only" routerLink="/contact" fragment="signin">Sign in</a>
+      <a class="btn btn-primary btn-sm desktop-only" routerLink="/contact">Book a demo</a>
+      <button type="button" class="icon-btn burger" (click)="menuOpen.set(!menuOpen())" aria-label="Toggle menu" [attr.aria-expanded]="menuOpen()">
+        <i class="fa-solid" [class.fa-bars]="!menuOpen()" [class.fa-xmark]="menuOpen()"></i>
+      </button>
+    </div>
+  </div>
+</header>

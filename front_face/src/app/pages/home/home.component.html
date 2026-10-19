@@ -1,0 +1,222 @@
+<!-- HERO -->
+<section class="hero">
+  <div class="bg-grid hero-grid"></div>
+  <div class="orb" style="width:520px;height:520px;background:var(--brand-1);top:-160px;left:-120px"></div>
+  <div class="orb" style="width:420px;height:420px;background:var(--brand-2);top:120px;right:-140px;opacity:.35"></div>
+
+  <div class="container hero-inner">
+    <div class="hero-copy">
+      <span class="eyebrow"><span class="dot"></span> Now code-switching across Hindi, Telugu, Tamil &amp; Kannada</span>
+      <h1>Voice agents that <span class="text-gradient">close</span>, not just call.</h1>
+      <p class="lead">
+        Aedon AI calls every lead within minutes, answers every customer on the first ring and turns each conversation
+        into a qualified, exported lead — in a voice your customers won't hang up on.
+      </p>
+      <div class="row">
+        <a class="btn btn-primary" routerLink="/contact">Book a demo <i class="fa-solid fa-arrow-right"></i></a>
+        <a class="btn btn-ghost" routerLink="/" fragment="demo"><i class="fa-solid fa-play"></i> Hear a sample call</a>
+      </div>
+      <p class="trust"><i class="fa-solid fa-shield-halved"></i> No credit card · Live in a day · Inbound &amp; outbound</p>
+    </div>
+
+    <div class="hero-visual" appReveal [revealDelay]="150">
+      <div class="fleet card">
+        <div class="fleet-head">
+          <span><span class="live-dot"></span> Live calls</span>
+          <span class="mono text-muted">fleet · 3 active</span>
+        </div>
+        @for (call of liveCalls; track call.agent; let i = $index) {
+          <div class="fleet-row">
+            <div class="avatar">{{ call.agent[0] }}</div>
+            <div class="fleet-meta">
+              <strong>{{ call.agent }} <span class="lang">{{ call.language }}</span></strong>
+              <small>{{ call.industry }} · <span class="node">{{ call.node }}</span></small>
+            </div>
+            <div class="mini-wave"><app-voice-wave [count]="14" /></div>
+            <span class="mono dur">{{ call.duration }}</span>
+          </div>
+        }
+      </div>
+      <div class="float-chip chip-a"><i class="fa-solid fa-calendar-check"></i> Site visit booked · Sat 11am</div>
+      <div class="float-chip chip-b"><i class="fa-solid fa-bolt"></i> Lead pushed to CRM</div>
+      <div class="float-chip chip-c"><i class="fa-brands fa-whatsapp"></i> Owner notified</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <div class="stats" appReveal [revealDelay]="250">
+      @for (s of stats; track s.label) {
+        <div class="stat">
+          <strong class="text-gradient">{{ s.value }}</strong>
+          <span>{{ s.label }}</span>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- INTEGRATIONS MARQUEE -->
+<section class="marquee-band" aria-label="Integrations">
+  <div class="marquee">
+    @for (copy of [0, 1]; track copy) {
+      <div class="marquee-track" [attr.aria-hidden]="copy === 1">
+        @for (item of integrations; track item.name) {
+          <span class="marquee-item"><i class="fa-solid {{ item.icon }}"></i> {{ item.name }}</span>
+        }
+      </div>
+    }
+  </div>
+</section>
+
+<!-- HOW IT WORKS -->
+<section class="section">
+  <div class="container">
+    <div class="section-head" appReveal>
+      <span class="eyebrow">How it works</span>
+      <h2>From template to live calls in four steps</h2>
+      <p class="lead">No scripts to write from scratch. No telephony to wire up. Just teach Aedon your business.</p>
+    </div>
+    <div class="grid grid-4 steps">
+      @for (step of steps; track step.title; let i = $index) {
+        <div class="card step" appReveal [revealDelay]="i * 100">
+          <span class="step-no mono">0{{ i + 1 }}</span>
+          <div class="icon-tile"><i class="fa-solid {{ step.icon }}"></i></div>
+          <h3>{{ step.title }}</h3>
+          <p class="text-muted">{{ step.description }}</p>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- LIVE DEMO -->
+<section class="section demo" id="demo">
+  <div class="container">
+    <div class="section-head" appReveal>
+      <span class="eyebrow"><span class="dot"></span> Interactive demo</span>
+      <h2>Listen in on a real conversation flow</h2>
+      <p class="lead">Pick an industry and watch the agent move through its conversation graph — from greeting to booked appointment.</p>
+    </div>
+    <div appReveal>
+      <app-call-simulator />
+    </div>
+  </div>
+</section>
+
+<!-- SOLUTIONS -->
+<section class="section">
+  <div class="container">
+    <div class="section-head" appReveal>
+      <span class="eyebrow">Solutions</span>
+      <h2>Pre-trained for the calls your business makes</h2>
+      <p class="lead">Each agent ships with an industry-specific conversation graph, objection handling and lead fields — ready to customise.</p>
+    </div>
+    <div class="grid grid-3">
+      @for (s of solutions; track s.slug; let i = $index) {
+        <a class="card hoverable solution" [routerLink]="['/solutions', s.slug]" appReveal [revealDelay]="(i % 3) * 100">
+          <div class="row between">
+            <div class="icon-tile"><i class="fa-solid {{ s.icon }}"></i></div>
+            <span class="chip">{{ s.direction }}</span>
+          </div>
+          <h3>{{ s.name }}</h3>
+          <p class="text-muted">{{ s.tagline }}</p>
+          <span class="more">Explore <i class="fa-solid fa-arrow-right"></i></span>
+        </a>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- CALL → DATA -->
+<section class="section">
+  <div class="container split">
+    <div appReveal>
+      <span class="eyebrow">After the call</span>
+      <h2>Every conversation becomes a qualified lead</h2>
+      <p class="lead">
+        The moment a call ends, Aedon analyses the transcript, scores intent, extracts the fields you care about and
+        creates follow-up actions — then delivers it wherever your team works.
+      </p>
+      <div class="exports">
+        @for (e of exports; track e.label) {
+          <span class="chip"><i class="{{ e.icon }}"></i> {{ e.label }}</span>
+        }
+      </div>
+    </div>
+
+    <div class="lead-preview card" appReveal [revealDelay]="150">
+      <div class="lp-head">
+        <div class="avatar lg">{{ lead.name[0] }}</div>
+        <div>
+          <strong>{{ lead.name }}</strong>
+          <small class="mono">{{ lead.phone }} · {{ lead.agent }}</small>
+        </div>
+        <span class="badge-hot"><i class="fa-solid fa-fire"></i> {{ lead.interest }}</span>
+      </div>
+      <div class="score">
+        <span>Intent score</span>
+        <div class="bar"><span [style.width.%]="lead.score"></span></div>
+        <b>{{ lead.score }}</b>
+      </div>
+      <p class="summary">{{ lead.summary }}</p>
+      <div class="fields">
+        @for (f of lead.fields; track f.label) {
+          <div><small>{{ f.label }}</small><strong>{{ f.value }}</strong></div>
+        }
+      </div>
+      <div class="actions">
+        <small>Action items</small>
+        <ul class="check-list">
+          @for (a of lead.actions; track a) { <li>{{ a }}</li> }
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- FEATURES -->
+<section class="section">
+  <div class="container">
+    <div class="section-head" appReveal>
+      <span class="eyebrow">Platform</span>
+      <h2>Built for real phone calls, not chat demos</h2>
+    </div>
+    <div class="grid grid-3">
+      @for (f of features; track f.title; let i = $index) {
+        <div class="card hoverable" appReveal [revealDelay]="(i % 3) * 100">
+          <div class="icon-tile"><i class="fa-solid {{ f.icon }}"></i></div>
+          <h3>{{ f.title }}</h3>
+          <p class="text-muted">{{ f.description }}</p>
+        </div>
+      }
+    </div>
+    <div class="row center more-link">
+      <a class="btn btn-ghost" routerLink="/platform">Explore the full platform <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+  </div>
+</section>
+
+<!-- LANGUAGES -->
+<section class="section-tight languages">
+  <div class="container" appReveal>
+    <p class="lang-title">One agent. Every language your customers speak.</p>
+    <div class="lang-cloud">
+      @for (l of languages; track l; let i = $index) {
+        <span [style.animation-delay.ms]="i * 250">{{ l }}</span>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- FAQ -->
+<section class="section" id="faq">
+  <div class="container">
+    <div class="section-head" appReveal>
+      <span class="eyebrow">FAQ</span>
+      <h2>Questions, answered</h2>
+    </div>
+    <app-faq-list />
+  </div>
+</section>
+
+<app-cta-banner />

@@ -1,0 +1,78 @@
+/* Studio illustration */
+.studio { padding: 0; overflow: hidden; background: var(--surface-solid); }
+.studio-bar {
+  display: flex; align-items: center; gap: 16px;
+  padding: 12px 18px; border-bottom: 1px solid var(--border);
+  font-size: 0.78rem; color: var(--text-faint);
+}
+.studio-bar .mono { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dots { display: inline-flex; gap: 6px; }
+.dots i { width: 10px; height: 10px; border-radius: 50%; background: var(--border-strong); }
+.studio-body { display: grid; grid-template-columns: 1fr 320px; min-height: 380px; }
+
+.graph { position: relative; margin: 10px; }
+.edges { position: absolute; inset: 0; width: 100%; height: 100%; }
+.edges line { stroke: var(--border-strong); stroke-width: 1.5; stroke-dasharray: 4 5; animation: dash 1.6s linear infinite; }
+@keyframes dash { to { stroke-dashoffset: -18; } }
+.router {
+  position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  padding: 14px 20px; border-radius: var(--radius);
+  background: var(--gradient-brand); color: #fff; font-weight: 600; font-size: 0.9rem;
+  box-shadow: 0 0 0 8px rgba(124, 108, 255, 0.12), 0 20px 50px -10px var(--glow);
+  white-space: nowrap;
+}
+.router i { margin-right: 6px; }
+.gnode {
+  position: absolute; left: 2%;
+  padding: 10px 14px; min-width: 120px; text-align: center;
+  border-radius: var(--radius);
+  background: var(--bg-elevated); border: 1px solid var(--border-strong);
+  font-size: 0.82rem; font-weight: 500;
+}
+.gnode.right { left: auto; right: 2%; }
+.gnode.active { border-color: var(--brand-2); box-shadow: 0 0 0 4px rgba(34, 211, 197, 0.15); }
+
+.inspector { border-left: 1px solid var(--border); padding: 20px; display: grid; gap: 14px; align-content: start; background: var(--surface); }
+.inspector > small { font-family: var(--font-mono); font-size: 0.72rem; color: var(--brand-2); text-transform: uppercase; letter-spacing: 0.06em; }
+.field-mock span:first-child { display: block; font-size: 0.72rem; color: var(--text-faint); margin-bottom: 6px; }
+.field-mock p { margin: 0; padding: 10px 12px; border-radius: var(--radius-sm); border: 1px solid var(--border); background: var(--bg-elevated); font-size: 0.82rem; color: var(--text-muted); }
+.field-mock .row { gap: 6px; }
+.field-mock .chip { font-family: var(--font-mono); font-size: 0.7rem; }
+.link { color: var(--brand-2); }
+
+/* Pipeline */
+.pipeline { display: grid; grid-template-columns: repeat(6, 1fr); gap: 0; position: relative; }
+.pipeline::before {
+  content: ''; position: absolute; top: 23px; left: 8%; right: 8%; height: 2px;
+  background: var(--gradient-brand); opacity: 0.5;
+}
+.pipe { display: grid; justify-items: center; text-align: center; gap: 4px; padding: 0 8px; position: relative; }
+.pipe .icon-tile { background: var(--surface-solid); margin-bottom: 10px; }
+.pipe strong { font-size: 0.92rem; }
+.pipe small { font-size: 0.8rem; color: var(--text-faint); }
+
+/* Integrations */
+.split { display: grid; grid-template-columns: 1fr 1fr; gap: 64px; align-items: center; }
+.int-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+.int { padding: 20px 10px; display: grid; justify-items: center; gap: 10px; text-align: center; font-size: 0.82rem; font-weight: 500; }
+.int i { font-size: 1.4rem; color: var(--brand-1); }
+
+/* Trust */
+.trust { display: flex; gap: 16px; }
+.trust > i { font-size: 1.3rem; color: var(--brand-2); margin-top: 4px; }
+.trust p { font-size: 0.9rem; margin: 6px 0 0; }
+
+@media (max-width: 960px) {
+  .studio-body { grid-template-columns: 1fr; }
+  .inspector { border-left: 0; border-top: 1px solid var(--border); }
+  .graph { height: 360px; }
+  .pipeline { grid-template-columns: repeat(3, 1fr); row-gap: 32px; }
+  .pipeline::before { display: none; }
+  .split { grid-template-columns: 1fr; gap: 32px; }
+}
+@media (max-width: 560px) {
+  .pipeline { grid-template-columns: repeat(2, 1fr); }
+  .int-grid { grid-template-columns: repeat(2, 1fr); }
+  .gnode { min-width: 0; font-size: 0.72rem; padding: 8px 10px; }
+  .router { font-size: 0.78rem; padding: 10px 12px; }
+}

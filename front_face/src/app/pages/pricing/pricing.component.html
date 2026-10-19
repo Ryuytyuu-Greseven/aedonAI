@@ -1,0 +1,54 @@
+<section class="page-hero">
+  <div class="bg-grid"></div>
+  <div class="orb" style="width:480px;height:480px;background:var(--brand-2);top:-240px;left:50%;transform:translateX(-50%);opacity:.35"></div>
+  <div class="container">
+    <span class="eyebrow">Pricing</span>
+    <h1>Simple pricing that <span class="text-gradient">scales with calls</span></h1>
+    <p class="lead">Every plan includes all industry templates, multilingual voices and post-call lead analysis. Pay only for the minutes you talk.</p>
+
+    <div class="toggle" role="group" aria-label="Billing period">
+      <button type="button" [class.on]="!annual()" (click)="annual.set(false)">Monthly</button>
+      <button type="button" [class.on]="annual()" (click)="annual.set(true)">Annual <span class="save">-20%</span></button>
+    </div>
+  </div>
+</section>
+
+<section class="section" style="padding-top: 16px">
+  <div class="container grid grid-3 plans">
+    @for (plan of plans; track plan.name; let i = $index) {
+      <div class="card plan" [class.featured]="plan.highlighted" appReveal [revealDelay]="i * 100">
+        @if (plan.highlighted) { <span class="badge">Most popular</span> }
+        <h3>{{ plan.name }}</h3>
+        <p class="text-muted desc">{{ plan.description }}</p>
+        <div class="price">
+          @if (plan.monthly !== null) {
+            <strong>${{ price(plan.monthly) }}</strong><span>/ month</span>
+          } @else {
+            <strong>Custom</strong>
+          }
+        </div>
+        <div class="minutes">
+          <span><i class="fa-solid fa-clock"></i> {{ plan.includedMinutes }}</span>
+          <small>{{ plan.overage }}</small>
+        </div>
+        <a class="btn" [class.btn-primary]="plan.highlighted" [class.btn-ghost]="!plan.highlighted" routerLink="/contact"
+          [queryParams]="{ plan: plan.name.toLowerCase() }">{{ plan.cta }}</a>
+        <ul class="check-list">
+          @for (f of plan.features; track f) { <li>{{ f }}</li> }
+        </ul>
+      </div>
+    }
+  </div>
+  <p class="container note">Prices in USD, excluding taxes and carrier charges. Local billing available in INR, AED, GBP and EUR.</p>
+</section>
+
+<section class="section" id="faq">
+  <div class="container">
+    <div class="section-head" appReveal>
+      <h2>Frequently asked questions</h2>
+    </div>
+    <app-faq-list />
+  </div>
+</section>
+
+<app-cta-banner title="Not sure which plan fits?" subtitle="Tell us your call volume and we'll recommend a plan — and set up your first agent with you." />

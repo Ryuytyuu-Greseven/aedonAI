@@ -1,0 +1,85 @@
+@if (solution(); as s) {
+  <section class="page-hero">
+    <div class="bg-grid"></div>
+    <div class="orb" style="width:460px;height:460px;background:var(--brand-1);top:-180px;left:-100px"></div>
+    <div class="orb" style="width:380px;height:380px;background:var(--brand-2);top:-120px;right:-120px;opacity:.3"></div>
+    <div class="container">
+      <a class="back" routerLink="/solutions"><i class="fa-solid fa-arrow-left"></i> All solutions</a>
+      <div class="hero-icon"><i class="fa-solid {{ s.icon }}"></i></div>
+      <span class="eyebrow">{{ s.name }} · {{ s.direction }}</span>
+      <h1>{{ s.tagline }}</h1>
+      <p class="lead">{{ s.summary }}</p>
+      <div class="row center">
+        <a class="btn btn-primary" routerLink="/contact" [queryParams]="{ industry: s.slug }">Get this agent <i class="fa-solid fa-arrow-right"></i></a>
+        <a class="btn btn-ghost" routerLink="." fragment="sample"><i class="fa-solid fa-play"></i> Hear {{ s.agentName }}</a>
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="sample" style="padding-top: 32px">
+    <div class="container" appReveal>
+      <!-- keyed by slug so navigating between solutions restarts the simulator -->
+      @for (key of [s.slug]; track key) {
+        <app-call-simulator [solution]="s" />
+      }
+    </div>
+  </section>
+
+  <section class="section-tight">
+    <div class="container grid grid-2">
+      <div class="card" appReveal>
+        <div class="icon-tile"><i class="fa-solid fa-trophy"></i></div>
+        <h3>Outcomes it drives</h3>
+        <ul class="check-list">
+          @for (o of s.outcomes; track o) { <li>{{ o }}</li> }
+        </ul>
+      </div>
+      <div class="card" appReveal [revealDelay]="100">
+        <div class="icon-tile"><i class="fa-solid fa-table-list"></i></div>
+        <h3>Lead fields captured on every call</h3>
+        <div class="row tags">
+          @for (c of s.captures; track c) { <span class="chip">{{ c }}</span> }
+        </div>
+        <p class="text-muted small">Delivered to your CRM, API, WhatsApp, SMS or email the moment the call ends — plus scheduled Excel reports.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-tight">
+    <div class="container">
+      <div class="card flow-card" appReveal>
+        <h3><i class="fa-solid fa-diagram-project"></i> {{ s.agentName }}'s conversation graph</h3>
+        <p class="text-muted">Each node is a focused prompt with its own tools. A semantic router chooses the next node every turn.</p>
+        <div class="flow">
+          @for (node of s.flow; track node; let last = $last) {
+            <span class="node">{{ node }}</span>
+            @if (!last) { <i class="fa-solid fa-chevron-right sep"></i> }
+          }
+        </div>
+        <div class="row common">
+          <span class="chip"><i class="fa-solid fa-ear-listen"></i> Silence handling</span>
+          <span class="chip"><i class="fa-solid fa-user-group"></i> Human handoff</span>
+          <span class="chip"><i class="fa-solid fa-hand"></i> Graceful rejection</span>
+          <span class="chip"><i class="fa-solid fa-book"></i> FAQ via knowledge base</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section-tight">
+    <div class="container">
+      <h3 class="others-title">Explore other solutions</h3>
+      <div class="grid grid-2">
+        @for (o of others(); track o.slug) {
+          <a class="card hoverable other" [routerLink]="['/solutions', o.slug]">
+            <div class="icon-tile"><i class="fa-solid {{ o.icon }}"></i></div>
+            <strong>{{ o.name }}</strong>
+            <p class="text-muted">{{ o.tagline }}</p>
+          </a>
+        }
+      </div>
+    </div>
+  </section>
+
+  <app-cta-banner [title]="'Put ' + s.agentName + ' to work for your team.'" />
+}

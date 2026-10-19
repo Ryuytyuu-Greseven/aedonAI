@@ -1,0 +1,39 @@
+<footer class="footer">
+  <div class="container">
+    <div class="cols">
+      <div class="brand">
+        <app-logo />
+        <p class="text-muted">Human-sounding voice agents that sell, support and follow up — in your customer's language.</p>
+        <div class="row socials">
+          <a class="icon-btn" href="#" aria-label="LinkedIn"><i class="fa-brands fa-linkedin-in"></i></a>
+          <a class="icon-btn" href="#" aria-label="X"><i class="fa-brands fa-x-twitter"></i></a>
+          <a class="icon-btn" href="#" aria-label="YouTube"><i class="fa-brands fa-youtube"></i></a>
+        </div>
+      </div>
+      <div>
+        <h4>Solutions</h4>
+        @for (s of solutions; track s.slug) {
+          <a [routerLink]="['/solutions', s.slug]">{{ s.name }}</a>
+        }
+      </div>
+      <div>
+        <h4>Product</h4>
+        <a routerLink="/platform">Platform</a>
+        <a routerLink="/platform" fragment="integrations">Integrations</a>
+        <a routerLink="/pricing">Pricing</a>
+        <a routerLink="/" fragment="demo">Live demo</a>
+      </div>
+      <div>
+        <h4>Company</h4>
+        <a routerLink="/contact">Book a demo</a>
+        <a routerLink="/contact">Contact sales</a>
+        <a href="#">Privacy</a>
+        <a href="#">Terms</a>
+      </div>
+    </div>
+    <div class="bottom">
+      <span>© {{ year }} Aedon AI. All rights reserved.</span>
+      <span class="row"><span class="status-dot"></span> All systems operational</span>
+    </div>
+  </div>
+</footer>

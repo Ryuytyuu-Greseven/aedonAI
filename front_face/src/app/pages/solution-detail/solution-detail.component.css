@@ -1,0 +1,33 @@
+.back { display: inline-flex; gap: 8px; align-items: center; font-size: 0.88rem; color: var(--text-muted); margin-bottom: 32px; }
+.back:hover { color: var(--text); }
+.hero-icon {
+  width: 72px; height: 72px; margin: 0 auto 20px;
+  display: grid; place-items: center;
+  border-radius: 20px;
+  background: var(--gradient-brand);
+  color: #fff; font-size: 1.8rem;
+  box-shadow: 0 20px 50px -15px var(--glow);
+}
+h1 { max-width: 860px; margin-inline: auto; font-size: clamp(2.2rem, 5vw, 3.6rem); }
+.page-hero .lead { margin-bottom: 32px; }
+
+.tags { gap: 8px; margin-bottom: 16px; }
+.tags .chip { padding: 6px 14px; font-size: 0.85rem; }
+.small { font-size: 0.88rem; margin: 0; }
+
+.flow-card h3 i { color: var(--brand-1); margin-right: 8px; }
+.flow { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 24px 0; }
+.node {
+  padding: 10px 16px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-strong);
+  background: var(--surface-strong);
+  font-size: 0.88rem; font-weight: 500;
+}
+.node:first-child { background: var(--gradient-brand); color: #fff; border-color: transparent; }
+.sep { font-size: 0.7rem; color: var(--text-faint); }
+.common { gap: 8px; padding-top: 20px; border-top: 1px solid var(--border); }
+
+.others-title { margin-bottom: 20px; }
+.other strong { display: block; margin-bottom: 6px; }
+.other p { margin: 0; font-size: 0.9rem; }

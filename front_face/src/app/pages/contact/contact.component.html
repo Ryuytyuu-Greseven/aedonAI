@@ -1,0 +1,97 @@
+<section class="page-hero">
+  <div class="bg-grid"></div>
+  <div class="orb" style="width:460px;height:460px;background:var(--brand-1);top:-200px;right:10%"></div>
+  <div class="container">
+    <span class="eyebrow"><span class="dot"></span> Book a demo</span>
+    <h1>Hear your own agent <span class="text-gradient">on a real call</span></h1>
+    <p class="lead">Tell us a little about your calls. We'll build a sample agent for your business and call you with it.</p>
+  </div>
+</section>
+
+<section class="section" style="padding-top: 16px">
+  <div class="container layout">
+    <div class="card form-card" appReveal>
+      @if (reference(); as ref) {
+        <div class="success">
+          <div class="success-icon"><i class="fa-solid fa-check"></i></div>
+          <h2>You're on the list!</h2>
+          <p class="text-muted">Thanks, {{ form.controls.name.value.split(' ')[0] }}. Our team will reach out within one business day to schedule your demo.</p>
+          <span class="chip mono">Reference · {{ ref }}</span>
+          <div class="row center">
+            <button type="button" class="btn btn-ghost" (click)="reset()">Submit another request</button>
+            <a class="btn btn-primary" routerLink="/" fragment="demo">Try the sample call</a>
+          </div>
+        </div>
+      } @else {
+        <form [formGroup]="form" (ngSubmit)="submit()" novalidate>
+          <div class="grid grid-2">
+            <div class="field">
+              <label for="name">Full name *</label>
+              <input id="name" class="input" formControlName="name" autocomplete="name" [class.invalid]="invalid('name')" />
+              @if (invalid('name')) { <span class="field-error">Please enter your name.</span> }
+            </div>
+            <div class="field">
+              <label for="email">Work email *</label>
+              <input id="email" type="email" class="input" formControlName="email" autocomplete="email" [class.invalid]="invalid('email')" />
+              @if (invalid('email')) { <span class="field-error">Enter a valid email address.</span> }
+            </div>
+            <div class="field">
+              <label for="company">Company *</label>
+              <input id="company" class="input" formControlName="company" autocomplete="organization" [class.invalid]="invalid('company')" />
+              @if (invalid('company')) { <span class="field-error">Company is required.</span> }
+            </div>
+            <div class="field">
+              <label for="phone">Phone (we'll call you here) *</label>
+              <input id="phone" type="tel" class="input" formControlName="phone" placeholder="+91 98765 43210" autocomplete="tel" [class.invalid]="invalid('phone')" />
+              @if (invalid('phone')) { <span class="field-error">Enter a valid phone number.</span> }
+            </div>
+            <div class="field">
+              <label for="industry">Use-case</label>
+              <select id="industry" class="input" formControlName="industry">
+                <option value="">Select an industry</option>
+                @for (s of solutions; track s.slug) { <option [value]="s.slug">{{ s.name }}</option> }
+                <option value="other">Something else</option>
+              </select>
+            </div>
+            <div class="field">
+              <label for="monthlyCalls">Calls per month</label>
+              <select id="monthlyCalls" class="input" formControlName="monthlyCalls">
+                <option value="">Select a range</option>
+                @for (v of volumes; track v) { <option [value]="v">{{ v }}</option> }
+              </select>
+            </div>
+          </div>
+          <div class="field full">
+            <label for="message">What should your agent do?</label>
+            <textarea id="message" class="input" formControlName="message" placeholder="e.g. Call our Meta leads within 5 minutes, qualify budget and book site visits."></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary submit" [disabled]="submitting()">
+            @if (submitting()) { <i class="fa-solid fa-circle-notch fa-spin"></i> Sending… }
+            @else { Request my demo <i class="fa-solid fa-arrow-right"></i> }
+          </button>
+          <p class="fine">By submitting you agree to be contacted about Aedon AI. We never share your details.</p>
+        </form>
+      }
+    </div>
+
+    <aside class="side">
+      <div class="card" appReveal [revealDelay]="100">
+        <h3>What you'll get</h3>
+        <ul class="perks">
+          @for (p of perks; track p.text) {
+            <li><span class="icon-tile sm"><i class="fa-solid {{ p.icon }}"></i></span>{{ p.text }}</li>
+          }
+        </ul>
+      </div>
+      <div class="card" id="signin" appReveal [revealDelay]="200">
+        <h3>Already a customer?</h3>
+        <p class="text-muted">Manage agents, numbers, leads and reports in Aedon Studio.</p>
+        <a class="btn btn-ghost" href="#" (click)="$event.preventDefault()"><i class="fa-solid fa-arrow-right-to-bracket"></i> Sign in to Studio</a>
+      </div>
+      <div class="contact-lines" appReveal [revealDelay]="300">
+        <span><i class="fa-solid fa-envelope"></i> hello&#64;aedon.ai</span>
+        <span><i class="fa-solid fa-location-dot"></i> Hyderabad · Dubai</span>
+      </div>
+    </aside>
+  </div>
+</section>

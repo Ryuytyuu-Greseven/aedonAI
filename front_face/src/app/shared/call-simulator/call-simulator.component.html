@@ -1,0 +1,96 @@
+<div class="sim" [class.with-flow]="showFlow()">
+  @if (!solution()) {
+    <div class="tabs" role="tablist" aria-label="Choose an industry">
+      @for (s of solutions; track s.slug) {
+        <button type="button" role="tab" class="tab" [class.active]="s.slug === current().slug"
+          [attr.aria-selected]="s.slug === current().slug" (click)="select(s)">
+          <i class="fa-solid {{ s.icon }}"></i> {{ s.shortName }}
+        </button>
+      }
+    </div>
+  }
+
+  <div class="body">
+    <div class="call card">
+      <div class="call-head">
+        <div class="avatar" [class.pulse]="state() === 'ringing'">
+          <span>{{ current().agentName[0] }}</span>
+        </div>
+        <div class="who">
+          <strong>{{ current().agentName }} · Aedon agent</strong>
+          <small>{{ current().name }} · {{ current().direction }}</small>
+        </div>
+        <span class="status" [attr.data-state]="state()">
+          @switch (state()) {
+            @case ('ringing') { <i class="fa-solid fa-phone-volume"></i> Ringing… }
+            @case ('live') { <span class="live-dot"></span> {{ timer() }} }
+            @case ('ended') { <i class="fa-solid fa-circle-check"></i> Call ended }
+            @default { Ready }
+          }
+        </span>
+      </div>
+
+      <div class="wave-wrap">
+        <app-voice-wave [count]="40" [active]="agentSpeaking()" />
+      </div>
+
+      <div class="transcript" #transcript aria-live="polite">
+        @if (state() === 'idle') {
+          <div class="placeholder">
+            <i class="fa-solid fa-headphones"></i>
+            <p>Press <b>Start call</b> to hear how {{ current().agentName }} handles a {{ current().name.toLowerCase() }} conversation.</p>
+          </div>
+        }
+        @for (line of lines(); track $index) {
+          <div class="bubble" [class.customer]="line.speaker === 'customer'">
+            @if (line.node) { <span class="node-tag">{{ line.node }}</span> }
+            {{ line.text }}
+          </div>
+        }
+        @if (typing(); as t) {
+          <div class="bubble" [class.customer]="t.line.speaker === 'customer'">
+            @if (t.line.node) { <span class="node-tag">{{ t.line.node }}</span> }
+            @if (t.text) { {{ t.text }}<span class="caret"></span> }
+            @else { <span class="dots"><i></i><i></i><i></i></span> }
+          </div>
+        }
+        @if (state() === 'ended' && lines().length) {
+          <div class="lead-card">
+            <div class="lead-head"><i class="fa-solid fa-bolt"></i> Lead captured &amp; exported</div>
+            <div class="row">
+              @for (c of current().captures; track c) {
+                <span class="chip"><i class="fa-solid fa-check"></i> {{ c }}</span>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="call-foot">
+        <button type="button" class="btn btn-sm" [class.btn-primary]="state() !== 'live' && state() !== 'ringing'"
+          [class.btn-danger]="state() === 'live' || state() === 'ringing'" (click)="toggle()">
+          @if (state() === 'live' || state() === 'ringing') { <i class="fa-solid fa-phone-slash"></i> End call }
+          @else if (state() === 'ended') { <i class="fa-solid fa-rotate-right"></i> Replay call }
+          @else { <i class="fa-solid fa-phone"></i> Start call }
+        </button>
+        <span class="hint mono">simulated · no audio</span>
+      </div>
+    </div>
+
+    @if (showFlow()) {
+      <aside class="flow card">
+        <div class="flow-head">
+          <i class="fa-solid fa-diagram-project"></i> Conversation graph
+        </div>
+        <ol>
+          @for (node of current().flow; track node) {
+            <li [class.active]="node === activeNode()" [class.visited]="visitedNodes().has(node)">
+              <span class="bullet"></span>{{ node }}
+            </li>
+          }
+        </ol>
+        <p class="flow-note">A semantic router picks the next node every turn — so the agent can jump from pitch to objection to closing, just like a person.</p>
+      </aside>
+    }
+  </div>
+</div>

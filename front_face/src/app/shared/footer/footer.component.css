@@ -1,0 +1,15 @@
+.footer { border-top: 1px solid var(--border); padding: 72px 0 32px; background: var(--bg-elevated); }
+.cols { display: grid; grid-template-columns: 2fr 1fr 1fr 1fr; gap: 40px; }
+.brand p { max-width: 320px; margin: 16px 0 20px; font-size: 0.92rem; }
+.socials { gap: 8px; }
+h4 { font-size: 0.85rem; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-faint); margin-bottom: 16px; font-family: var(--font-body); }
+.cols a:not(.icon-btn):not(.logo) { display: block; padding: 5px 0; color: var(--text-muted); font-size: 0.92rem; transition: color var(--t-fast); }
+.cols a:not(.icon-btn):hover { color: var(--text); }
+.bottom {
+  display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px;
+  margin-top: 56px; padding-top: 24px;
+  border-top: 1px solid var(--border);
+  font-size: 0.85rem; color: var(--text-faint);
+}
+.status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--success); box-shadow: 0 0 0 4px rgba(46, 204, 143, 0.15); }
+@media (max-width: 800px) { .cols { grid-template-columns: 1fr 1fr; } .brand { grid-column: 1 / -1; } }

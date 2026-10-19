@@ -1,0 +1,119 @@
+<section class="page-hero">
+  <div class="bg-grid"></div>
+  <div class="orb" style="width:500px;height:500px;background:var(--brand-1);top:-220px;left:20%"></div>
+  <div class="container">
+    <span class="eyebrow"><span class="dot"></span> The Aedon platform</span>
+    <h1>Everything a voice agent needs, <span class="text-gradient">in one studio</span></h1>
+    <p class="lead">Design the conversation, teach it your knowledge, connect your numbers and watch results — without stitching together five vendors.</p>
+  </div>
+</section>
+
+<!-- Studio illustration -->
+<section class="section-tight">
+  <div class="container">
+    <div class="studio card" appReveal>
+      <div class="studio-bar">
+        <span class="dots"><i></i><i></i><i></i></span>
+        <span class="mono">studio.aedon.ai / agents / real-estate-sales</span>
+        <span class="chip"><span class="live-dot"></span> Live</span>
+      </div>
+      <div class="studio-body">
+        <div class="graph">
+          <svg class="edges" viewBox="0 0 600 360" preserveAspectRatio="none" aria-hidden="true">
+            @for (n of graphNodes; track n; let i = $index) {
+              <line x1="300" y1="180" [attr.x2]="i < 3 ? 90 : 510" [attr.y2]="60 + (i % 3) * 120" />
+            }
+          </svg>
+          <div class="router"><i class="fa-solid fa-route"></i> Semantic router</div>
+          @for (n of graphNodes; track n; let i = $index) {
+            <div class="gnode" [class.right]="i >= 3" [style.top.%]="(i % 3) * 33.3 + 8" [class.active]="i === 2">{{ n }}</div>
+          }
+        </div>
+        <div class="inspector">
+          <small>Node · Presentation</small>
+          <div class="field-mock"><span>Prompt</span><p>Present the chosen property: configuration, carpet area, price and two standout amenities. Keep it to 3 sentences…</p></div>
+          <div class="field-mock"><span>Tools</span>
+            <div class="row"><span class="chip">search_properties</span><span class="chip">get_amenities</span><span class="chip">book_site_visit</span></div>
+          </div>
+          <div class="field-mock"><span>Version</span><p class="mono">v14 · edited 2h ago · <a class="link">history</a></p></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- Pipeline -->
+<section class="section">
+  <div class="container">
+    <div class="section-head" appReveal>
+      <span class="eyebrow">Under the hood</span>
+      <h2>A real-time voice pipeline, tuned for phone calls</h2>
+      <p class="lead">Every turn streams through the full stack in well under a second — so conversations feel human, even on a patchy mobile line.</p>
+    </div>
+    <div class="pipeline">
+      @for (p of pipeline; track p.title; let i = $index) {
+        <div class="pipe" appReveal [revealDelay]="i * 80">
+          <div class="icon-tile"><i class="fa-solid {{ p.icon }}"></i></div>
+          <strong>{{ p.title }}</strong>
+          <small>{{ p.text }}</small>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- All features -->
+<section class="section">
+  <div class="container">
+    <div class="section-head" appReveal>
+      <span class="eyebrow">Capabilities</span>
+      <h2>Built for teams that live on the phone</h2>
+    </div>
+    <div class="grid grid-3">
+      @for (f of features; track f.title; let i = $index) {
+        <div class="card hoverable" appReveal [revealDelay]="(i % 3) * 80">
+          <div class="icon-tile"><i class="fa-solid {{ f.icon }}"></i></div>
+          <h3>{{ f.title }}</h3>
+          <p class="text-muted">{{ f.description }}</p>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- Integrations -->
+<section class="section" id="integrations">
+  <div class="container split">
+    <div appReveal>
+      <span class="eyebrow">Integrations</span>
+      <h2>Plugs into the tools you already use</h2>
+      <p class="lead">Leads flow in from your ads and CRM; outcomes flow out to your team's inbox, chat and dashboards.</p>
+      <a class="btn btn-ghost" routerLink="/contact">Request an integration <i class="fa-solid fa-arrow-right"></i></a>
+    </div>
+    <div class="int-grid" appReveal [revealDelay]="120">
+      @for (item of integrations; track item.name) {
+        <div class="int card">
+          <i class="fa-solid {{ item.icon }}"></i>
+          <span>{{ item.name }}</span>
+        </div>
+      }
+    </div>
+  </div>
+</section>
+
+<!-- Trust -->
+<section class="section-tight">
+  <div class="container grid grid-3">
+    @for (t of trust; track t.title; let i = $index) {
+      <div class="trust" appReveal [revealDelay]="i * 100">
+        <i class="fa-solid {{ t.icon }}"></i>
+        <div>
+          <strong>{{ t.title }}</strong>
+          <p class="text-muted">{{ t.text }}</p>
+        </div>
+      </div>
+    }
+  </div>
+</section>
+
+<app-cta-banner />
