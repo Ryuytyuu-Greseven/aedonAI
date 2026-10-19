@@ -1,0 +1,50 @@
+[
+  {
+    "name": "Bespoke AI Refrigerators",
+    "description": "Category: Refrigerators. Types available: French Door, Side-by-Side, Top Freezer, Bottom Freezer, 4-Door Flex, and Family Hub smart refrigerators. Family Hub models have a built-in touchscreen and an internal AI Vision camera that helps you see and manage what food you have. Bespoke models have customizable door panels to match your kitchen, and AI-driven food management. Connects to the SmartThings app. Price: to be confirmed by the store team."
+  },
+  {
+    "name": "Bespoke AI Laundry (Washers, Dryers & Combo)",
+    "description": "Category: Washing machines and dryers. Types available: front-load washers, top-load washers, separate dryers, the Bespoke AI Laundry Combo (washer and dryer in one unit), and stacked Laundry Hubs. Features EcoBubble and Bubble Shot technology for effective cleaning, and AI OptiWash, which adjusts the wash to the load. Connects to the SmartThings app. Price: to be confirmed by the store team."
+  },
+  {
+    "name": "Cooking & Kitchen Appliances",
+    "description": "Category: Cooking. Types available: slide-in and freestanding gas and induction ranges, cooktops (hobs), range hoods, built-in wall ovens, and microwave ovens in convection, solo, and grill types. Selected ovens have a Smart Oven Camera so you can check on your food, and touchscreen AI Hub controls. Price: to be confirmed by the store team."
+  },
+  {
+    "name": "Smart Dishwashers",
+    "description": "Category: Dishwashers. Built-in smart dishwashers with WaterWall or StormWash+ cleaning technology, and models with a third rack for extra space for cutlery and utensils. Price: to be confirmed by the store team."
+  },
+  {
+    "name": "Floor Care (Bespoke Jet AI & Jet Bot AI+)",
+    "description": "Category: Vacuum cleaners. Bespoke Jet AI cordless stick vacuums with an auto-empty station, Jet Bot AI+ robot vacuum cleaners, and multi-surface cleaning accessories. Price: to be confirmed by the store team."
+  },
+  {
+    "name": "Air Solutions (WindFree ACs & Air Purifiers)",
+    "description": "Category: Air conditioning and air care. WindFree wall-mount air conditioners, which cool the room without a direct cold draught, ducted HVAC systems for whole-home cooling and heating, and air purifiers. Especially popular in hot climates. Price: to be confirmed by the store team."
+  },
+  {
+    "name": "Samsung Televisions",
+    "description": "Category: Televisions. Ranges available: Neo QLED (8K and 4K), OLED TVs, MICRO LED TVs, Lifestyle TVs (The Frame, The Serif, The Sero), and Crystal UHD TVs. Powered by Samsung Vision AI processors and the Tizen OS smart TV platform, with free streaming channels on Samsung TV Plus. Price: to be confirmed by the store team."
+  },
+  {
+    "name": "Soundbars & Audio",
+    "description": "Category: Audio. Q-Series and S-Series soundbars, wireless audio speakers, and tower sound systems. Optimized for Q-Symphony, which lets the soundbar and a Samsung TV's speakers play together. Price: to be confirmed by the store team."
+  },
+  {
+    "name": "Galaxy Smartphones",
+    "description": "Category: Smartphones. Galaxy S Series flagships, Galaxy Z Fold and Z Flip foldables, and Galaxy A and M Series mid-range and budget phones. Anchored by the Galaxy AI software suite. Price: to be confirmed by the store team."
+  },
+  {
+    "name": "Galaxy Tablets & Wearables",
+    "description": "Category: Tablets and wearables. Galaxy Tab S and Tab A tablets, Galaxy Watch (including Ultra variants), Galaxy Buds wireless earbuds, and the Galaxy Ring smart ring. Price: to be confirmed by the store team."
+  },
+  {
+    "name": "Monitors & Storage",
+    "description": "Category: Monitors and storage. Odyssey gaming monitors (OLED and curved), ViewFinity high-resolution monitors, Smart Monitors, portable SSDs such as the T7 and T9 series, and internal NVMe M.2 SSDs such as the 990 PRO. Price: to be confirmed by the store team."
+  },
+  {
+    "name": "Galaxy Book Laptops",
+    "description": "Category: Laptops. Galaxy Book series including Pro, Ultra, and 360 convertible notebooks, with lightweight builds and Copilot+ PC AI hardware. Price: to be confirmed by the store team."
+  }
+]
