@@ -1,0 +1,117 @@
+<div class="mcp">
+  <div class="mcp-toolbar">
+    <span class="mcp-count">{{ mcpServers.length }} server{{ mcpServers.length === 1 ? '' : 's' }}</span>
+    <button type="button" class="btn btn-primary btn-sm" (click)="openAddForm()">
+      <i class="fa-solid fa-plus" aria-hidden="true"></i> Add MCP server
+    </button>
+  </div>
+
+  @if (mcpServers.length === 0) {
+    <div class="list-empty list-empty-compact mcp-empty">
+      <i class="fa-solid fa-server list-empty-icon" aria-hidden="true"></i>
+      <h3>No MCP servers yet</h3>
+      <p class="text-muted">Connect a server to give this agent extra tools — ticketing, CRM lookups, bookings and more.</p>
+      <button type="button" class="btn btn-secondary btn-sm" (click)="openAddForm()">
+        <i class="fa-solid fa-plug" aria-hidden="true"></i> Connect a server
+      </button>
+    </div>
+  } @else {
+    <div class="mcp-list">
+      @for (server of mcpServers; track server.id) {
+        <div class="mcp-item" [class.mcp-item-editing]="editingId === server.id">
+          @if (editingId === server.id && editDraft) {
+            <div class="mcp-edit">
+              <div class="mcp-edit-grid">
+                <div class="icon-field">
+                  <i class="fa-solid fa-tag" aria-hidden="true"></i>
+                  <input class="input" [(ngModel)]="editDraft.name" placeholder="Name" aria-label="Server name" />
+                </div>
+                <div class="icon-field">
+                  <i class="fa-solid fa-globe" aria-hidden="true"></i>
+                  <input class="input input-mono" [(ngModel)]="editDraft.url" placeholder="URL" aria-label="Server URL" />
+                </div>
+              </div>
+              <div class="icon-field">
+                <i class="fa-solid fa-key" aria-hidden="true"></i>
+                <input
+                  class="input input-mono"
+                  type="password"
+                  [(ngModel)]="editApiKeyInput"
+                  [placeholder]="editDraft.api_key ? maskedApiKey(editDraft) + ' (leave blank to keep)' : 'API key'"
+                  autocomplete="off"
+                  aria-label="API key"
+                />
+              </div>
+              <div class="mcp-edit-actions">
+                <button type="button" class="btn btn-ghost btn-sm" (click)="cancelEdit()">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" (click)="saveEdit()"><i class="fa-solid fa-check" aria-hidden="true"></i> Save</button>
+              </div>
+            </div>
+          } @else {
+            <span class="mcp-icon"><i class="fa-solid fa-server" aria-hidden="true"></i></span>
+            <div class="mcp-text">
+              <strong>{{ server.name }}</strong>
+              <span class="mcp-url">{{ server.url }}</span>
+              @if (server.api_key) {
+                <span class="mcp-key"><i class="fa-solid fa-key" aria-hidden="true"></i> {{ maskedApiKey(server) }}</span>
+              }
+            </div>
+            <div class="row-actions">
+              <button type="button" class="icon-action" (click)="startEdit(server)" [attr.aria-label]="'Edit ' + server.name">
+                <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                <span class="icon-action-tip">Edit</span>
+              </button>
+              <button type="button" class="icon-action mcp-delete" (click)="confirmDelete(server)" [attr.aria-label]="'Delete ' + server.name">
+                <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+                <span class="icon-action-tip">Delete</span>
+              </button>
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>
+
+@if (showAddForm) {
+  <app-modal title="Add MCP server" subtitle="The agent can call this server's tools during conversations." icon="fa-server" [width]="460" (closed)="showAddForm = false">
+    <div class="form-group">
+      <label class="label" for="mcp-name">Name</label>
+      <div class="icon-field">
+        <i class="fa-solid fa-tag" aria-hidden="true"></i>
+        <input id="mcp-name" class="input" [(ngModel)]="draft.name" placeholder="e.g. Internal Ticketing" />
+      </div>
+      @if (nameError) {
+        <span class="field-error">{{ nameError }}</span>
+      }
+    </div>
+    <div class="form-group">
+      <label class="label" for="mcp-url">URL</label>
+      <div class="icon-field">
+        <i class="fa-solid fa-globe" aria-hidden="true"></i>
+        <input id="mcp-url" class="input input-mono" [(ngModel)]="draft.url" placeholder="https://mcp.internal.example.com" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="label" for="mcp-key">API key <span class="text-muted">(optional)</span></label>
+      <div class="icon-field">
+        <i class="fa-solid fa-key" aria-hidden="true"></i>
+        <input id="mcp-key" class="input input-mono" type="password" [(ngModel)]="draft.api_key" placeholder="API key" autocomplete="off" />
+      </div>
+    </div>
+    <ng-container ngProjectAs="[modal-footer]">
+      <button type="button" class="btn btn-ghost" (click)="showAddForm = false">Cancel</button>
+      <button type="button" class="btn btn-primary" (click)="saveServer()"><i class="fa-solid fa-plug" aria-hidden="true"></i> Add server</button>
+    </ng-container>
+  </app-modal>
+}
+
+@if (deleteTarget; as server) {
+  <app-modal title="Delete MCP server?" [subtitle]="server.name" icon="fa-triangle-exclamation" tone="danger" [width]="420" (closed)="cancelDelete()">
+    <p class="mcp-modal-copy">The agent will no longer be able to use this server's tools.</p>
+    <ng-container ngProjectAs="[modal-footer]">
+      <button type="button" class="btn btn-ghost" (click)="cancelDelete()">Cancel</button>
+      <button type="button" class="btn btn-danger" (click)="deleteServer()"><i class="fa-regular fa-trash-can" aria-hidden="true"></i> Delete</button>
+    </ng-container>
+  </app-modal>
+}

@@ -1,0 +1,136 @@
+<div class="kbd-page list-page container">
+  <a routerLink="/knowledge-base" class="kbd-back"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> All knowledge bases</a>
+
+  @if (loading()) {
+    <section class="card kbd-hero">
+      <div class="kbd-hero-main">
+        <div class="skeleton kbd-skeleton-icon"></div>
+        <div class="skeleton-lines">
+          <div class="skeleton kbd-skeleton-title"></div>
+          <div class="skeleton skeleton-line short"></div>
+        </div>
+      </div>
+    </section>
+    <div class="card kbd-skeleton-body">
+      <div class="skeleton skeleton-line"></div>
+      <div class="skeleton skeleton-line"></div>
+      <div class="skeleton skeleton-line short"></div>
+    </div>
+  } @else if (base()) {
+    @let kb = base()!;
+    <!-- Hero -->
+    <section class="card kbd-hero" [class.kbd-hero-off]="kb.status === 'disabled'">
+      <div class="kbd-hero-main">
+        <span class="kbd-hero-icon"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span>
+        <div class="kbd-hero-text">
+          <div class="kbd-title-row">
+            <h1>{{ kb.name }}</h1>
+            <span class="kbd-status" [class.kbd-status-on]="kb.status === 'active'">
+              <span class="kbd-status-dot"></span>{{ kb.status === 'active' ? 'Active' : 'Disabled' }}
+            </span>
+          </div>
+          <div class="kbd-chips">
+            <span><i class="fa-solid fa-file-lines" aria-hidden="true"></i> {{ kb.files.length }} file{{ kb.files.length === 1 ? '' : 's' }}</span>
+            <span><i class="fa-solid fa-link" aria-hidden="true"></i> {{ kb.urls.length }} URL{{ kb.urls.length === 1 ? '' : 's' }}</span>
+            <span><i class="fa-solid fa-robot" aria-hidden="true"></i> {{ linkedAgents().length }} agent{{ linkedAgents().length === 1 ? '' : 's' }}</span>
+            <span><i class="fa-regular fa-clock" aria-hidden="true"></i> Updated {{ formatDate(kb.updated_at) }}</span>
+          </div>
+        </div>
+      </div>
+      @if (kb.status === 'active') {
+        <button type="button" class="btn btn-danger" (click)="confirmDisable()">
+          <i class="fa-solid fa-ban" aria-hidden="true"></i> Disable
+        </button>
+      } @else {
+        <button type="button" class="btn btn-primary" [disabled]="statusUpdating()" (click)="enableKnowledgeBase()">
+          @if (statusUpdating()) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Enabling… }
+          @else { <i class="fa-solid fa-power-off" aria-hidden="true"></i> Enable }
+        </button>
+      }
+    </section>
+
+    @if (kb.status === 'disabled') {
+      <div class="note-box kbd-off-note">
+        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+        This knowledge base is disabled, so its sources are read-only. Enable it to add or manage sources.
+      </div>
+    }
+
+    <div class="kbd-layout">
+      <!-- Sources -->
+      <section class="card kbd-panel">
+        <header class="kbd-panel-head">
+          <span class="kbd-panel-title"><i class="fa-solid fa-layer-group" aria-hidden="true"></i> Sources</span>
+          <span class="caption">Files and web pages agents can reference</span>
+        </header>
+        <div class="kbd-panel-body">
+          <app-knowledge-base
+            [entries]="knowledgeBaseToEntries(kb)"
+            [editable]="kb.status === 'active'"
+            (filesAdded)="onFilesAdded($event)"
+            (urlsAdded)="onUrlsAdded($event)"
+            (entryDisable)="onEntryDisable($event)"
+            (entryEnable)="onEntryEnable($event)"
+          />
+        </div>
+      </section>
+
+      <!-- Linked agents -->
+      <aside class="card kbd-panel">
+        <header class="kbd-panel-head">
+          <span class="kbd-panel-title"><i class="fa-solid fa-robot" aria-hidden="true"></i> Used by agents</span>
+          <span class="kbd-count">{{ linkedAgents().length }}</span>
+        </header>
+        <div class="kbd-panel-body">
+          @if (linkedAgents().length === 0) {
+            <div class="kbd-agents-empty">
+              <i class="fa-solid fa-plug-circle-xmark" aria-hidden="true"></i>
+              <p class="text-muted">No agents link to this knowledge base yet. Link it from an agent in the Playground.</p>
+            </div>
+          } @else {
+            <ul class="kbd-agents">
+              @for (agent of linkedAgents(); track agent.id) {
+                <li>
+                  <a [routerLink]="['/playground', agent.id]" class="kbd-agent">
+                    <span class="kbd-agent-avatar">{{ agent.agent_name.charAt(0).toUpperCase() }}</span>
+                    <span class="kbd-agent-name">{{ agent.agent_name }}</span>
+                    <span class="kbd-agent-status" [attr.data-status]="agent.status">{{ agent.status }}</span>
+                    <i class="fa-solid fa-chevron-right kbd-agent-go" aria-hidden="true"></i>
+                  </a>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </aside>
+    </div>
+  }
+</div>
+
+@if (confirmingDisable()) {
+  <app-modal
+    title="Disable this knowledge base?"
+    [subtitle]="base()?.name"
+    icon="fa-ban"
+    tone="danger"
+    [width]="440"
+    (closed)="cancelDisable()"
+  >
+    @if (activeLinkedCount() > 0) {
+      <div class="alert-box">
+        <i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>
+        It's linked to {{ activeLinkedCount() }} live agent{{ activeLinkedCount() === 1 ? '' : 's' }}. Unlink it (or disable those agents) before disabling.
+      </div>
+    } @else {
+      <p class="kbd-modal-copy">Its sources become read-only and agents stop drawing on it. You can enable it again at any time.</p>
+    }
+
+    <ng-container ngProjectAs="[modal-footer]">
+      <button type="button" class="btn btn-ghost" (click)="cancelDisable()">Cancel</button>
+      <button type="button" class="btn btn-danger" [disabled]="statusUpdating() || activeLinkedCount() > 0" (click)="disableKnowledgeBase()">
+        @if (statusUpdating()) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Disabling… }
+        @else { <i class="fa-solid fa-ban" aria-hidden="true"></i> Disable }
+      </button>
+    </ng-container>
+  </app-modal>
+}

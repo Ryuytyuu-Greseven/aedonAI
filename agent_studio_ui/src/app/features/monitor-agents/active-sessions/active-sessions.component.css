@@ -1,0 +1,84 @@
+.active-sessions-toolbar {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 12px;
+}
+
+.active-sessions-empty-icon {
+  font-size: 28px;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+  display: block;
+}
+
+.active-session-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+
+.active-session-card {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  transition: transform var(--transition), box-shadow var(--transition);
+}
+
+.active-session-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-md);
+}
+
+.active-session-card-skeleton {
+  min-height: 108px;
+  justify-content: center;
+}
+
+.active-session-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.active-session-card-top .live-dot-pulse {
+  width: 8px;
+  height: 8px;
+}
+
+.active-session-info {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+
+.active-session-info strong {
+  font-size: 14px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.active-session-direction {
+  align-self: flex-start;
+}
+
+.active-session-duration {
+  font-variant-numeric: tabular-nums;
+}
+
+.active-session-card-actions {
+  display: flex;
+  gap: 8px;
+  margin-top: auto;
+  padding-top: 4px;
+}
+
+.active-session-view,
+.active-session-join {
+  flex: 1;
+}

@@ -1,0 +1,171 @@
+/* Channel colours shared by list rows and picker cards */
+[data-kind] { --tone: var(--brand-1); }
+[data-kind='whatsapp'] { --tone: #25d366; }
+[data-kind='sms'] { --tone: var(--brand-2); }
+[data-kind='email'] { --tone: var(--brand-3); }
+
+.xd-icon {
+  width: 38px;
+  height: 38px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 14%, transparent);
+  font-size: 16px;
+}
+
+.xd-text {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+}
+
+.xd-text strong {
+  font-size: 13.5px;
+}
+
+.xd-text small {
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* List */
+.xd-empty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 16px;
+  margin-bottom: 18px;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: 14px;
+}
+
+.xd-empty i {
+  font-size: 18px;
+  color: var(--text-muted);
+}
+
+.xd-empty p {
+  margin: 0;
+  font-size: 13px;
+}
+
+.xd-list {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  margin: 0 0 18px;
+  padding: 0;
+}
+
+.xd-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-secondary);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.xd-item-editing {
+  border-color: var(--brand-1);
+  box-shadow: 0 0 0 3px var(--accent-muted);
+}
+
+.xd-item .xd-text small {
+  font-family: var(--font-mono);
+}
+
+.xd-remove {
+  --tone: var(--danger);
+}
+
+/* Form */
+.xd-form {
+  padding: 16px;
+  border-radius: 16px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+}
+
+.xd-form-title {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+
+.xd-kinds {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.xd-kind {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: 14px;
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition), background var(--transition);
+}
+
+.xd-kind input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.xd-kind:hover {
+  background: var(--bg-hover);
+}
+
+.xd-kind-on {
+  border-color: var(--tone);
+  background: color-mix(in srgb, var(--tone) 7%, var(--bg-secondary));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tone) 18%, transparent);
+}
+
+.xd-kind:has(input:focus-visible) {
+  outline: 2px solid var(--brand-1);
+  outline-offset: 2px;
+}
+
+.xd-kind .xd-text small {
+  white-space: normal;
+}
+
+.xd-fields {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 0 12px;
+}
+
+.xd-form .input {
+  background: var(--bg-secondary);
+}
+
+.xd-form-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+@media (max-width: 680px) {
+  .xd-kinds,
+  .xd-fields {
+    grid-template-columns: 1fr;
+  }
+}

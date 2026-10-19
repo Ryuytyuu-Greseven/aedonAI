@@ -1,0 +1,119 @@
+<div class="akb">
+  <div class="akb-toolbar">
+    <span class="akb-count">{{ linkedIds.length }} linked</span>
+    <div class="akb-actions">
+      <button type="button" class="btn btn-secondary btn-sm" (click)="openCreateForm()">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i> New
+      </button>
+      <button type="button" class="btn btn-primary btn-sm" (click)="openLinkPicker()">
+        <i class="fa-solid fa-link" aria-hidden="true"></i> Link existing
+      </button>
+    </div>
+  </div>
+
+  @if (loading()) {
+    <div class="skeleton akb-skeleton"></div>
+    <div class="skeleton akb-skeleton"></div>
+  } @else if (linkedBases.length === 0) {
+    <div class="akb-empty">
+      <span class="akb-empty-icon"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span>
+      <strong>No knowledge bases linked</strong>
+      <p class="text-muted">Link one so this agent can answer from your product and business data.</p>
+    </div>
+  } @else {
+    <div class="akb-list">
+      @for (base of linkedBases; track base.id) {
+        <div class="akb-item" [class.akb-item-open]="isExpanded(base.id)">
+          <div class="akb-item-header">
+            <button type="button" class="akb-item-toggle" (click)="toggleExpand(base.id)" [attr.aria-expanded]="isExpanded(base.id)">
+              <span class="akb-item-icon" [class.akb-item-icon-off]="base.status !== 'active'"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span>
+              <span class="akb-item-text">
+                <strong>{{ base.name }}</strong>
+                <small>{{ entryCountLabel(base) }}{{ base.status !== 'active' ? ' · disabled' : '' }}</small>
+              </span>
+              <i class="fa-solid fa-chevron-down akb-chevron" aria-hidden="true"></i>
+            </button>
+            <button type="button" class="icon-action akb-unlink" (click)="unlink(base)" [attr.aria-label]="'Unlink ' + base.name">
+              <i class="fa-solid fa-link-slash" aria-hidden="true"></i>
+              <span class="icon-action-tip">Unlink</span>
+            </button>
+          </div>
+
+          @if (isExpanded(base.id)) {
+            <div class="akb-item-body">
+              <p class="akb-shared-note">
+                <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                Shared knowledge base — changes here apply everywhere it's linked.
+              </p>
+              <app-knowledge-base
+                [entries]="knowledgeBaseToEntries(base)"
+                [editable]="base.status === 'active'"
+                (filesAdded)="onFilesAdded(base, $event)"
+                (urlsAdded)="onUrlsAdded(base, $event)"
+                (entryDisable)="onEntryDisable(base, $event)"
+                (entryEnable)="onEntryEnable(base, $event)"
+              />
+            </div>
+          }
+        </div>
+      }
+    </div>
+  }
+</div>
+
+@if (showLinkPicker) {
+  <app-modal title="Link a knowledge base" subtitle="Pick a shared knowledge base for this agent to draw on." icon="fa-link" [width]="460" (closed)="cancelLinkPicker()">
+    @if (availableBases.length === 0) {
+      <div class="list-empty list-empty-compact">
+        <i class="fa-solid fa-book-open list-empty-icon" aria-hidden="true"></i>
+        <p class="text-muted">All knowledge bases are already linked, or none exist yet.</p>
+      </div>
+    } @else {
+      <div class="search-pill akb-search">
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        <input type="search" class="input" [(ngModel)]="linkSearch" placeholder="Search knowledge bases" aria-label="Search knowledge bases" autocomplete="off" />
+      </div>
+      @if (filteredAvailableBases.length === 0) {
+        <p class="text-muted akb-no-match">No knowledge bases match your search.</p>
+      } @else {
+        <div class="akb-picker-list">
+          @for (base of filteredAvailableBases; track base.id) {
+            <button type="button" class="akb-picker-item" (click)="linkExisting(base)">
+              <span class="akb-item-icon"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span>
+              <span class="akb-item-text">
+                <strong>{{ base.name }}</strong>
+                <small>{{ entryCountLabel(base) }}</small>
+              </span>
+              <span class="akb-picker-cta">Link <i class="fa-solid fa-plus" aria-hidden="true"></i></span>
+            </button>
+          }
+        </div>
+      }
+    }
+    <ng-container ngProjectAs="[modal-footer]">
+      <button type="button" class="btn btn-ghost" (click)="cancelLinkPicker()">Close</button>
+    </ng-container>
+  </app-modal>
+}
+
+@if (showCreateForm) {
+  <app-modal title="New knowledge base" subtitle="It's created and linked to this agent straight away." icon="fa-book-open" [width]="440" (closed)="cancelCreate()">
+    <div class="form-group">
+      <label class="label" for="akb-create-name">Name</label>
+      <div class="icon-field">
+        <i class="fa-solid fa-signature" aria-hidden="true"></i>
+        <input id="akb-create-name" class="input" [(ngModel)]="createName" placeholder="e.g. Product FAQ" (keydown.enter)="createAndLink()" />
+      </div>
+    </div>
+    @if (createError) {
+      <div class="alert-box" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ createError }}</div>
+    }
+    <ng-container ngProjectAs="[modal-footer]">
+      <button type="button" class="btn btn-ghost" (click)="cancelCreate()">Cancel</button>
+      <button type="button" class="btn btn-primary" [disabled]="creating" (click)="createAndLink()">
+        @if (creating) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Creating… }
+        @else { <i class="fa-solid fa-link" aria-hidden="true"></i> Create &amp; link }
+      </button>
+    </ng-container>
+  </app-modal>
+}

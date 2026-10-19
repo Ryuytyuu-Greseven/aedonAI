@@ -1,0 +1,89 @@
+.history {
+  max-width: 1000px;
+}
+
+.history-body {
+  min-height: 300px;
+}
+
+.history-layout {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 16px;
+}
+
+.version-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.version-item {
+  text-align: left;
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  cursor: pointer;
+  font-family: inherit;
+  color: inherit;
+  transition: border-color var(--transition);
+}
+
+.version-item:hover,
+.version-item-active {
+  border-color: var(--accent);
+}
+
+.version-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 4px;
+  gap: 8px;
+}
+
+.version-detail {
+  padding: 16px;
+  max-height: 500px;
+  overflow: auto;
+}
+
+.version-detail h4 {
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.diff-view {
+  background: var(--bg-tertiary);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  margin: 12px 0;
+  max-height: 300px;
+  overflow: auto;
+}
+
+.diff-line {
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.diff-added {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.diff-removed {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.diff-unchanged {
+  color: var(--text-muted);
+}
+
+@media (max-width: 768px) {
+  .history-layout {
+    grid-template-columns: 1fr;
+  }
+}

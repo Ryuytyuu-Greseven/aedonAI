@@ -1,0 +1,219 @@
+/* Layout and shared list pieces come from styles/list-page.css; only Phone Number specifics live here. */
+.pn-page {
+  --list-cols: minmax(0, 1.9fr) minmax(100px, 1fr) 124px minmax(120px, 1.2fr) 150px 124px 44px;
+}
+
+.pn-flag {
+  --env: var(--warning);
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--bg-tertiary);
+  border: 1px solid var(--border-color);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.pn-flag[data-env='production'] {
+  --env: var(--brand-1);
+}
+
+/* Small environment dot on the flag */
+.pn-flag::after {
+  content: '';
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--env);
+  border: 2px solid var(--bg-secondary);
+}
+
+.pn-flag-lg {
+  width: 52px;
+  height: 52px;
+  font-size: 26px;
+}
+
+.pn-number {
+  font-family: var(--font-mono);
+  font-weight: 500;
+  letter-spacing: 0.01em;
+}
+
+.pn-country {
+  font-size: 13px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pn-env {
+  --env: var(--warning);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--env);
+  background: color-mix(in srgb, var(--env) 13%, transparent);
+}
+
+.pn-env[data-env='production'] {
+  --env: var(--accent);
+}
+
+.pn-agent {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  max-width: 100%;
+  padding: 3px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-tertiary);
+  font-size: 12.5px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pn-agent i {
+  color: var(--brand-2);
+  font-size: 11px;
+}
+
+.pn-unassigned {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  font-style: italic;
+}
+
+.list-row-muted .pn-flag {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
+.list-row-muted .pn-number {
+  color: var(--text-secondary);
+}
+
+/* ---------- Request dialog ---------- */
+.pn-env-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.pn-env-option {
+  --env: var(--warning);
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--border-strong);
+  background: var(--bg-secondary);
+  cursor: pointer;
+  transition: border-color var(--transition), background var(--transition), box-shadow var(--transition);
+}
+
+.pn-env-option[data-env='production'] {
+  --env: var(--brand-1);
+}
+
+.pn-env-option input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.pn-env-option > i {
+  width: 34px;
+  height: 34px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--env);
+  background: color-mix(in srgb, var(--env) 14%, transparent);
+}
+
+.pn-env-option span {
+  display: grid;
+}
+
+.pn-env-option strong {
+  font-size: 13.5px;
+}
+
+.pn-env-option small {
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.pn-env-option:hover {
+  background: var(--bg-hover);
+}
+
+.pn-env-option-on {
+  border-color: var(--env);
+  background: color-mix(in srgb, var(--env) 8%, var(--bg-secondary));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--env) 18%, transparent);
+}
+
+.pn-env-option:has(input:focus-visible) {
+  outline: 2px solid var(--brand-1);
+  outline-offset: 2px;
+}
+
+/* Country code + number joined into one control */
+.pn-phone-input {
+  display: flex;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.pn-phone-input:focus-within {
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 4px var(--accent-muted);
+}
+
+.pn-phone-input .select,
+.pn-phone-input .input {
+  height: 44px;
+  border: none;
+  box-shadow: none !important;
+  background: transparent;
+}
+
+.pn-phone-input .select {
+  width: 46%;
+  border-right: 1px solid var(--border-color);
+  border-radius: var(--radius-md) 0 0 var(--radius-md);
+  font-size: 13px;
+}
+
+.pn-phone-input .input {
+  flex: 1;
+  border-radius: 0 var(--radius-md) var(--radius-md) 0;
+}
+
+@media (max-width: 520px) {
+  .pn-env-options {
+    grid-template-columns: 1fr;
+  }
+}

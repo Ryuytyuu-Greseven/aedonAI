@@ -1,0 +1,111 @@
+.tools-manager {
+  max-width: 800px;
+}
+
+.bulk-section {
+  margin-bottom: 16px;
+}
+
+.bulk-row {
+  display: grid;
+  grid-template-columns: 1fr 1.5fr 1fr auto;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.tool-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.tool-item {
+  padding: 12px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+}
+
+.tool-item-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.edit-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.param-table {
+  width: 100%;
+  margin-top: 8px;
+  border-collapse: collapse;
+}
+
+.param-table td {
+  padding: 2px 8px 2px 0;
+}
+
+.param-row {
+  display: grid;
+  grid-template-columns: 1fr 100px 1fr auto auto;
+  gap: 6px;
+  margin-bottom: 6px;
+  align-items: center;
+}
+
+.required-check {
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.add-form {
+  padding: 16px;
+  margin-bottom: 16px;
+}
+
+.add-form h4 {
+  margin: 0 0 12px;
+  font-size: 14px;
+}
+
+.field-error {
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.badge-info {
+  background: var(--info-bg, var(--accent-muted));
+  color: var(--info, var(--accent));
+  margin-left: 8px;
+}
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(4, 5, 12, 0.6);
+  backdrop-filter: blur(6px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: var(--z-modal);
+  padding: 24px;
+}
+
+.modal {
+  width: 100%;
+  max-width: 440px;
+}
+
+.modal-actions {
+  margin-top: 16px;
+}
+
+@media (max-width: 700px) {
+  .bulk-row {
+    grid-template-columns: 1fr;
+  }
+}

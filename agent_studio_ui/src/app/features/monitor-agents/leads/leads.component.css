@@ -1,0 +1,132 @@
+.leads-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+  margin-bottom: 16px;
+}
+
+.leads-toggle-btn {
+  padding: 6px 14px;
+  border: none;
+  background: transparent;
+  border-radius: calc(var(--radius-md) - 2px);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.leads-toggle-btn:hover {
+  color: var(--text-primary);
+}
+
+.leads-toggle-active {
+  background: var(--bg-primary);
+  color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.lead-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.leads-pagination {
+  margin-top: 16px;
+}
+
+.lead-card {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.lead-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.lead-who {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.lead-summary {
+  color: var(--text-secondary);
+  margin: 0;
+}
+
+.lead-action {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.lead-action i {
+  color: var(--accent);
+}
+
+.lead-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding-top: 4px;
+  border-top: 1px solid var(--border-color);
+}
+
+.lead-badge-follow-up {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.lead-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.lead-badge-outcome {
+  font-weight: 600;
+}
+
+.lead-badge-success {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.lead-badge-drop {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.lead-call-attempts {
+  gap: 5px;
+}
+
+.lead-custom-fields {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 16px;
+  font-size: 13px;
+  color: var(--text-secondary);
+}
+
+.lead-custom-field {
+  white-space: nowrap;
+}

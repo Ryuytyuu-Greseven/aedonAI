@@ -1,0 +1,195 @@
+<div class="kbl-page list-page container">
+  <!-- Header -->
+  <header class="page-head">
+    <div>
+      <span class="page-eyebrow"><i class="fa-solid fa-book-open" aria-hidden="true"></i> Knowledge · Library</span>
+      <h1>Knowledge bases</h1>
+      <p class="text-muted">Shared reference material your agents can draw on. One knowledge base can be linked to many agents.</p>
+    </div>
+    <button type="button" class="btn btn-primary page-cta" (click)="openCreateForm()">
+      <i class="fa-solid fa-plus" aria-hidden="true"></i> New knowledge base
+    </button>
+  </header>
+
+  <!-- Stats -->
+  <div class="stat-grid">
+    @for (tile of [
+      { label: 'Knowledge bases', value: stats().total, icon: 'fa-layer-group', tone: 'brand' },
+      { label: 'Active', value: stats().active, icon: 'fa-circle-check', tone: 'success' },
+      { label: 'Sources (files & URLs)', value: stats().sources, icon: 'fa-file-lines', tone: 'info' },
+      { label: 'Agent links', value: stats().linkedAgents, icon: 'fa-robot', tone: 'warm' }
+    ]; track tile.label) {
+      <div class="stat-tile" [attr.data-tone]="tile.tone">
+        <span class="stat-tile-icon"><i class="fa-solid {{ tile.icon }}" aria-hidden="true"></i></span>
+        <div>
+          @if (loading()) {
+            <div class="skeleton stat-tile-skeleton"></div>
+          } @else {
+            <strong>{{ tile.value }}</strong>
+          }
+          <span>{{ tile.label }}</span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Toolbar -->
+  <div class="card list-panel kbl-toolbar-card">
+    <div class="list-toolbar">
+      <div class="search-pill">
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        <input
+          type="search"
+          class="input"
+          placeholder="Search knowledge bases"
+          aria-label="Search knowledge bases"
+          [ngModel]="search()"
+          (ngModelChange)="search.set($event)"
+        />
+        @if (search()) {
+          <button type="button" class="search-pill-clear" (click)="search.set('')" aria-label="Clear search">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        }
+      </div>
+      <div class="segmented" role="tablist" aria-label="Filter by status">
+        @for (f of [
+          { id: 'all', label: 'All', count: stats().total },
+          { id: 'active', label: 'Active', count: stats().active },
+          { id: 'disabled', label: 'Disabled', count: stats().disabled }
+        ]; track f.id) {
+          <button type="button" role="tab" [attr.aria-selected]="statusFilter() === f.id" [class.segmented-on]="statusFilter() === f.id" (click)="statusFilter.set($any(f.id))">
+            {{ f.label }} <span>{{ f.count }}</span>
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Grid -->
+  @if (loading()) {
+    <div class="kbl-grid">
+      @for (i of [1, 2, 3]; track i) {
+        <div class="card kbl-card kbl-card-skeleton">
+          <div class="skeleton skeleton-avatar"></div>
+          <div class="skeleton skeleton-title"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line short"></div>
+        </div>
+      }
+    </div>
+  } @else if (summaries().length === 0) {
+    <div class="card list-empty">
+      <div class="list-empty-art" aria-hidden="true">
+        <span><i class="fa-solid fa-file-lines"></i></span>
+        <span><i class="fa-solid fa-book-open"></i></span>
+        <span><i class="fa-solid fa-link"></i></span>
+      </div>
+      <h3>No knowledge bases yet</h3>
+      <p class="text-muted">Create one to start cataloguing reference material your agents can be linked to.</p>
+      <button type="button" class="btn btn-primary" (click)="openCreateForm()">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i> Create your first knowledge base
+      </button>
+    </div>
+  } @else if (filteredSummaries().length === 0) {
+    <div class="card list-empty list-empty-compact">
+      <i class="fa-solid fa-magnifying-glass list-empty-icon" aria-hidden="true"></i>
+      <h3>No matches</h3>
+      <p class="text-muted">No knowledge bases match your search or filter.</p>
+      <button type="button" class="btn btn-secondary btn-sm" (click)="clearFilters()">Clear filters</button>
+    </div>
+  } @else {
+    <div class="kbl-grid">
+      @for (summary of filteredSummaries(); track summary.base.id; let i = $index) {
+        @let kb = summary.base;
+        <article
+          class="card kbl-card"
+          [class.kbl-card-off]="kb.status === 'disabled'"
+          [style.--i]="i"
+          (click)="openKnowledgeBase(kb.id)"
+          (keydown.enter)="openKnowledgeBase(kb.id)"
+          role="button"
+          tabindex="0"
+          [attr.aria-label]="'Open ' + kb.name"
+        >
+          <div class="kbl-card-top">
+            <span class="kbl-card-icon"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span>
+            <div class="status-cell" (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()">
+              <span class="status-cell-label">{{ kb.status === 'active' ? 'Active' : 'Disabled' }}</span>
+              <button
+                type="button"
+                role="switch"
+                class="status-switch"
+                [class.status-switch-on]="kb.status === 'active'"
+                [class.status-switch-busy]="statusUpdatingId() === kb.id"
+                [attr.aria-checked]="kb.status === 'active'"
+                [attr.aria-label]="(kb.status === 'active' ? 'Disable ' : 'Enable ') + kb.name"
+                [disabled]="statusUpdatingId() === kb.id"
+                (click)="toggleStatus($event, summary)"
+              >
+                <span class="status-switch-knob"></span>
+              </button>
+            </div>
+          </div>
+
+          <h3 class="kbl-card-title">{{ kb.name }}</h3>
+
+          <div class="kbl-metrics">
+            <span><i class="fa-solid fa-file-lines" aria-hidden="true"></i> {{ kb.files.length }} file{{ kb.files.length === 1 ? '' : 's' }}</span>
+            <span><i class="fa-solid fa-link" aria-hidden="true"></i> {{ kb.urls.length }} URL{{ kb.urls.length === 1 ? '' : 's' }}</span>
+            <span><i class="fa-solid fa-robot" aria-hidden="true"></i> {{ summary.agentCount }} agent{{ summary.agentCount === 1 ? '' : 's' }}</span>
+          </div>
+
+          <footer class="kbl-card-foot">
+            <span class="date-cell"><i class="fa-regular fa-clock" aria-hidden="true"></i> Updated {{ formatDate(kb.updated_at) }}</span>
+            <span class="kbl-open">Open <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+          </footer>
+        </article>
+      }
+
+      <button type="button" class="kbl-card kbl-card-new" (click)="openCreateForm()">
+        <span class="kbl-new-icon"><i class="fa-solid fa-plus" aria-hidden="true"></i></span>
+        <strong>New knowledge base</strong>
+        <small>Group files and URLs your agents can use</small>
+      </button>
+    </div>
+  }
+</div>
+
+@if (showCreateForm) {
+  <app-modal
+    title="New knowledge base"
+    subtitle="Give it a name — you'll add files and URLs on the next screen."
+    icon="fa-book-open"
+    [width]="440"
+    (closed)="cancelCreate()"
+  >
+    <div class="preview-card">
+      <span class="kbl-card-icon"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span>
+      <div>
+        <strong>{{ createName.trim() || 'Untitled knowledge base' }}</strong>
+        <span>0 files · 0 URLs</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="label" for="kb-create-name">Name</label>
+      <div class="icon-field">
+        <i class="fa-solid fa-signature" aria-hidden="true"></i>
+        <input id="kb-create-name" class="input" [(ngModel)]="createName" placeholder="e.g. Product FAQ" (keydown.enter)="create()" />
+      </div>
+    </div>
+
+    @if (createError) {
+      <div class="alert-box" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ createError }}</div>
+    }
+
+    <ng-container ngProjectAs="[modal-footer]">
+      <button type="button" class="btn btn-ghost" (click)="cancelCreate()">Cancel</button>
+      <button type="button" class="btn btn-primary" [disabled]="creating" (click)="create()">
+        @if (creating) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Creating… }
+        @else { Create &amp; add sources <i class="fa-solid fa-arrow-right" aria-hidden="true"></i> }
+      </button>
+    </ng-container>
+  </app-modal>
+}

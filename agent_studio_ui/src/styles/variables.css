@@ -1,0 +1,103 @@
+/* Aedon AI design tokens — shared palette with the marketing site (front_face).
+   Dark is the default; [data-theme='light'] overrides only what changes.
+   Token names are kept stable because every component stylesheet reads them. */
+:root,
+[data-theme='dark'] {
+  /* Brand */
+  --brand-1: #7c6cff;
+  --brand-2: #22d3c5;
+  --brand-3: #ff8a5c;
+  --gradient-brand: linear-gradient(120deg, var(--brand-1) 0%, #5b8cff 45%, var(--brand-2) 100%);
+  --gradient-warm: linear-gradient(120deg, var(--brand-3), #ff5c9a);
+  --glow: rgba(124, 108, 255, 0.35);
+
+  /* Surfaces & text */
+  --bg-primary: #07080f;
+  --bg-secondary: #0d0f1a;
+  --bg-tertiary: #151827;
+  --bg-hover: #1c2033;
+  --text-primary: #eef0fa;
+  --text-secondary: #9aa0b8;
+  --text-muted: #646a85;
+  --border-color: #1f2336;
+  --border-strong: #2c3150;
+
+  /* Accent: violet for interactive state, teal (--brand-2) for highlights */
+  --border-focus: var(--brand-1);
+  --accent: #a59bff;
+  --accent-hover: #8f82ff;
+  --accent-muted: rgba(124, 108, 255, 0.16);
+  --accent-fill: var(--brand-1);
+  --accent-contrast: #ffffff;
+
+  /* Status */
+  --success: #2ecc8f;
+  --success-bg: rgba(46, 204, 143, 0.13);
+  --warning: #f5b544;
+  --warning-bg: rgba(245, 181, 68, 0.13);
+  --danger: #ff5c6c;
+  --danger-bg: rgba(255, 92, 108, 0.13);
+  --info: #5b8cff;
+  --info-bg: rgba(91, 140, 255, 0.14);
+
+  --shadow-sm: 0 1px 0 rgba(255, 255, 255, 0.03) inset, 0 2px 8px rgba(0, 0, 0, 0.35);
+  --shadow-md: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 24px 60px -24px rgba(0, 0, 0, 0.8);
+  --ambient-a: rgba(124, 108, 255, 0.12);
+  --ambient-b: rgba(34, 211, 197, 0.07);
+
+  /* Shape & type */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 18px;
+  --radius-pill: 999px;
+  --font-sans: 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-display: 'Sora', 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
+  --ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --transition: 0.2s var(--ease);
+
+  /* Layout */
+  --header-height: 56px;
+  --bp-xs: 480px;
+  --bp-sm: 768px;
+  --bp-md: 1200px;
+  --bp-lg: 1400px;
+  --z-header: 100;
+  --z-modal: 200;
+  --z-toast: 1000;
+
+  color-scheme: dark;
+}
+
+[data-theme='light'] {
+  --bg-primary: #f7f7fb;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f0f0f7;
+  --bg-hover: #e8e8f3;
+  --text-primary: #12142a;
+  --text-secondary: #565b78;
+  --text-muted: #8b90a8;
+  --border-color: #e2e3ee;
+  --border-strong: #cfd1e2;
+
+  --accent: #5b4ce0;
+  --accent-hover: #4a3bd0;
+  --accent-muted: rgba(124, 108, 255, 0.12);
+  --glow: rgba(124, 108, 255, 0.22);
+
+  --success: #1a9e6c;
+  --success-bg: rgba(26, 158, 108, 0.11);
+  --warning: #b97a0f;
+  --warning-bg: rgba(245, 181, 68, 0.16);
+  --danger: #dc3a4b;
+  --danger-bg: rgba(220, 58, 75, 0.1);
+  --info: #3a6ff0;
+  --info-bg: rgba(58, 111, 240, 0.1);
+
+  --shadow-sm: 0 1px 2px rgba(20, 22, 50, 0.06);
+  --shadow-md: 0 1px 2px rgba(20, 22, 50, 0.05), 0 20px 50px -24px rgba(40, 40, 90, 0.28);
+  --ambient-a: rgba(124, 108, 255, 0.08);
+  --ambient-b: rgba(34, 211, 197, 0.06);
+
+  color-scheme: light;
+}

@@ -1,0 +1,68 @@
+.live-call-modal {
+  width: 100%;
+  max-width: 640px;
+  max-height: 85vh;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+}
+
+.live-call-header h3 {
+  margin: 0;
+}
+
+.live-call-join {
+  margin-left: auto;
+}
+
+.live-call-duration {
+  font-variant-numeric: tabular-nums;
+}
+
+.live-call-body {
+  overflow-y: auto;
+  padding-right: 4px;
+}
+
+.live-call-waiting {
+  text-align: center;
+  padding: 32px 0;
+}
+
+.live-call-typing {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 10px;
+  padding: 6px 10px;
+  width: fit-content;
+}
+
+.live-call-typing-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  animation: live-call-typing-bounce 1.2s ease-in-out infinite;
+}
+
+.live-call-typing-dot:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.live-call-typing-dot:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+@keyframes live-call-typing-bounce {
+  0%,
+  60%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.5;
+  }
+  30% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}

@@ -1,0 +1,149 @@
+<div class="tools-manager card">
+  <div class="card-header flex justify-between items-center">
+    <span>Tools ({{ agent.tools.length }})</span>
+    <div class="flex gap-sm">
+      <button type="button" class="btn btn-secondary btn-sm" (click)="showBulk = !showBulk">
+        {{ showBulk ? 'Cancel Bulk' : 'Bulk Create' }}
+      </button>
+      <button type="button" class="btn btn-primary btn-sm" (click)="openAddForm()">+ Add Tool</button>
+    </div>
+  </div>
+  <div class="card-body">
+    @if (showAddForm) {
+      <div class="add-form card surface-1">
+        <h4>Add Tool</h4>
+        <div class="form-group">
+          <label class="label">Name</label>
+          <input class="input" [(ngModel)]="draft.name" placeholder="Tool name" />
+          @if (nameError) {
+            <span class="field-error">{{ nameError }}</span>
+          }
+        </div>
+        <div class="form-group">
+          <label class="label">Description</label>
+          <input class="input" [(ngModel)]="draft.description" placeholder="Function description for LLM" />
+        </div>
+        <div class="form-group">
+          <label class="label">Returns (optional)</label>
+          <input class="input" [(ngModel)]="draft.returns" placeholder="Return value description" />
+        </div>
+        <div class="form-group">
+          <div class="flex justify-between items-center">
+            <span class="label">Parameters</span>
+            <button type="button" class="btn btn-ghost btn-sm" (click)="addParamRow()">+ Add Parameter</button>
+          </div>
+          @for (param of draft.parameters; track $index) {
+            <div class="param-row">
+              <input class="input" [(ngModel)]="param.name" placeholder="Name" />
+              <select class="select" [(ngModel)]="param.type">
+                @for (t of paramTypes; track t) {
+                  <option [value]="t">{{ t }}</option>
+                }
+              </select>
+              <input class="input" [(ngModel)]="param.description" placeholder="Description" />
+              <label class="required-check">
+                <input type="checkbox" [(ngModel)]="param.required" /> Req
+              </label>
+              <button type="button" class="btn btn-ghost btn-sm" (click)="removeParamRow($index)">×</button>
+            </div>
+          }
+        </div>
+        <div class="flex gap-sm">
+          <button type="button" class="btn btn-primary btn-sm" (click)="saveTool(false)">Save Tool</button>
+          <button type="button" class="btn btn-secondary btn-sm" (click)="saveTool(true)">Save and Add Another</button>
+          <button type="button" class="btn btn-ghost btn-sm" (click)="showAddForm = false">Cancel</button>
+        </div>
+      </div>
+      <div class="divider"></div>
+    }
+
+    @if (showBulk) {
+      <div class="bulk-section">
+        <p class="text-muted text-sm caption">Comma-separated params: name:type, name:type</p>
+        @for (row of bulkRows; track $index) {
+          <div class="bulk-row">
+            <input class="input" placeholder="Tool name" [(ngModel)]="row.name" />
+            <input class="input" placeholder="Description" [(ngModel)]="row.description" />
+            <input class="input" placeholder="Parameters" [(ngModel)]="row.parameters" />
+            @if (bulkRows.length > 1) {
+              <button type="button" class="btn btn-ghost btn-sm" (click)="removeRow($index)">✕</button>
+            }
+          </div>
+        }
+        <div class="flex gap-sm">
+          <button type="button" class="btn btn-secondary btn-sm" (click)="addRow()">+ Row</button>
+          <button type="button" class="btn btn-primary btn-sm" (click)="createBulkTools()">Create Tools</button>
+        </div>
+      </div>
+      <div class="divider"></div>
+    }
+
+    @if (agent.tools.length === 0) {
+      <div class="empty-state">
+        <p>No tools yet. Create your first tool.</p>
+        <button type="button" class="btn btn-primary btn-sm" (click)="openAddForm()">Add Tool</button>
+      </div>
+    } @else {
+      <div class="tool-list">
+        @for (tool of agent.tools; track tool.id) {
+          <div class="tool-item">
+            @if (editingId === tool.id && editDraft) {
+              <div class="edit-form">
+                <input class="input" [(ngModel)]="editDraft.name" placeholder="Name" />
+                <input class="input" [(ngModel)]="editDraft.description" placeholder="Description" />
+                <div class="flex gap-sm">
+                  <button type="button" class="btn btn-primary btn-sm" (click)="saveEdit()">Save</button>
+                  <button type="button" class="btn btn-ghost btn-sm" (click)="cancelEdit()">Cancel</button>
+                </div>
+              </div>
+            } @else {
+              <div class="tool-item-content">
+                <div>
+                  <strong>{{ tool.name }}</strong>
+                  @if (referenceCount(tool.id) > 0) {
+                    <span class="badge badge-info">{{ referenceCount(tool.id) }} node(s)</span>
+                  }
+                  <p class="text-muted text-sm">{{ tool.description }}</p>
+                  @if (tool.parameters.length > 0) {
+                    <table class="param-table text-sm">
+                      @for (p of tool.parameters; track p.name) {
+                        <tr>
+                          <td>{{ p.name }}</td>
+                          <td class="text-muted">{{ p.type }}</td>
+                          <td>{{ p.required ? 'required' : 'optional' }}</td>
+                        </tr>
+                      }
+                    </table>
+                  }
+                </div>
+                <div class="flex gap-sm">
+                  <button type="button" class="btn btn-ghost btn-sm" (click)="startEdit(tool)">Edit</button>
+                  <button type="button" class="btn btn-danger btn-sm" (click)="confirmDelete(tool)">Delete</button>
+                </div>
+              </div>
+            }
+          </div>
+        }
+      </div>
+    }
+  </div>
+</div>
+
+@if (deleteTarget; as tool) {
+  <div class="modal-overlay" (click)="cancelDelete()">
+    <div class="modal card" (click)="$event.stopPropagation()">
+      <div class="card-header">Delete tool?</div>
+      <div class="card-body">
+        @if (nodesUsing(tool.id).length > 0) {
+          <p>This tool is used in: <strong>{{ nodesUsing(tool.id).join(', ') }}</strong>. Deleting it will remove it from those nodes.</p>
+        } @else {
+          <p>Delete <strong>{{ tool.name }}</strong>?</p>
+        }
+        <div class="flex gap-sm modal-actions">
+          <button type="button" class="btn btn-danger btn-sm" (click)="deleteTool()">Delete</button>
+          <button type="button" class="btn btn-secondary btn-sm" (click)="cancelDelete()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

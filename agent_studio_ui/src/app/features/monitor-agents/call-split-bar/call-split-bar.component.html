@@ -1,0 +1,23 @@
+<div class="split-bar-wrap">
+  @if (total() === 0) {
+    <div class="split-bar split-bar-empty"></div>
+    <p class="split-empty-label text-muted text-sm">No calls yet</p>
+  } @else {
+    <div class="split-bar" role="img" [attr.aria-label]="inboundCount + ' inbound calls, ' + outboundCount + ' outbound calls'">
+      <div class="split-segment split-inbound" [style.width.%]="inboundPct()"></div>
+      <div class="split-segment split-outbound" [style.width.%]="outboundPct()"></div>
+    </div>
+    <div class="split-labels">
+      <span class="split-label">
+        <i class="fa-solid fa-arrow-down split-icon-inbound" aria-hidden="true"></i>
+        {{ inboundCount }} inbound
+        <span class="text-muted">· {{ inboundPct() }}%</span>
+      </span>
+      <span class="split-label">
+        <i class="fa-solid fa-arrow-up split-icon-outbound" aria-hidden="true"></i>
+        {{ outboundCount }} outbound
+        <span class="text-muted">· {{ outboundPct() }}%</span>
+      </span>
+    </div>
+  }
+</div>

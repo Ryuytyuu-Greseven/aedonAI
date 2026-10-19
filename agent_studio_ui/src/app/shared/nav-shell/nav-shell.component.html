@@ -1,0 +1,90 @@
+<!-- Scrim: only visible when the rail is pinned open by click/tap -->
+<div class="nav-scrim" [class.nav-scrim-visible]="railExpanded()" (click)="closeRail()" aria-hidden="true"></div>
+
+<nav class="nav-rail" [class.nav-rail-expanded]="railExpanded()" aria-label="Main navigation">
+  <div class="nav-rail-top">
+    <button
+      type="button"
+      class="nav-rail-handle"
+      (click)="toggleRail()"
+      [attr.aria-expanded]="railExpanded()"
+      aria-label="Toggle navigation menu"
+    >
+      <span class="nav-burger" [class.nav-burger-open]="railExpanded()" aria-hidden="true">
+        <i></i><i></i><i></i>
+      </span>
+    </button>
+    <span class="nav-rail-title">Navigate</span>
+  </div>
+
+  <div class="nav-rail-items">
+    @for (group of navGroups(); track group.label; let g = $index) {
+      <div class="nav-rail-group">
+        <span class="nav-rail-group-label">{{ group.label }}</span>
+        @if (g > 0) {
+          <span class="nav-rail-divider" aria-hidden="true"></span>
+        }
+      </div>
+      @for (item of group.items; track item.path; let i = $index) {
+        <a
+          [routerLink]="item.path"
+          routerLinkActive="nav-rail-item-active"
+          [routerLinkActiveOptions]="{ exact: false }"
+          class="nav-rail-item"
+          [style.--i]="i + g * 5"
+          [attr.aria-label]="item.label"
+        >
+          <span class="nav-rail-icon"><i class="{{ item.icon }}" aria-hidden="true"></i></span>
+          <span class="nav-rail-label">{{ item.label }}</span>
+          <i class="fa-solid fa-chevron-right nav-rail-arrow" aria-hidden="true"></i>
+        </a>
+      }
+    }
+  </div>
+
+  <div class="nav-rail-footer">
+    <span class="nav-rail-studio">
+      <span class="nav-rail-studio-mark"><img src="logo.svg" alt="" aria-hidden="true" /></span>
+      <span class="nav-rail-label">Aedon Studio</span>
+    </span>
+  </div>
+</nav>
+
+<header class="nav-topbar">
+  <div class="nav-topbar-left">
+    <a routerLink="/monitor" class="nav-topbar-brand" aria-label="Aedon AI home">
+      <img class="nav-topbar-logo" src="logo.svg" alt="" aria-hidden="true" />
+      <span class="nav-topbar-brand-name">Aedon <span class="text-gradient">AI</span></span>
+    </a>
+    @if (currentSection(); as section) {
+      <span class="nav-topbar-sep" aria-hidden="true"></span>
+      <!-- keyed on label so the title animates in on every section change -->
+      @for (s of [section]; track s.label) {
+        <span class="nav-topbar-section">
+          <i class="{{ s.icon }}" aria-hidden="true"></i>
+          {{ s.label }}
+        </span>
+      }
+    }
+  </div>
+
+  <div class="top-controls">
+    <!-- <select
+      class="select currency-select top-control-btn"
+      aria-label="Display currency"
+      [ngModel]="currencyService.currency()"
+      (ngModelChange)="setCurrency($event)"
+    >
+      @for (code of currencyService.currencies; track code) {
+        <option [value]="code">{{ code }}</option>
+      }
+    </select> -->
+
+    <app-theme-switch />
+    <app-account-menu />
+  </div>
+</header>
+
+<main class="nav-shell-main">
+  <ng-content />
+</main>

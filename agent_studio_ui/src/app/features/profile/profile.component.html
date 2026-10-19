@@ -1,0 +1,126 @@
+<div class="profile-page container">
+  <!-- Identity hero -->
+  <section class="card profile-hero">
+    <div class="profile-cover" aria-hidden="true"></div>
+    <div class="profile-hero-body">
+      <div class="profile-avatar" aria-hidden="true">
+        <span>{{ editing() ? form.name.charAt(0).toUpperCase() || '?' : initial() }}</span>
+      </div>
+      <div class="profile-identity">
+        @if (loading()) {
+          <div class="skeleton profile-skeleton-name"></div>
+          <div class="skeleton profile-skeleton-email"></div>
+        } @else {
+          <h1>{{ profile().name || 'Your profile' }}</h1>
+          <p class="profile-email"><i class="fa-solid fa-envelope" aria-hidden="true"></i> {{ profile().email || '—' }}</p>
+          <div class="profile-chips">
+            <span class="profile-chip" [class.profile-chip-admin]="isAdmin()">
+              <i class="fa-solid" [class.fa-crown]="isAdmin()" [class.fa-headset]="!isAdmin()" aria-hidden="true"></i>
+              {{ isAdmin() ? 'Admin' : 'Sales agent' }}
+            </span>
+            @if (company(); as c) {
+              <span class="profile-chip"><i class="fa-solid fa-building" aria-hidden="true"></i> {{ c.companyName }}</span>
+            }
+          </div>
+        }
+      </div>
+      @if (!loading() && !editing()) {
+        <button type="button" class="btn btn-secondary btn-sm profile-edit-btn" (click)="startEdit()">
+          <i class="fa-solid fa-pen" aria-hidden="true"></i> Edit profile
+        </button>
+      }
+    </div>
+  </section>
+
+  <div class="profile-grid">
+    <!-- Personal Details -->
+    <section class="card profile-card" [class.profile-card-editing]="editing()">
+      <div class="card-header profile-card-header">
+        <span class="profile-card-title"><i class="fa-solid fa-user" aria-hidden="true"></i> Personal details</span>
+        @if (editing()) {
+          <span class="profile-editing-pill"><span class="live-dot"></span> Editing</span>
+        }
+      </div>
+      <div class="card-body">
+        @if (loading()) {
+          <div class="skeleton skeleton-block profile-skeleton-line"></div>
+          <div class="skeleton skeleton-block profile-skeleton-line"></div>
+        } @else if (!editing()) {
+          <dl class="profile-fields">
+            <div>
+              <dt>Name</dt>
+              <dd>{{ profile().name || '—' }}</dd>
+            </div>
+            <div>
+              <dt>Email</dt>
+              <dd>{{ profile().email || '—' }}</dd>
+            </div>
+          </dl>
+        } @else {
+          <div class="form-group">
+            <label class="label" for="profile-name">Name</label>
+            <input id="profile-name" type="text" class="input" [(ngModel)]="form.name" name="name" />
+            @if (errors['name']) {
+              <span class="field-error">{{ errors['name'] }}</span>
+            }
+          </div>
+          <div class="form-group">
+            <label class="label" for="profile-email">Email</label>
+            <input id="profile-email" type="email" class="input" [value]="form.email" disabled />
+            <span class="caption">Email is your login identity and can't be changed here.</span>
+          </div>
+          <p class="caption">Profile picture upload isn't available yet.</p>
+          <div class="flex gap-sm profile-edit-actions">
+            <button type="button" class="btn btn-primary btn-sm" [disabled]="saving()" (click)="save()">
+              {{ saving() ? 'Saving…' : 'Save changes' }}
+            </button>
+            <button type="button" class="btn btn-ghost btn-sm" [disabled]="saving()" (click)="cancelEdit()">Cancel</button>
+          </div>
+        }
+      </div>
+    </section>
+
+    <!-- Company Details (real API, read-only, any role) -->
+    <section class="card profile-card">
+      <div class="card-header profile-card-header">
+        <span class="profile-card-title"><i class="fa-solid fa-building" aria-hidden="true"></i> Company</span>
+        <span class="caption">Read-only</span>
+      </div>
+      <div class="card-body">
+        @if (loading()) {
+          <div class="skeleton skeleton-block profile-skeleton-line"></div>
+          <div class="skeleton skeleton-block profile-skeleton-line"></div>
+        } @else if (company()) {
+          @let c = company()!;
+          <dl class="profile-fields">
+            <div>
+              <dt><i class="fa-solid fa-signature" aria-hidden="true"></i> Company name</dt>
+              <dd>{{ c.companyName }}</dd>
+            </div>
+            <div>
+              <dt><i class="fa-solid fa-at" aria-hidden="true"></i> Company email</dt>
+              <dd>{{ c.email }}</dd>
+            </div>
+            <div>
+              <dt><i class="fa-solid fa-phone" aria-hidden="true"></i> Phone</dt>
+              <dd>{{ c.contactNo }}</dd>
+            </div>
+            <div>
+              <dt><i class="fa-solid fa-earth-asia" aria-hidden="true"></i> Country</dt>
+              <dd>{{ c.country }}</dd>
+            </div>
+            <div class="profile-field-wide">
+              <dt><i class="fa-solid fa-location-dot" aria-hidden="true"></i> Address</dt>
+              <dd>{{ c.address }}</dd>
+            </div>
+          </dl>
+        } @else {
+          <div class="profile-empty">
+            <i class="fa-solid fa-building-circle-xmark" aria-hidden="true"></i>
+            <p class="text-muted">You're not part of a company yet.</p>
+          </div>
+        }
+      </div>
+    </section>
+  </div>
+</div>

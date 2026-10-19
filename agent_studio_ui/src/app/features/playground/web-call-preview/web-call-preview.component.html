@@ -1,0 +1,91 @@
+@if (!agentId) {
+  <p class="text-muted text-sm">Save the agent to start a web call preview.</p>
+} @else {
+  <div
+    class="web-call-stage"
+    [class.stage-idle]="callStatus() === 'idle' || callStatus() === 'ended'"
+    [class.stage-speaking]="assistantState() === 'speaking'"
+    [class.stage-listening]="callStatus() === 'active' && assistantState() !== 'speaking'"
+    [style.--mic-level]="micLevel()"
+  >
+    <div class="web-call-orb">
+      <span class="orb-ring orb-ring-1"></span>
+      <span class="orb-ring orb-ring-2"></span>
+      <span class="orb-core">
+        @if (callStatus() === 'connecting') {
+          <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+        } @else if (assistantState() === 'speaking') {
+          <i class="fa-solid fa-robot" aria-hidden="true"></i>
+        } @else if (callStatus() === 'active') {
+          <i class="fa-solid fa-microphone" aria-hidden="true"></i>
+        } @else {
+          <i class="fa-solid fa-headset" aria-hidden="true"></i>
+        }
+      </span>
+    </div>
+
+    @if (callStatus() === 'active') {
+      <div
+        class="voice-wave"
+        [class.voice-wave-speaking]="assistantState() === 'speaking'"
+        aria-hidden="true"
+      >
+        @for (bar of waveBars; track $index) {
+          <span class="voice-wave-bar" [style.--i]="$index"></span>
+        }
+      </div>
+    }
+
+    <p class="web-call-state-label">
+      @switch (true) {
+        @case (callStatus() === 'connecting') { Connecting… }
+        @case (assistantState() === 'speaking') { Agent is speaking }
+        @case (callStatus() === 'active') { Listening — speak now }
+        @case (callStatus() === 'ended') { Call ended }
+        @default { Ready to talk }
+      }
+    </p>
+
+    @if (liveCaption()) {
+      <p class="web-call-caption">{{ liveCaption() }}</p>
+    } @else if (callStatus() === 'idle') {
+      <p class="text-muted text-sm web-call-hint">
+        Talk to your agent from the browser — your voice streams to the server and its reply plays back live. No phone required.
+      </p>
+    }
+
+    <div class="web-call-actions">
+      @if (callStatus() === 'idle' || callStatus() === 'ended') {
+        <button type="button" class="btn btn-primary web-call-start" (click)="startCall()">
+          <i class="fa-solid fa-phone" aria-hidden="true"></i>
+          {{ callStatus() === 'ended' ? 'Call Again' : 'Start Web Call' }}
+        </button>
+      } @else {
+        <button type="button" class="web-call-end" (click)="endCall()" aria-label="End call">
+          <i class="fa-solid fa-phone-slash" aria-hidden="true"></i>
+        </button>
+      }
+    </div>
+  </div>
+
+  @if (messages().length > 0) {
+    <div class="preview-conversation surface-1">
+      @for (message of messages(); track message.id) {
+        <div
+          class="preview-message"
+          [class.preview-message-agent]="message.speaker === 'agent'"
+          [class.preview-message-customer]="message.speaker === 'customer'"
+        >
+          <span class="preview-message-speaker">{{ message.speaker === 'agent' ? 'Agent' : 'You' }}</span>
+          <span class="preview-message-text">{{ message.text }}</span>
+        </div>
+      }
+    </div>
+  }
+
+  @if (callStatus() === 'ended' && previewPassed()) {
+    <p class="text-sm preview-status-success">
+      <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Web call completed successfully.
+    </p>
+  }
+}

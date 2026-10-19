@@ -1,0 +1,64 @@
+<div class="dl-page list-page container">
+  <header class="page-head">
+    <div>
+      <span class="page-eyebrow"><i class="fa-solid fa-file-pen" aria-hidden="true"></i> Playground · Drafts</span>
+      <h1>Drafted agents</h1>
+      <p class="text-muted">Agents you've customized but haven't taken live yet.</p>
+    </div>
+    <a routerLink="/playground/new" class="btn btn-primary page-cta"><i class="fa-solid fa-plus" aria-hidden="true"></i> Create agent</a>
+  </header>
+
+  @if (loading()) {
+    <div class="dl-grid">
+      @for (i of [1, 2, 3]; track i) {
+        <div class="card dl-card">
+          <div class="identity-cell">
+            <div class="skeleton skeleton-avatar"></div>
+            <div class="skeleton-lines">
+              <div class="skeleton skeleton-line"></div>
+              <div class="skeleton skeleton-line short"></div>
+            </div>
+          </div>
+        </div>
+      }
+    </div>
+  } @else if (drafts().length === 0) {
+    <div class="card list-empty">
+      <div class="list-empty-art" aria-hidden="true">
+        <span><i class="fa-solid fa-file"></i></span>
+        <span><i class="fa-solid fa-file-pen"></i></span>
+        <span><i class="fa-solid fa-file"></i></span>
+      </div>
+      <h3>No drafts yet</h3>
+      <p class="text-muted">Pick a template to start customizing your first agent.</p>
+      <a routerLink="/playground/new" class="btn btn-primary"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Choose a template</a>
+    </div>
+  } @else {
+    <div class="dl-grid">
+      @for (agent of drafts(); track agent.id; let i = $index) {
+        <article
+          class="card dl-card"
+          [style.--i]="i"
+          (click)="openDraft(agent)"
+          (keydown.enter)="openDraft(agent)"
+          role="button"
+          tabindex="0"
+          [attr.aria-label]="'Open draft ' + agent.agent_name"
+        >
+          <div class="dl-card-top">
+            <span class="dl-icon"><i [class]="templateIcon(agent)" aria-hidden="true"></i></span>
+            <span class="dl-badge"><span></span>Draft</span>
+          </div>
+          <div class="identity-text">
+            <strong>{{ agent.agent_name }}</strong>
+            <span>{{ templateName(agent) }}</span>
+          </div>
+          <footer class="dl-card-foot">
+            <span class="date-cell"><i class="fa-regular fa-clock" aria-hidden="true"></i> Updated {{ formatDate(agent.updated_at) }}</span>
+            <span class="dl-cta">Continue <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+          </footer>
+        </article>
+      }
+    </div>
+  }
+</div>

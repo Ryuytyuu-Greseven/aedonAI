@@ -1,0 +1,280 @@
+<div class="pn-page list-page container">
+  <!-- Header -->
+  <header class="page-head">
+    <div>
+      <span class="page-eyebrow"><i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i> Telephony · Numbers</span>
+      <h1>Phone numbers</h1>
+      <p class="text-muted">Dedicated mobile numbers available to assign to your agents, by country.</p>
+    </div>
+    <button type="button" class="btn btn-primary page-cta" (click)="openRequestForm()">
+      <i class="fa-solid fa-phone-volume" aria-hidden="true"></i> Request number
+    </button>
+  </header>
+
+  <!-- Stats -->
+  <div class="stat-grid">
+    @for (tile of [
+      { label: 'Total numbers', value: stats().total, icon: 'fa-hashtag', tone: 'brand' },
+      { label: 'Available', value: stats().available, icon: 'fa-signal', tone: 'success' },
+      { label: 'Assigned to agents', value: stats().assigned, icon: 'fa-robot', tone: 'info' },
+      { label: 'Countries', value: stats().countries, icon: 'fa-earth-asia', tone: 'warm' }
+    ]; track tile.label) {
+      <div class="stat-tile" [attr.data-tone]="tile.tone">
+        <span class="stat-tile-icon"><i class="fa-solid {{ tile.icon }}" aria-hidden="true"></i></span>
+        <div>
+          @if (loading()) {
+            <div class="skeleton stat-tile-skeleton"></div>
+          } @else {
+            <strong>{{ tile.value }}</strong>
+          }
+          <span>{{ tile.label }}</span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- List -->
+  <section class="card list-panel">
+    <div class="list-toolbar">
+      <div class="search-pill">
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        <input
+          type="search"
+          class="input"
+          placeholder="Search number, label, notes or country"
+          aria-label="Search phone numbers"
+          [ngModel]="search()"
+          (ngModelChange)="setSearch($event)"
+        />
+        @if (search()) {
+          <button type="button" class="search-pill-clear" (click)="setSearch('')" aria-label="Clear search">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        }
+      </div>
+
+      <div class="list-toolbar-group">
+        <select class="select select-pill" aria-label="Filter by country" [ngModel]="countryFilter()" (ngModelChange)="setCountryFilter($event)">
+          <option value="all">🌐 All countries</option>
+          @for (country of countries; track country.name) {
+            <option [value]="country.code">{{ country.flag }} {{ country.name }} ({{ country.code }})</option>
+          }
+        </select>
+
+        <div class="segmented" role="tablist" aria-label="Filter by environment">
+          <button type="button" role="tab" [attr.aria-selected]="environmentFilter() === 'all'" [class.segmented-on]="environmentFilter() === 'all'" (click)="setEnvironmentFilter('all')">
+            All <span>{{ environmentCounts().all }}</span>
+          </button>
+          @for (env of environmentTypes; track env) {
+            <button type="button" role="tab" [attr.aria-selected]="environmentFilter() === env" [class.segmented-on]="environmentFilter() === env" (click)="setEnvironmentFilter(env)">
+              {{ phoneNumberEnvironmentLabel(env) }} <span>{{ environmentCounts()[env] }}</span>
+            </button>
+          }
+        </div>
+
+        @if (hasAnyFilter()) {
+          <button type="button" class="text-link" (click)="clearFilters()"><i class="fa-solid fa-filter-circle-xmark" aria-hidden="true"></i> Clear</button>
+        }
+      </div>
+    </div>
+
+    <div class="list-body" role="table" aria-label="Phone numbers">
+      <div class="list-row list-row-head" role="row">
+        <span role="columnheader">Number</span>
+        <span role="columnheader" class="hide-sm">Country</span>
+        <span role="columnheader" class="hide-sm">Environment</span>
+        <span role="columnheader" class="hide-sm">Assigned agent</span>
+        <span role="columnheader">Status</span>
+        <span role="columnheader">Requested</span>
+        <span role="columnheader" class="col-end">Copy</span>
+      </div>
+
+      @if (loading()) {
+        @for (i of [1, 2, 3, 4, 5]; track i) {
+          <div class="list-row" role="row">
+            <div class="identity-cell">
+              <div class="skeleton skeleton-avatar"></div>
+              <div class="skeleton-lines">
+                <div class="skeleton skeleton-line"></div>
+                <div class="skeleton skeleton-line short"></div>
+              </div>
+            </div>
+            <div class="skeleton skeleton-pill hide-sm"></div>
+            <div class="skeleton skeleton-pill hide-sm"></div>
+            <div class="skeleton skeleton-pill hide-sm"></div>
+            <div class="skeleton skeleton-pill"></div>
+            <div class="skeleton skeleton-pill date-cell"></div>
+            <span></span>
+          </div>
+        }
+      } @else if (numbers().length === 0) {
+        <div class="list-empty">
+          <div class="list-empty-art" aria-hidden="true">
+            <span><i class="fa-solid fa-phone"></i></span>
+            <span><i class="fa-solid fa-phone-volume"></i></span>
+            <span><i class="fa-solid fa-sim-card"></i></span>
+          </div>
+          <h3>No phone numbers yet</h3>
+          <p class="text-muted">Request a number to start assigning dedicated lines to your agents.</p>
+          <button type="button" class="btn btn-primary" (click)="openRequestForm()">
+            <i class="fa-solid fa-phone-volume" aria-hidden="true"></i> Request your first number
+          </button>
+        </div>
+      } @else if (filtered().length === 0) {
+        <div class="list-empty list-empty-compact">
+          <i class="fa-solid fa-magnifying-glass list-empty-icon" aria-hidden="true"></i>
+          <h3>No matches</h3>
+          <p class="text-muted">No phone numbers match these filters.</p>
+          <button type="button" class="btn btn-secondary btn-sm" (click)="clearFilters()">Clear filters</button>
+        </div>
+      } @else {
+        @for (number of pagedNumbers(); track number.id; let i = $index) {
+          <div class="list-row" role="row" [class.list-row-muted]="number.status === 'Disabled'" [style.--i]="i">
+            <div class="identity-cell" role="cell">
+              <span class="pn-flag" [attr.data-env]="number.environmentType" aria-hidden="true">{{ countryFor(number.country_code)?.flag ?? '🌐' }}</span>
+              <div class="identity-text">
+                <strong class="pn-number">{{ phoneNumberE164(number) }}</strong>
+                <span [title]="number.notes || ''">{{ number.label }}</span>
+              </div>
+            </div>
+
+            <div class="pn-country hide-sm" role="cell">{{ phoneNumberCountryName(number) }}</div>
+
+            <div class="hide-sm" role="cell">
+              <span class="pn-env" [attr.data-env]="number.environmentType">
+                <i class="fa-solid" [class.fa-rocket]="number.environmentType === 'production'" [class.fa-flask]="number.environmentType === 'staging'" aria-hidden="true"></i>
+                {{ phoneNumberEnvironmentLabel(number.environmentType) }}
+              </span>
+            </div>
+
+            <div class="hide-sm" role="cell">
+              @if (agentNameFor(number); as agent) {
+                <span class="pn-agent"><i class="fa-solid fa-robot" aria-hidden="true"></i> {{ agent }}</span>
+              } @else {
+                <span class="pn-unassigned">Unassigned</span>
+              }
+            </div>
+
+            <div class="status-cell" role="cell">
+              <button
+                type="button"
+                role="switch"
+                class="status-switch"
+                [class.status-switch-on]="number.status === 'Available'"
+                [class.status-switch-busy]="statusUpdatingId() === number.id"
+                [attr.aria-checked]="number.status === 'Available'"
+                [attr.aria-label]="(number.status === 'Available' ? 'Disable ' : 'Enable ') + phoneNumberE164(number)"
+                [disabled]="statusUpdatingId() === number.id"
+                (click)="toggleStatus(number)"
+              >
+                <span class="status-switch-knob"></span>
+              </button>
+              <span class="status-cell-label">{{ number.status }}</span>
+            </div>
+
+            <div class="date-cell" role="cell">
+              <i class="fa-regular fa-calendar" aria-hidden="true"></i> {{ formatDate(number.created_at) }}
+            </div>
+
+            <div class="row-actions" role="cell">
+              <button type="button" class="icon-action" [attr.aria-label]="'Copy ' + phoneNumberE164(number)" (click)="copyNumber(number)">
+                <i class="fa-regular fa-copy" aria-hidden="true"></i>
+                <span class="icon-action-tip">Copy number</span>
+              </button>
+            </div>
+          </div>
+        }
+      }
+    </div>
+
+    @if (!loading() && filtered().length > 0) {
+      <footer class="list-foot">
+        <span>Showing <b>{{ pageRange().start }}–{{ pageRange().end }}</b> of {{ pageRange().total }} number{{ pageRange().total === 1 ? '' : 's' }}</span>
+        <div class="pager">
+          <button type="button" class="pager-btn" [disabled]="page() === 1" (click)="prevPage()" aria-label="Previous page">
+            <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+          </button>
+          <span>Page {{ page() }} of {{ totalPages() }}</span>
+          <button type="button" class="pager-btn" [disabled]="page() === totalPages()" (click)="nextPage()" aria-label="Next page">
+            <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+          </button>
+        </div>
+      </footer>
+    }
+  </section>
+</div>
+
+<!-- Request number -->
+@if (showRequestForm) {
+  <app-modal
+    title="Request a phone number"
+    subtitle="Add a dedicated line you can assign to an agent."
+    icon="fa-phone-volume"
+    [width]="540"
+    (closed)="cancelRequest()"
+  >
+    <div class="preview-card">
+      <span class="pn-flag pn-flag-lg" [attr.data-env]="requestEnvironmentType || 'staging'" aria-hidden="true">
+        {{ countryFor(requestCountryCode)?.flag ?? '🌐' }}
+      </span>
+      <div>
+        <strong class="pn-number">{{ requestCountryCode || '+··' }} {{ requestNumber.trim() || '··········' }}</strong>
+        <span>{{ requestLabel.trim() || 'Untitled line' }}{{ requestEnvironmentType ? ' · ' + phoneNumberEnvironmentLabel(requestEnvironmentType) : '' }}</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <span class="label">Environment</span>
+      <div class="pn-env-options" role="radiogroup" aria-label="Environment">
+        @for (env of environmentTypes; track env) {
+          <label class="pn-env-option" [class.pn-env-option-on]="requestEnvironmentType === env" [attr.data-env]="env">
+            <input type="radio" name="request-environment" [value]="env" [(ngModel)]="requestEnvironmentType" />
+            <i class="fa-solid" [class.fa-rocket]="env === 'production'" [class.fa-flask]="env === 'staging'" aria-hidden="true"></i>
+            <span>
+              <strong>{{ phoneNumberEnvironmentLabel(env) }}</strong>
+              <small>{{ env === 'production' ? 'Live customer calls' : 'Testing before launch' }}</small>
+            </span>
+          </label>
+        }
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="label" for="request-number">Mobile number</label>
+      <div class="pn-phone-input">
+        <select class="select" aria-label="Country code" [(ngModel)]="requestCountryCode">
+          <option value="" disabled>Country</option>
+          @for (country of countries; track country.name) {
+            <option [value]="country.code">{{ country.flag }} {{ country.name }} ({{ country.code }})</option>
+          }
+        </select>
+        <input id="request-number" class="input input-mono" [(ngModel)]="requestNumber" placeholder="9876543210" inputmode="tel" (keydown.enter)="submitRequest()" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="label" for="request-label">Label</label>
+      <div class="icon-field">
+        <i class="fa-solid fa-tag" aria-hidden="true"></i>
+        <input id="request-label" class="input" [(ngModel)]="requestLabel" placeholder="e.g. Sales line" (keydown.enter)="submitRequest()" />
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="label" for="request-notes">Notes <span class="text-muted">(optional)</span></label>
+      <textarea id="request-notes" class="textarea" rows="3" [(ngModel)]="requestNotes" placeholder="What is this number for?"></textarea>
+    </div>
+
+    @if (requestError) {
+      <div class="alert-box" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ requestError }}</div>
+    }
+
+    <ng-container ngProjectAs="[modal-footer]">
+      <button type="button" class="btn btn-ghost" (click)="cancelRequest()">Cancel</button>
+      <button type="button" class="btn btn-primary" [disabled]="requesting" (click)="submitRequest()">
+        @if (requesting) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Requesting… }
+        @else { <i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Request number }
+      </button>
+    </ng-container>
+  </app-modal>
+}

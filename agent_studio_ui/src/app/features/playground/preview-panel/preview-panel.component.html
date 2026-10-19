@@ -1,0 +1,39 @@
+<section class="card panel">
+  <header class="panel-head">
+    <span class="panel-icon"><i class="fa-solid fa-phone-volume" aria-hidden="true"></i></span>
+    <div>
+      <h2>Preview</h2>
+      <p>Talk to your agent before it goes live — by phone, chat or right here in the browser.</p>
+    </div>
+  </header>
+  <div class="panel-body">
+    <div class="pv-modes" role="tablist" aria-label="Preview mode">
+      @for (mode of modes; track mode.id) {
+        <button
+          type="button"
+          role="tab"
+          class="pv-mode"
+          [class.pv-mode-on]="activeMode() === mode.id"
+          [attr.aria-selected]="activeMode() === mode.id"
+          (click)="selectMode(mode.id)"
+        >
+          <span class="pv-mode-icon"><i class="fa-solid {{ mode.icon }}" aria-hidden="true"></i></span>
+          <span class="pv-mode-text">
+            <strong>{{ mode.label }}</strong>
+            <small>{{ mode.hint }}</small>
+          </span>
+        </button>
+      }
+    </div>
+
+    <div class="pv-stage">
+      @if (activeMode() === 'call') {
+        <app-call-preview [agentId]="agentId" [agentBusiness]="business" (passed)="onPassed()" />
+      } @else if (activeMode() === 'chat') {
+        <app-chat-preview [agentId]="agentId" (passed)="onPassed()" />
+      } @else {
+        <app-web-call-preview [agentId]="agentId" (passed)="onPassed()" />
+      }
+    </div>
+  </div>
+</section>

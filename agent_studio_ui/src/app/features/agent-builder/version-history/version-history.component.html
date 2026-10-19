@@ -1,0 +1,52 @@
+<div class="history card">
+  <div class="card-header">Version History</div>
+  <div class="card-body history-body">
+    @if (loading()) {
+      <p class="text-muted">Loading history…</p>
+    } @else if (versions().length === 0) {
+      <div class="empty-state">
+        <p>No version history yet. Save your agent to create the first version.</p>
+      </div>
+    } @else {
+      <div class="history-layout">
+        <div class="version-list">
+          @for (version of versions(); track version.id) {
+            <button
+              type="button"
+              class="version-item"
+              [class.version-item-active]="selectedVersion()?.id === version.id"
+              (click)="selectVersion(version)"
+            >
+              <div class="version-meta">
+                <strong>v{{ version.versionNumber }} — {{ version.label }}</strong>
+                <span class="text-muted text-sm">{{ formatDate(version.timestamp) }}</span>
+              </div>
+              <p class="text-sm text-muted">{{ version.summary }}</p>
+              <p class="text-sm text-muted">
+                {{ version.snapshot.nodes.length }} nodes · {{ version.snapshot.tools.length }} tools
+              </p>
+            </button>
+          }
+        </div>
+
+        @if (selectedVersion(); as version) {
+          <aside class="version-detail card surface-1">
+            <div class="flex justify-between items-center">
+              <h4>Version #{{ version.versionNumber }}</h4>
+              <button type="button" class="btn btn-ghost btn-sm" (click)="closeDetail()">✕</button>
+            </div>
+            <p class="text-sm text-muted">{{ version.summary }}</p>
+            <div class="diff-view text-mono text-sm">
+              @for (line of diffLines(); track $index) {
+                <div class="diff-line diff-{{ line.status }}">{{ line.value }}</div>
+              }
+            </div>
+            <button type="button" class="btn btn-primary btn-sm" (click)="loadVersion(version)">
+              Restore this version
+            </button>
+          </aside>
+        }
+      </div>
+    }
+  </div>
+</div>

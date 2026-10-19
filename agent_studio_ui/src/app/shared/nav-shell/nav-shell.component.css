@@ -1,0 +1,458 @@
+:host {
+  display: block;
+  min-height: 100vh;
+  --dock-inset: 12px;
+  --dock-collapsed: 64px;
+  --dock-expanded: 252px;
+  --dock-gap: 12px;
+  --topbar-inset: 12px;
+  --topbar-height: var(--header-height);
+  --topbar-gap: 14px;
+  --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --glass: color-mix(in srgb, var(--bg-secondary) 78%, transparent);
+}
+
+/* Fade band above the floating top bar so scrolled content doesn't peek through the gap */
+:host::before {
+  content: '';
+  position: fixed;
+  inset: 0 0 auto;
+  height: calc(var(--topbar-inset) + 14px);
+  z-index: var(--z-header);
+  background: linear-gradient(var(--bg-primary) 55%, transparent);
+  pointer-events: none;
+}
+
+/* ================= Scrim (rail pinned open) ================= */
+.nav-scrim {
+  position: fixed;
+  inset: 0;
+  z-index: var(--z-header);
+  background: rgba(4, 5, 12, 0.35);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.35s var(--ease);
+}
+
+.nav-scrim-visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ================= Side rail (left edge, opens rightwards) ================= */
+.nav-rail {
+  position: fixed;
+  top: var(--dock-inset);
+  left: var(--dock-inset);
+  bottom: var(--dock-inset);
+  width: var(--dock-collapsed);
+  z-index: calc(var(--z-header) + 2);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--glass);
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  border: 1px solid var(--border-color);
+  border-radius: 22px;
+  box-shadow: var(--shadow-sm);
+  transition:
+    width 0.45s var(--ease),
+    box-shadow 0.45s var(--ease),
+    border-color 0.45s var(--ease);
+}
+
+/* Faint brand wash that brightens as the rail opens */
+.nav-rail::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(220px 160px at 0% 0%, rgba(124, 108, 255, 0.18), transparent 70%),
+    radial-gradient(200px 160px at 0% 100%, rgba(34, 211, 197, 0.12), transparent 70%);
+  transition: opacity 0.45s var(--ease);
+}
+
+/* Open state: pinned by click/tap, keyboard focus, or hover on desktop.
+   --open (0/1) drives every label/divider transition below. */
+.nav-rail-expanded,
+.nav-rail:has(:focus-visible) {
+  --open: 1;
+  width: var(--dock-expanded);
+  box-shadow: var(--shadow-md);
+  border-color: var(--border-strong);
+}
+
+@media (hover: hover) and (min-width: 768px) {
+  .nav-rail:hover {
+    --open: 1;
+    width: var(--dock-expanded);
+    box-shadow: var(--shadow-md);
+    border-color: var(--border-strong);
+  }
+}
+
+.nav-rail::before {
+  opacity: calc(0.5 + var(--open, 0) * 0.5);
+}
+
+/* Icons sit first in every row so they stay pinned to the screen edge while the rail grows */
+.nav-rail-top,
+.nav-rail-item,
+.nav-rail-footer,
+.nav-rail-group {
+  display: flex;
+  align-items: center;
+}
+
+.nav-rail-top {
+  height: 64px;
+  padding: 0 10px;
+  flex-shrink: 0;
+  gap: 10px;
+}
+
+.nav-rail-handle {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border: none;
+  border-radius: 12px;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.nav-rail-handle:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+/* Burger → X morph */
+.nav-burger {
+  position: relative;
+  width: 18px;
+  height: 14px;
+}
+
+.nav-burger i {
+  position: absolute;
+  left: 0;
+  height: 2px;
+  border-radius: 2px;
+  background: currentColor;
+  transition: transform 0.35s var(--spring), width 0.35s var(--ease), opacity 0.2s, top 0.35s var(--ease);
+}
+
+.nav-burger i:nth-child(1) { top: 0; width: 18px; }
+.nav-burger i:nth-child(2) { top: 6px; width: 12px; }
+.nav-burger i:nth-child(3) { top: 12px; width: 15px; }
+
+.nav-burger-open i:nth-child(1) { top: 6px; width: 18px; transform: rotate(45deg); }
+.nav-burger-open i:nth-child(2) { opacity: 0; width: 0; }
+.nav-burger-open i:nth-child(3) { top: 6px; width: 18px; transform: rotate(-45deg); }
+
+.nav-rail-title {
+  font-family: var(--font-display);
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  color: var(--text-secondary);
+}
+
+/* Labels: hidden while collapsed, slide in from the left with a stagger when open */
+.nav-rail-title,
+.nav-rail-label,
+.nav-rail-group-label {
+  white-space: nowrap;
+  opacity: calc(var(--open, 0));
+  transform: translateX(calc((1 - var(--open, 0)) * -12px));
+  transition:
+    opacity 0.2s var(--ease),
+    transform 0.35s var(--ease);
+  transition-delay: calc(var(--open, 0) * (80ms + var(--i, 0) * 28ms));
+}
+
+.nav-rail-items {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 4px 0 12px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: none;
+}
+
+.nav-rail-group {
+  position: relative;
+  height: 26px;
+  margin: 6px 10px 0;
+  padding-left: 14px;
+}
+
+.nav-rail-group-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+/* Collapsed rails show a short divider instead of the group label */
+.nav-rail-divider {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  width: 20px;
+  height: 1px;
+  background: var(--border-strong);
+  opacity: calc(1 - var(--open, 0));
+  transition: opacity 0.2s var(--ease);
+}
+
+.nav-rail-item {
+  position: relative;
+  height: 44px;
+  margin: 0 10px;
+  gap: 10px;
+  border-radius: 12px;
+  color: var(--text-secondary);
+  text-decoration: none;
+  transition: background var(--transition), color var(--transition);
+}
+
+.nav-rail-item:hover {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+  text-decoration: none;
+}
+
+.nav-rail-icon {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 12px;
+  font-size: 15px;
+  transition: background 0.3s var(--ease), color 0.3s var(--ease), box-shadow 0.3s var(--ease), transform 0.3s var(--spring);
+}
+
+.nav-rail-item:hover .nav-rail-icon {
+  transform: scale(1.08);
+}
+
+.nav-rail-label {
+  flex: 1;
+  text-align: left;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.nav-rail-arrow {
+  padding-right: 10px;
+  font-size: 10px;
+  opacity: 0;
+  transform: translateX(-6px);
+  transition: opacity 0.2s var(--ease), transform 0.3s var(--ease);
+}
+
+.nav-rail-item:hover .nav-rail-arrow {
+  opacity: calc(var(--open, 0) * 0.6);
+  transform: none;
+}
+
+/* Active: gradient icon tile + glowing edge marker on the screen side */
+.nav-rail-item-active {
+  color: var(--text-primary);
+  background: var(--accent-muted);
+}
+
+.nav-rail-item-active .nav-rail-icon {
+  color: #fff;
+  background: var(--gradient-brand);
+  box-shadow: 0 6px 18px -6px var(--glow);
+}
+
+.nav-rail-item-active::after {
+  content: '';
+  position: absolute;
+  left: -10px;
+  top: 50%;
+  width: 3px;
+  height: 22px;
+  margin-top: -11px;
+  border-radius: 0 3px 3px 0;
+  background: linear-gradient(to bottom, var(--brand-1), var(--brand-2));
+  box-shadow: 0 0 10px var(--brand-2);
+  animation: nav-marker-in 0.4s var(--spring);
+}
+
+@keyframes nav-marker-in {
+  from { transform: scaleY(0); }
+}
+
+.nav-rail-item-active .nav-rail-label {
+  font-weight: 600;
+}
+
+.nav-rail-footer {
+  flex-shrink: 0;
+  height: 56px;
+  padding: 0 10px;
+  border-top: 1px solid var(--border-color);
+}
+
+.nav-rail-studio {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.nav-rail-studio-mark {
+  width: 44px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+}
+
+.nav-rail-studio-mark img {
+  width: 20px;
+  height: 20px;
+  opacity: 0.8;
+}
+
+/* ================= Top bar ================= */
+.nav-topbar {
+  position: fixed;
+  top: var(--topbar-inset);
+  left: calc(var(--dock-inset) + var(--dock-collapsed) + var(--dock-gap));
+  right: var(--topbar-inset);
+  height: var(--topbar-height);
+  z-index: calc(var(--z-header) + 1);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 0 8px 0 18px;
+  background: var(--glass);
+  backdrop-filter: blur(22px) saturate(170%);
+  -webkit-backdrop-filter: blur(22px) saturate(170%);
+  border: 1px solid var(--border-color);
+  border-radius: 18px;
+  box-shadow: var(--shadow-sm);
+}
+
+.nav-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.nav-topbar-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--text-primary);
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.nav-topbar-brand:hover {
+  text-decoration: none;
+}
+
+.nav-topbar-logo {
+  width: 26px;
+  height: 26px;
+  flex-shrink: 0;
+  transition: transform 0.4s var(--spring);
+}
+
+.nav-topbar-brand:hover .nav-topbar-logo {
+  transform: scale(1.12) rotate(-6deg);
+}
+
+.nav-topbar-brand-name {
+  font-family: var(--font-display);
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.nav-topbar-sep {
+  width: 1px;
+  height: 22px;
+  background: var(--border-strong);
+  transform: rotate(14deg);
+}
+
+.nav-topbar-section {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  animation: nav-section-in 0.45s var(--ease);
+}
+
+.nav-topbar-section i {
+  color: var(--brand-2);
+  font-size: 13px;
+}
+
+@keyframes nav-section-in {
+  from { opacity: 0; transform: translateY(8px); filter: blur(3px); }
+}
+
+.top-controls {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* ================= Content ================= */
+.nav-shell-main {
+  min-height: 100vh;
+  margin-left: calc(var(--dock-inset) + var(--dock-collapsed) + var(--dock-gap));
+  padding-top: calc(var(--topbar-inset) + var(--topbar-height) + var(--topbar-gap));
+}
+
+/* ================= Responsive / motion ================= */
+@media (max-width: 640px) {
+  .nav-topbar-sep,
+  .nav-topbar-section {
+    display: none;
+  }
+
+  .nav-topbar-brand-name {
+    font-size: 15px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host *,
+  :host *::before,
+  :host *::after {
+    transition-duration: 0.01ms !important;
+    animation: none !important;
+  }
+}

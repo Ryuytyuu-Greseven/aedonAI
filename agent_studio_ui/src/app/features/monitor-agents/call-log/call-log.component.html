@@ -1,0 +1,152 @@
+<div class="call-log">
+  <div class="call-log-filters">
+    <div class="form-group call-log-search-group">
+      <label class="label" for="filter-search">Search</label>
+      <input id="filter-search" type="search" class="input" placeholder="Search by name or phone number"
+        [ngModel]="search()" (ngModelChange)="setSearch($event)" />
+    </div>
+    <div class="form-group">
+      <label class="label" for="filter-direction">Direction</label>
+      <select id="filter-direction" class="select" [ngModel]="direction()" (ngModelChange)="setDirection($event)">
+        <option value="all">All</option>
+        <option value="inbound">Inbound</option>
+        <option value="outbound">Outbound</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="label" for="filter-outcome">Outcome</label>
+      <select id="filter-outcome" class="select" [ngModel]="outcome()" (ngModelChange)="setOutcome($event)">
+        <option value="all">All</option>
+        <option value="lead">Lead</option>
+        <option value="completed">Completed</option>
+        <option value="no_answer">No answer</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label class="label" for="filter-from">From</label>
+      <input id="filter-from" type="date" class="input" [ngModel]="dateFrom()" (ngModelChange)="setDateFrom($event)" />
+    </div>
+    <div class="form-group">
+      <label class="label" for="filter-to">To</label>
+      <input id="filter-to" type="date" class="input" [ngModel]="dateTo()" (ngModelChange)="setDateTo($event)" />
+    </div>
+    @if (hasAnyFilter()) {
+    <button type="button" class="btn btn-ghost btn-sm clear-filters-btn" (click)="clearFilters()">Clear filters</button>
+    }
+  </div>
+
+  @if (loading()) {
+  <div class="table-scroll">
+    <table class="call-log-table">
+      <caption class="sr-only">Loading call log</caption>
+      <thead>
+        <tr>
+          <th scope="col">Time</th>
+          <th scope="col">Customer Name</th>
+          <th scope="col">Phone Number</th>
+          <th scope="col">Direction</th>
+          <th scope="col">Outcome</th>
+          <th scope="col">Duration</th>
+          <th scope="col">Total tokens</th>
+          <th scope="col">Cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (i of [1, 2, 3, 4, 5, 6, 7, 8]; track i) {
+        <tr>
+          <td>
+            <div class="skeleton skeleton-block call-log-skeleton-cell"></div>
+          </td>
+          <td>
+            <div class="skeleton skeleton-block call-log-skeleton-cell"></div>
+          </td>
+          <td>
+            <div class="skeleton skeleton-block call-log-skeleton-cell"></div>
+          </td>
+          <td>
+            <div class="skeleton skeleton-block call-log-skeleton-cell"></div>
+          </td>
+          <td>
+            <div class="skeleton skeleton-block call-log-skeleton-cell"></div>
+          </td>
+          <td>
+            <div class="skeleton skeleton-block call-log-skeleton-cell"></div>
+          </td>
+          <td>
+            <div class="skeleton skeleton-block call-log-skeleton-cell"></div>
+          </td>
+          <td>
+            <div class="skeleton skeleton-block call-log-skeleton-cell"></div>
+          </td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+  } @else if (records().length === 0) {
+  <div class="empty-state">
+    <p>No calls recorded for this agent yet.</p>
+  </div>
+  } @else if (filtered().length === 0) {
+  <div class="empty-state">
+    <p>No calls match these filters.</p>
+    <button type="button" class="btn btn-secondary btn-sm" (click)="clearFilters()">Clear filters</button>
+  </div>
+  } @else {
+  <div class="table-scroll">
+    <table class="call-log-table">
+      <caption class="sr-only">Call log for this agent</caption>
+      <thead>
+        <tr>
+          <th scope="col">Time</th>
+          <th scope="col">Customer Name</th>
+          <th scope="col">Phone Number</th>
+          <th scope="col">Direction</th>
+          <th scope="col">Outcome</th>
+          <th scope="col" title="Total call length">Duration</th>
+          <th scope="col" title="Total tokens consumed generating this call">Total tokens</th>
+          <th scope="col" title="Telephony + LLM cost for this call">Cost</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (record of pagedRecords(); track record.id) {
+        <tr class="call-log-row" (click)="rowClick(record)" tabindex="0" (keydown.enter)="rowClick(record)">
+          <td>{{ formatDateTime(record.occurred_at) }}</td>
+          <td>{{ record.customer_name ?? '—' }}</td>
+          <td>{{ record.phone_number }}</td>
+          <td>
+            <span class="direction-pill" [class.direction-inbound]="record.direction === 'inbound'"
+              [class.direction-outbound]="record.direction === 'outbound'">
+              <i class="fa-solid" [class.fa-arrow-down]="record.direction === 'inbound'"
+                [class.fa-arrow-up]="record.direction === 'outbound'" aria-hidden="true"></i>
+              {{ record.direction === 'inbound' ? 'Inbound' : 'Outbound' }}
+            </span>
+          </td>
+          <td>
+            <span class="outcome-pill" [class.outcome-lead]="record.outcome === 'lead'"
+              [class.outcome-completed]="record.outcome === 'completed'"
+              [class.outcome-no-answer]="record.outcome === 'no_answer'">
+              {{ outcomeLabel(record.outcome) }}
+            </span>
+          </td>
+          <td>{{ formatDuration(record.duration_seconds) }}</td>
+          <td>{{ record.total_tokens ? record.total_tokens.toLocaleString() : 'NA' }}</td>
+          <td>{{ currencyService.format(record.cost_usd) }}</td>
+        </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+
+  <div class="flex justify-between items-center call-log-pagination">
+    <span class="text-muted text-sm">{{ filtered().length }} call{{ filtered().length === 1 ? '' : 's' }} · Page {{
+      page() }} of {{ totalPages() }}</span>
+    <div class="flex gap-sm">
+      <button type="button" class="btn btn-secondary btn-sm" [disabled]="page() === 1"
+        (click)="prevPage()">Previous</button>
+      <button type="button" class="btn btn-secondary btn-sm" [disabled]="page() === totalPages()"
+        (click)="nextPage()">Next</button>
+    </div>
+  </div>
+  }
+</div>

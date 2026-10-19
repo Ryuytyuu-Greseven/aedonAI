@@ -1,0 +1,109 @@
+<div class="login-page">
+  <!-- Decorative showcase: a live "fleet" of voice agents at work -->
+  <section class="login-showcase" aria-hidden="true">
+    <div class="login-aurora login-aurora-a"></div>
+    <div class="login-aurora login-aurora-b"></div>
+    <div class="login-aurora login-aurora-c"></div>
+    <div class="login-showcase-grid"></div>
+
+    <header class="login-showcase-brand">
+      <img class="login-showcase-logo" src="logo.svg" alt="" />
+      <span class="login-showcase-name">Aedon <span class="text-gradient">AI</span></span>
+      <span class="login-status-pill"><span class="login-pulse"></span> All agents online</span>
+    </header>
+
+    <div class="login-stage">
+      <div class="login-orb">
+        <div class="login-ring login-ring-1"></div>
+        <div class="login-ring login-ring-2"></div>
+        <div class="login-ring login-ring-3"></div>
+
+        <div class="login-radial-wave">
+          @for (bar of waveBars; track $index) {
+            <span [style.--a]="bar.angle + 'deg'" [style.animation-delay.ms]="bar.delay"></span>
+          }
+        </div>
+
+        <div class="login-core">
+          <i class="fa-solid fa-microphone-lines"></i>
+        </div>
+
+        @for (agent of agents; track agent.name; let i = $index) {
+          <div class="login-orbit" [style.--orbit-i]="i">
+            <div class="login-orbiter">
+              <span class="login-orbiter-avatar">{{ agent.name[0] }}</span>
+              <span class="login-orbiter-meta">{{ agent.name }} <b>{{ agent.language }}</b></span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="login-feed">
+        @for (event of feed(); track event.key) {
+          <div class="login-feed-item" [attr.data-tone]="event.tone">
+            <span class="login-feed-icon"><i [class]="iconClass(event.icon)"></i></span>
+            <span class="login-feed-text">
+              <strong>{{ event.title }}</strong>
+              <small>{{ event.detail }}</small>
+            </span>
+            <span class="login-feed-time">now</span>
+          </div>
+        }
+      </div>
+    </div>
+
+    <footer class="login-showcase-footer">
+      <h2 class="login-showcase-heading">
+        Right now, your agents are
+        <span class="login-verb-slot">
+          @for (verb of verbs; track verb; let i = $index) {
+            <span class="login-verb text-gradient" [class.login-verb-active]="i === verbIndex()">{{ verb }}</span>
+          }
+        </span>
+      </h2>
+      <div class="login-counters">
+        @for (c of counters(); track c.label) {
+          <div class="login-counter">
+            <strong>{{ c.value.toLocaleString() }}</strong>
+            <span>{{ c.label }}</span>
+          </div>
+        }
+        <div class="login-counter">
+          <strong>0.7<small>s</small></strong>
+          <span>Avg. response</span>
+        </div>
+      </div>
+      <p class="login-showcase-footnote">© {{ year }} Aedon AI · Sample activity shown</p>
+    </footer>
+  </section>
+
+  <!-- Form panel -->
+  <section class="login-form-panel">
+    <div class="login-form-grid" aria-hidden="true"></div>
+    <button
+      type="button"
+      class="btn btn-secondary btn-icon login-theme-toggle"
+      (click)="themeService.toggle()"
+      [attr.aria-label]="themeService.theme() === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
+    >
+      <i class="fa-solid" [class.fa-moon]="themeService.theme() === 'light'" [class.fa-sun]="themeService.theme() === 'dark'" aria-hidden="true"></i>
+    </button>
+
+    <div class="login-form-wrap">
+      <div class="login-brand-mobile">
+        <img class="login-logo" src="logo.svg" alt="" aria-hidden="true" />
+        <span class="login-brand-mobile-name">Aedon <span class="text-gradient">AI</span></span>
+      </div>
+
+      <div class="login-card">
+        <span class="login-card-chip"><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Aedon Studio</span>
+        <ng-content />
+      </div>
+
+      <p class="login-footnote text-muted text-sm">
+        <i class="fa-solid fa-lock" aria-hidden="true"></i>
+        Protected by enterprise-grade security.
+      </p>
+    </div>
+  </section>
+</div>

@@ -1,0 +1,87 @@
+/* Layout and shared list pieces come from styles/list-page.css; only Sales Agent specifics live here. */
+.sa-page {
+  --list-cols: minmax(0, 2.2fr) minmax(140px, 1fr) minmax(130px, 1fr) 120px;
+}
+
+.sa-avatar {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+}
+
+.sa-avatar-lg {
+  width: 52px;
+  height: 52px;
+  font-size: 18px;
+  transition: background 0.3s var(--ease);
+}
+
+.sa-avatar-dot {
+  position: absolute;
+  right: -1px;
+  bottom: -1px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  border: 2px solid var(--bg-secondary);
+}
+
+.sa-avatar-dot-on {
+  background: var(--success);
+}
+
+.list-row-muted .sa-avatar {
+  filter: grayscale(0.85);
+  opacity: 0.6;
+}
+
+.list-row-muted .identity-text strong {
+  color: var(--text-secondary);
+}
+
+/* Password strength meter */
+.sa-strength {
+  --tone: var(--danger);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 8px;
+}
+
+.sa-strength[data-score='2'] { --tone: var(--warning); }
+.sa-strength[data-score='3'] { --tone: var(--brand-2); }
+.sa-strength[data-score='4'] { --tone: var(--success); }
+
+.sa-strength span {
+  flex: 1;
+  height: 4px;
+  border-radius: 4px;
+  background: var(--bg-hover);
+  transition: background 0.3s var(--ease);
+}
+
+.sa-strength[data-score='1'] span:nth-child(-n + 1),
+.sa-strength[data-score='2'] span:nth-child(-n + 2),
+.sa-strength[data-score='3'] span:nth-child(-n + 3),
+.sa-strength[data-score='4'] span:nth-child(-n + 4) {
+  background: var(--tone);
+}
+
+.sa-strength small {
+  min-width: 64px;
+  margin-left: 6px;
+  text-align: right;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--tone);
+}

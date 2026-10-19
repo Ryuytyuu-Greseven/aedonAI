@@ -1,0 +1,191 @@
+<div class="db-page list-page container">
+  <!-- Header -->
+  <header class="page-head">
+    <div>
+      <span class="page-eyebrow"><i class="fa-solid fa-robot" aria-hidden="true"></i> Agents · Fleet</span>
+      <h1>All agents</h1>
+      <p class="text-muted">Manage your voice and text agents — launch, pause, clone or refine them in the Playground.</p>
+    </div>
+    <div class="db-head-actions">
+      <a routerLink="/playground/drafted" class="btn btn-secondary page-cta"><i class="fa-solid fa-file-pen" aria-hidden="true"></i> Drafts</a>
+      <a routerLink="/playground/new" class="btn btn-primary page-cta"><i class="fa-solid fa-plus" aria-hidden="true"></i> Create agent</a>
+    </div>
+  </header>
+
+  <!-- Stats -->
+  <div class="stat-grid">
+    @for (tile of [
+      { label: 'Total agents', value: counts().all, icon: 'fa-robot', tone: 'brand' },
+      { label: 'Live', value: counts().live, icon: 'fa-signal', tone: 'success' },
+      { label: 'Staged', value: counts().staged, icon: 'fa-flask', tone: 'warm' },
+      { label: 'Drafts', value: counts().draft, icon: 'fa-file-pen', tone: 'info' }
+    ]; track tile.label) {
+      <div class="stat-tile" [attr.data-tone]="tile.tone">
+        <span class="stat-tile-icon"><i class="fa-solid {{ tile.icon }}" aria-hidden="true"></i></span>
+        <div>
+          @if (loading()) {
+            <div class="skeleton stat-tile-skeleton"></div>
+          } @else {
+            <strong>{{ tile.value }}</strong>
+          }
+          <span>{{ tile.label }}</span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- Toolbar -->
+  <div class="card list-panel db-toolbar-card">
+    <div class="list-toolbar">
+      <div class="search-pill">
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        <input class="input" type="search" placeholder="Search agents" [value]="searchQuery()" (input)="onSearchInput($event)" aria-label="Search agents" />
+        @if (searchQuery()) {
+          <button type="button" class="search-pill-clear" (click)="searchQuery.set('')" aria-label="Clear search">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        }
+      </div>
+      <div class="segmented" role="tablist" aria-label="Filter by status">
+        @for (f of [
+          { id: 'all', label: 'All', count: counts().all },
+          { id: 'live', label: 'Live', count: counts().live },
+          { id: 'staged', label: 'Staged', count: counts().staged },
+          { id: 'draft', label: 'Draft', count: counts().draft },
+          { id: 'disabled', label: 'Disabled', count: counts().disabled }
+        ]; track f.id) {
+          <button type="button" role="tab" [attr.aria-selected]="filter() === f.id" [class.segmented-on]="filter() === f.id" (click)="setFilter($any(f.id))">
+            {{ f.label }} <span>{{ f.count }}</span>
+          </button>
+        }
+      </div>
+    </div>
+  </div>
+
+  <!-- Grid -->
+  @if (loading()) {
+    <div class="db-grid">
+      @for (i of skeletonItems; track i) {
+        <div class="card db-card">
+          <div class="identity-cell">
+            <div class="skeleton skeleton-avatar"></div>
+            <div class="skeleton-lines">
+              <div class="skeleton skeleton-line"></div>
+              <div class="skeleton skeleton-line short"></div>
+            </div>
+          </div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line short"></div>
+        </div>
+      }
+    </div>
+  } @else if (agents().length === 0) {
+    <div class="card list-empty">
+      <div class="list-empty-art" aria-hidden="true">
+        <span><i class="fa-solid fa-headset"></i></span>
+        <span><i class="fa-solid fa-robot"></i></span>
+        <span><i class="fa-solid fa-phone-volume"></i></span>
+      </div>
+      <h3>No agents yet</h3>
+      <p class="text-muted">Pick a template in the Playground and have your first voice agent ready in minutes.</p>
+      <a routerLink="/playground/new" class="btn btn-primary"><i class="fa-solid fa-plus" aria-hidden="true"></i> Create your first agent</a>
+    </div>
+  } @else if (filteredAgents().length === 0) {
+    <div class="card list-empty list-empty-compact">
+      <i class="fa-solid fa-magnifying-glass list-empty-icon" aria-hidden="true"></i>
+      <h3>No matches</h3>
+      <p class="text-muted">
+        @if (searchQuery()) { No agents match your search. } @else { No {{ filter() }} agents right now. }
+      </p>
+      <button type="button" class="btn btn-secondary btn-sm" (click)="searchQuery.set(''); setFilter('all')">Clear filters</button>
+    </div>
+  } @else {
+    <div class="db-grid">
+      @for (agent of filteredAgents(); track agent.id; let i = $index) {
+        <article
+          class="card db-card"
+          [attr.data-status]="agent.status"
+          [style.--i]="i"
+          (click)="openAgent(agent)"
+          (keydown.enter)="openAgent(agent)"
+          role="button"
+          tabindex="0"
+          [attr.aria-label]="'Open ' + agent.agent_name"
+        >
+          <div class="db-card-top">
+            <div class="identity-cell">
+              <span class="db-avatar" [style.background]="avatarBackground(agent.agent_name)" aria-hidden="true">
+                {{ agent.agent_name.charAt(0).toUpperCase() }}
+                @if (agent.status === 'live') { <span class="db-avatar-pulse"></span> }
+              </span>
+              <div class="identity-text">
+                <strong>{{ agent.agent_name }}</strong>
+                <span>{{ templateName(agent) ?? 'Custom agent' }}</span>
+              </div>
+            </div>
+            <span class="db-status" [attr.data-status]="agent.status">
+              <span class="db-status-dot"></span>{{ agent.status }}
+            </span>
+          </div>
+
+          <div class="db-chips">
+            <span><i class="fa-solid" [class.fa-phone]="agent.enable_voice" [class.fa-comment-dots]="!agent.enable_voice" aria-hidden="true"></i> {{ agent.enable_voice ? 'Voice' : 'Chat' }}</span>
+            @if (nodeCount(agent) > 0 || agent.tools.length > 0) {
+              <span><i class="fa-solid fa-diagram-project" aria-hidden="true"></i> {{ nodeCount(agent) }} node{{ nodeCount(agent) === 1 ? '' : 's' }}</span>
+              <span><i class="fa-solid fa-screwdriver-wrench" aria-hidden="true"></i> {{ agent.tools.length }} tool{{ agent.tools.length === 1 ? '' : 's' }}</span>
+            }
+          </div>
+
+          <p class="db-dates">
+            <i class="fa-regular fa-clock" aria-hidden="true"></i> Updated {{ formatDate(agent.updated_at) }}
+            <span>· Created {{ formatDate(agent.created_at) }}</span>
+          </p>
+
+          <footer class="db-card-foot" (click)="$event.stopPropagation()" (keydown.enter)="$event.stopPropagation()">
+            @if (agent.status === 'live' || agent.status === 'disabled') {
+              <div class="status-cell">
+                <button
+                  type="button"
+                  role="switch"
+                  class="status-switch"
+                  [class.status-switch-on]="agent.status === 'live'"
+                  [attr.aria-checked]="agent.status === 'live'"
+                  [attr.aria-label]="(agent.status === 'live' ? 'Disable ' : 'Enable ') + agent.agent_name"
+                  (click)="toggleStatus(agent, $event)"
+                >
+                  <span class="status-switch-knob"></span>
+                </button>
+                <span class="status-cell-label">{{ agent.status === 'live' ? 'Live' : 'Off' }}</span>
+              </div>
+            } @else {
+              <a [routerLink]="['/playground', agent.id]" class="db-open"><i class="fa-solid fa-sliders" aria-hidden="true"></i> Continue in Playground</a>
+            }
+
+            <div class="row-actions">
+              @if (agent.status === 'live' || agent.status === 'disabled') {
+                <a [routerLink]="['/playground', agent.id]" class="icon-action" [attr.aria-label]="'Edit ' + agent.agent_name">
+                  <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                  <span class="icon-action-tip">Edit</span>
+                </a>
+              }
+              <button type="button" class="icon-action" (click)="cloneAgent(agent, $event)" [attr.aria-label]="'Clone ' + agent.agent_name">
+                <i class="fa-regular fa-copy" aria-hidden="true"></i>
+                <span class="icon-action-tip">Clone</span>
+              </button>
+              <button type="button" class="icon-action db-action-danger" (click)="confirmDelete(agent, $event)" [attr.aria-label]="'Delete ' + agent.agent_name">
+                <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+                <span class="icon-action-tip">Delete</span>
+              </button>
+            </div>
+          </footer>
+        </article>
+      }
+
+      <a routerLink="/playground/new" class="db-card db-card-new">
+        <span class="db-new-icon"><i class="fa-solid fa-plus" aria-hidden="true"></i></span>
+        <strong>Create agent</strong>
+        <small>Start from a template or build your own</small>
+      </a>
+    </div>
+  }
+</div>

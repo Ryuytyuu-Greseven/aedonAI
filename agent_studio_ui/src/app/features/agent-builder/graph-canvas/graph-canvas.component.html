@@ -1,0 +1,78 @@
+<div class="graph-toolbar">
+  <button type="button" class="btn btn-primary btn-sm" (click)="addNode()">+ Add Node</button>
+  <button type="button" class="btn btn-secondary btn-sm" (click)="autoLayout()">Auto-layout</button>
+  @if (selectedNodeId) {
+    <button type="button" class="btn btn-secondary btn-sm" (click)="duplicateSelected()">Duplicate</button>
+    <button type="button" class="btn btn-danger btn-sm" (click)="deleteSelected()">Delete Node</button>
+  }
+  @if (selectedConnectionId) {
+    <button type="button" class="btn btn-danger btn-sm" (click)="removeConnection(selectedConnectionId!)">
+      Remove connection
+    </button>
+  }
+  <span class="text-muted text-sm">{{ agent.nodes.length }} node(s)</span>
+  @if (canvasMessage) {
+    <span class="canvas-hint text-sm">{{ canvasMessage }}</span>
+  }
+</div>
+
+<div class="graph-canvas-wrap" (click)="onCanvasClick()">
+  <f-flow
+    fDraggable
+    (fCreateConnection)="onCreateConnection($event)"
+    (fMoveNodes)="onMoveNodes($event)"
+  >
+    <f-canvas fZoom [fZoomMinimum]="0.3" [fZoomMaximum]="2">
+      @for (conn of connections; track conn.id) {
+        <f-connection
+          [fOutputId]="conn.outputId"
+          [fInputId]="conn.inputId"
+          [class.connection-selected]="isConnectionSelected(conn.id)"
+          (click)="onConnectionClick(conn.id, $event)"
+        />
+      }
+      <f-connection-for-create />
+
+      @for (node of agent.nodes; track node.id) {
+        <div
+          fNode
+          fDragHandle
+          [fNodeId]="node.id"
+          [fNodePosition]="nodePosition(node)"
+          fNodeOutput
+          [fOutputId]="'out-' + node.id"
+          fOutputConnectableSide="right"
+          fNodeInput
+          [fInputId]="'in-' + node.id"
+          fInputConnectableSide="left"
+          class="flow-node"
+          [class.flow-node-selected]="isSelected(node.id)"
+          (click)="onNodeClick(node.id, $event)"
+        >
+          <div class="flow-node-header">
+            <div class="flow-node-title">{{ node.name }}</div>
+            <button
+              type="button"
+              class="flow-node-delete btn btn-ghost btn-sm"
+              title="Delete node"
+              (click)="deleteNode(node.id, $event)"
+            >
+              ×
+            </button>
+          </div>
+          <div class="flow-node-excerpt text-sm">{{ excerpt(node.prompt) }}</div>
+          @if (toolTags(node).length > 0) {
+            <div class="flow-node-tags">
+              @for (tag of toolTags(node); track tag) {
+                <span class="tool-tag">{{ tag }}</span>
+              }
+            </div>
+          }
+        </div>
+      }
+    </f-canvas>
+    @if (showMinimap) {
+      <f-minimap class="graph-minimap" />
+    }
+  </f-flow>
+</div>

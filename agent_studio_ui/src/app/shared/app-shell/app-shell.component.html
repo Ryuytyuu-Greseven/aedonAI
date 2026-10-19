@@ -1,0 +1,39 @@
+<header class="app-header">
+  <div class="header-inner container">
+    <a routerLink="/dashboard" class="logo">
+      <img class="logo-icon" src="logo.svg" alt="" aria-hidden="true" />
+      Aedon AI
+    </a>
+    <nav class="nav">
+      <a routerLink="/dashboard" routerLinkActive="nav-active" [routerLinkActiveOptions]="{ exact: false }">
+        Dashboard
+      </a>
+    </nav>
+    <div class="header-actions">
+      <button
+        type="button"
+        class="btn btn-ghost btn-icon"
+        (click)="toggleTheme()"
+        [attr.aria-label]="themeService.theme() === 'light' ? 'Switch to dark mode' : 'Switch to light mode'"
+      >
+        @if (themeService.theme() === 'light') {
+          <span aria-hidden="true">🌙</span>
+        } @else {
+          <span aria-hidden="true">☀️</span>
+        }
+      </button>
+      <button
+        type="button"
+        class="btn btn-ghost btn-icon"
+        (click)="logout()"
+        aria-label="Log out"
+        title="Log out"
+      >
+        <span aria-hidden="true">⏻</span>
+      </button>
+    </div>
+  </div>
+</header>
+<main class="app-main">
+  <ng-content />
+</main>

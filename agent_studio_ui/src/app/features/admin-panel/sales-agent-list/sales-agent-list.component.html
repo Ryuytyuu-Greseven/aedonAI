@@ -1,0 +1,360 @@
+<div class="sa-page list-page container">
+  <!-- Header -->
+  <header class="page-head">
+    <div>
+      <span class="page-eyebrow"><i class="fa-solid fa-user-shield" aria-hidden="true"></i> Admin · Sales team</span>
+      <h1>Sales agents</h1>
+      <p class="text-muted">Create and manage the logins your sales team uses to sign in to Aedon AI.</p>
+    </div>
+    <button type="button" class="btn btn-primary page-cta" (click)="openCreateForm()">
+      <i class="fa-solid fa-user-plus" aria-hidden="true"></i> Add sales agent
+    </button>
+  </header>
+
+  <!-- Stats -->
+  <div class="stat-grid">
+    @for (tile of [
+      { label: 'Total accounts', value: stats().total, icon: 'fa-users', tone: 'brand' },
+      { label: 'Active', value: stats().active, icon: 'fa-circle-check', tone: 'success' },
+      { label: 'Disabled', value: stats().disabled, icon: 'fa-user-slash', tone: 'muted' },
+      { label: 'Added this month', value: stats().addedThisMonth, icon: 'fa-calendar-plus', tone: 'info' }
+    ]; track tile.label) {
+      <div class="stat-tile" [attr.data-tone]="tile.tone">
+        <span class="stat-tile-icon"><i class="fa-solid {{ tile.icon }}" aria-hidden="true"></i></span>
+        <div>
+          @if (loading()) {
+            <div class="skeleton stat-tile-skeleton"></div>
+          } @else {
+            <strong>{{ tile.value }}</strong>
+          }
+          <span>{{ tile.label }}</span>
+        </div>
+      </div>
+    }
+  </div>
+
+  <!-- List -->
+  <section class="card list-panel">
+    <div class="list-toolbar">
+      <div class="search-pill">
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+        <input
+          type="search"
+          class="input"
+          placeholder="Search by name or email"
+          aria-label="Search sales agents"
+          [ngModel]="search()"
+          (ngModelChange)="search.set($event)"
+        />
+        @if (search()) {
+          <button type="button" class="search-pill-clear" (click)="clearSearch()" aria-label="Clear search">
+            <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+          </button>
+        }
+      </div>
+      <div class="segmented" role="tablist" aria-label="Filter by status">
+        @for (f of [
+          { id: 'all', label: 'All', count: stats().total },
+          { id: 'active', label: 'Active', count: stats().active },
+          { id: 'disabled', label: 'Disabled', count: stats().disabled }
+        ]; track f.id) {
+          <button
+            type="button"
+            role="tab"
+            [attr.aria-selected]="statusFilter() === f.id"
+            [class.segmented-on]="statusFilter() === f.id"
+            (click)="statusFilter.set($any(f.id))"
+          >
+            {{ f.label }} <span>{{ f.count }}</span>
+          </button>
+        }
+      </div>
+    </div>
+
+    <div class="list-body" role="table" aria-label="Sales agent accounts">
+      <div class="list-row list-row-head" role="row">
+        <span role="columnheader">Member</span>
+        <span role="columnheader">Status</span>
+        <span role="columnheader">Added</span>
+        <span role="columnheader" class="col-end">Actions</span>
+      </div>
+
+      @if (loading()) {
+        @for (i of [1, 2, 3, 4]; track i) {
+          <div class="list-row" role="row">
+            <div class="identity-cell">
+              <div class="skeleton skeleton-avatar"></div>
+              <div class="skeleton-lines">
+                <div class="skeleton skeleton-line"></div>
+                <div class="skeleton skeleton-line short"></div>
+              </div>
+            </div>
+            <div class="skeleton skeleton-pill"></div>
+            <div class="skeleton skeleton-pill"></div>
+            <span></span>
+          </div>
+        }
+      } @else if (accounts().length === 0) {
+        <div class="list-empty">
+          <div class="list-empty-art" aria-hidden="true">
+            <span><i class="fa-solid fa-user"></i></span>
+            <span><i class="fa-solid fa-user-plus"></i></span>
+            <span><i class="fa-solid fa-user"></i></span>
+          </div>
+          <h3>No sales agents yet</h3>
+          <p class="text-muted">Give each member of your sales team their own login to Aedon AI.</p>
+          <button type="button" class="btn btn-primary" (click)="openCreateForm()">
+            <i class="fa-solid fa-user-plus" aria-hidden="true"></i> Add your first sales agent
+          </button>
+        </div>
+      } @else if (filteredAccounts().length === 0) {
+        <div class="list-empty list-empty-compact">
+          <i class="fa-solid fa-magnifying-glass list-empty-icon" aria-hidden="true"></i>
+          <h3>No matches</h3>
+          <p class="text-muted">No sales agents match your search or filter.</p>
+          <button type="button" class="btn btn-secondary btn-sm" (click)="clearSearch(); statusFilter.set('all')">Clear filters</button>
+        </div>
+      } @else {
+        @for (account of filteredAccounts(); track account.id; let i = $index) {
+          <div class="list-row" role="row" [class.list-row-muted]="!account.enabled" [style.--i]="i">
+            <div class="identity-cell" role="cell">
+              <span class="sa-avatar" [style.background]="avatarBackground(account.name)" aria-hidden="true">
+                {{ initials(account.name) }}
+                <span class="sa-avatar-dot" [class.sa-avatar-dot-on]="account.enabled"></span>
+              </span>
+              <div class="identity-text">
+                <strong>{{ account.name }}</strong>
+                <span>{{ account.email }}</span>
+              </div>
+            </div>
+
+            <div class="status-cell" role="cell">
+              <button
+                type="button"
+                role="switch"
+                class="status-switch"
+                [class.status-switch-on]="account.enabled"
+                [class.status-switch-busy]="statusUpdatingId() === account.id"
+                [attr.aria-checked]="account.enabled"
+                [attr.aria-label]="(account.enabled ? 'Disable ' : 'Enable ') + account.name"
+                [disabled]="statusUpdatingId() === account.id"
+                (click)="toggleEnabled(account)"
+              >
+                <span class="status-switch-knob"></span>
+              </button>
+              <span class="status-cell-label">{{ account.enabled ? 'Active' : 'Disabled' }}</span>
+            </div>
+
+            <div class="date-cell" role="cell">
+              <i class="fa-regular fa-calendar" aria-hidden="true"></i> {{ formatDate(account.createdAt) }}
+            </div>
+
+            <div class="row-actions" role="cell">
+              <button
+                type="button"
+                class="icon-action"
+                [attr.aria-label]="'Update name for ' + account.name"
+                (click)="openEditName(account)"
+              >
+                <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                <span class="icon-action-tip">Rename</span>
+              </button>
+              <button
+                type="button"
+                class="icon-action icon-action-warning"
+                [attr.aria-label]="'Reset password for ' + account.name"
+                (click)="openResetPassword(account)"
+              >
+                <i class="fa-solid fa-key" aria-hidden="true"></i>
+                <span class="icon-action-tip">Reset password</span>
+              </button>
+            </div>
+          </div>
+        }
+      }
+    </div>
+  </section>
+</div>
+
+<!-- Create -->
+@if (showCreateForm) {
+  <app-modal
+    title="Add sales agent"
+    subtitle="They'll use these details to sign in to Aedon AI."
+    icon="fa-user-plus"
+    (closed)="cancelCreate()"
+  >
+    <div class="preview-card">
+      <span class="sa-avatar sa-avatar-lg" [style.background]="avatarBackground(createName || '?')">{{ initials(createName) }}</span>
+      <div>
+        <strong>{{ createName.trim() || 'New sales agent' }}</strong>
+        <span>{{ createEmail.trim() || 'agent@company.com' }}</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="label" for="create-name">Full name</label>
+      <div class="icon-field">
+        <i class="fa-solid fa-user" aria-hidden="true"></i>
+        <input id="create-name" type="text" class="input" [(ngModel)]="createName" placeholder="e.g. Jordan Lee" autocomplete="off" (keydown.enter)="create()" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="label" for="create-email">Work email</label>
+      <div class="icon-field">
+        <i class="fa-solid fa-envelope" aria-hidden="true"></i>
+        <input id="create-email" type="email" class="input" [(ngModel)]="createEmail" placeholder="agent@company.com" autocomplete="off" (keydown.enter)="create()" />
+      </div>
+    </div>
+    <div class="form-group">
+      <div class="label-row">
+        <label class="label" for="create-password">Password</label>
+        <button type="button" class="text-link" (click)="generateCreatePassword()">
+          <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Generate
+        </button>
+      </div>
+      <div class="icon-field">
+        <i class="fa-solid fa-lock" aria-hidden="true"></i>
+        <input
+          id="create-password"
+          [type]="showPassword ? 'text' : 'password'"
+          class="input input-mono"
+          [(ngModel)]="createPassword"
+          placeholder="At least 8 characters"
+          autocomplete="new-password"
+          (keydown.enter)="create()"
+        />
+        <button type="button" class="icon-field-btn" (click)="showPassword = !showPassword" [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
+          <i class="fa-solid" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword" aria-hidden="true"></i>
+        </button>
+      </div>
+      @if (passwordStrength(createPassword); as strength) {
+        @if (strength.score) {
+          <div class="sa-strength" [attr.data-score]="strength.score">
+            <span></span><span></span><span></span><span></span>
+            <small>{{ strength.label }}</small>
+          </div>
+        }
+      }
+    </div>
+
+    @if (createError) {
+      <div class="alert-box" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ createError }}</div>
+    }
+
+    <ng-container ngProjectAs="[modal-footer]">
+      <button type="button" class="btn btn-ghost" (click)="cancelCreate()">Cancel</button>
+      <button type="button" class="btn btn-primary" [disabled]="creating" (click)="create()">
+        @if (creating) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Creating… }
+        @else { <i class="fa-solid fa-check" aria-hidden="true"></i> Create login }
+      </button>
+    </ng-container>
+  </app-modal>
+}
+
+<!-- Rename -->
+@if (editNameTarget; as target) {
+  <app-modal title="Update name" [subtitle]="target.email" icon="fa-pen" [width]="420" (closed)="cancelEditName()">
+    <div class="preview-card">
+      <span class="sa-avatar sa-avatar-lg" [style.background]="avatarBackground(editNameValue || target.name)">{{ initials(editNameValue || target.name) }}</span>
+      <div>
+        <strong>{{ editNameValue.trim() || target.name }}</strong>
+        <span>Preview</span>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="label" for="edit-name-input">Full name</label>
+      <div class="icon-field">
+        <i class="fa-solid fa-user" aria-hidden="true"></i>
+        <input id="edit-name-input" type="text" class="input" [(ngModel)]="editNameValue" placeholder="e.g. Jordan Lee" (keydown.enter)="submitEditName()" />
+      </div>
+    </div>
+
+    @if (editNameError) {
+      <div class="alert-box" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ editNameError }}</div>
+    }
+
+    <ng-container ngProjectAs="[modal-footer]">
+      <button type="button" class="btn btn-ghost" (click)="cancelEditName()">Cancel</button>
+      <button type="button" class="btn btn-primary" [disabled]="savingName" (click)="submitEditName()">
+        @if (savingName) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Saving… }
+        @else { Save name }
+      </button>
+    </ng-container>
+  </app-modal>
+}
+
+<!-- Reset password -->
+@if (resetPasswordTarget; as target) {
+  <app-modal title="Reset password" [subtitle]="target.name + ' · ' + target.email" icon="fa-key" tone="warning" (closed)="cancelResetPassword()">
+    <div class="note-box">
+      <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+      Share the new password with {{ target.name }} securely — they'll need it the next time they sign in.
+    </div>
+
+    <div class="form-group">
+      <div class="label-row">
+        <label class="label" for="reset-password-input">New password</label>
+        <button type="button" class="text-link" (click)="generateResetPassword()">
+          <i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Generate
+        </button>
+      </div>
+      <div class="icon-field">
+        <i class="fa-solid fa-lock" aria-hidden="true"></i>
+        <input
+          id="reset-password-input"
+          [type]="showPassword ? 'text' : 'password'"
+          class="input input-mono"
+          [(ngModel)]="resetPasswordValue"
+          placeholder="At least 8 characters"
+          autocomplete="new-password"
+          (keydown.enter)="submitResetPassword()"
+        />
+        <button type="button" class="icon-field-btn" (click)="showPassword = !showPassword" [attr.aria-label]="showPassword ? 'Hide password' : 'Show password'">
+          <i class="fa-solid" [class.fa-eye]="!showPassword" [class.fa-eye-slash]="showPassword" aria-hidden="true"></i>
+        </button>
+      </div>
+      @if (passwordStrength(resetPasswordValue); as strength) {
+        @if (strength.score) {
+          <div class="sa-strength" [attr.data-score]="strength.score">
+            <span></span><span></span><span></span><span></span>
+            <small>{{ strength.label }}</small>
+          </div>
+        }
+      }
+    </div>
+    <div class="form-group">
+      <label class="label" for="reset-password-confirm">Confirm password</label>
+      <div class="icon-field">
+        <i class="fa-solid fa-lock" aria-hidden="true"></i>
+        <input
+          id="reset-password-confirm"
+          [type]="showPassword ? 'text' : 'password'"
+          class="input input-mono"
+          [(ngModel)]="resetPasswordConfirm"
+          placeholder="Re-enter password"
+          autocomplete="new-password"
+          (keydown.enter)="submitResetPassword()"
+        />
+        @if (resetPasswordConfirm) {
+          <span class="icon-field-state" [class.icon-field-ok]="resetPasswordConfirm === resetPasswordValue">
+            <i class="fa-solid" [class.fa-circle-check]="resetPasswordConfirm === resetPasswordValue" [class.fa-circle-xmark]="resetPasswordConfirm !== resetPasswordValue" aria-hidden="true"></i>
+          </span>
+        }
+      </div>
+    </div>
+
+    @if (resetPasswordError) {
+      <div class="alert-box" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ resetPasswordError }}</div>
+    }
+
+    <ng-container ngProjectAs="[modal-footer]">
+      <button type="button" class="btn btn-ghost" (click)="cancelResetPassword()">Cancel</button>
+      <button type="button" class="btn btn-primary" [disabled]="resettingPassword" (click)="submitResetPassword()">
+        @if (resettingPassword) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Resetting… }
+        @else { <i class="fa-solid fa-key" aria-hidden="true"></i> Reset password }
+      </button>
+    </ng-container>
+  </app-modal>
+}

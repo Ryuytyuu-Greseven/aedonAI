@@ -1,0 +1,30 @@
+.agent-reports {
+  padding-top: 8px;
+}
+
+.period-tabs {
+  display: inline-flex;
+}
+
+.custom-range {
+  max-width: 320px;
+}
+
+.generated-report {
+  padding: 12px 16px;
+  margin: 16px 0;
+}
+
+.report-actions {
+  margin-top: 8px;
+}
+
+.frequency-preference {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border-color);
+}
+
+.frequency-preference .select {
+  max-width: 160px;
+}

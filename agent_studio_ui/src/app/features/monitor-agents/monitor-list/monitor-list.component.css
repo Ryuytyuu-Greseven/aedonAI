@@ -1,0 +1,64 @@
+.monitor-list {
+  padding: 32px 24px;
+  margin: 25px;
+  background: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.monitor-list-header {
+  margin-bottom: 24px;
+}
+
+.agent-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+
+.monitor-card {
+  cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition), transform var(--transition);
+}
+
+.monitor-card:hover,
+.monitor-card:focus {
+  border-color: var(--accent);
+  outline: none;
+  box-shadow: var(--shadow-md);
+  transform: translateY(-1px);
+}
+
+.monitor-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.monitor-card-top h3 {
+  font-size: 16px;
+  margin: 0;
+}
+
+.total-figure {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.total-value {
+  font-size: 32px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.total-label {
+  font-size: 12px;
+}
+
+/* .skeleton/.skeleton-card/.skeleton-title/.skeleton-line/@keyframes shimmer are global (styles/globals.css) */

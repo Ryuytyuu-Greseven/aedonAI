@@ -1,0 +1,98 @@
+<div class="inspector">
+  <h3>Node Inspector</h3>
+  <div class="form-group">
+    <label class="label" for="node-name">Name</label>
+    <input
+      id="node-name"
+      class="input"
+      [ngModel]="node.name"
+      (ngModelChange)="updateField('name', $event)"
+    />
+  </div>
+  <div class="form-group">
+    <label class="label" for="node-prompt">Prompt</label>
+    <textarea
+      id="node-prompt"
+      class="textarea"
+      rows="6"
+      [ngModel]="node.prompt"
+      (ngModelChange)="updateField('prompt', $event)"
+      (blur)="onPromptBlur()"
+      placeholder="Describe the behaviour for this node…"
+    ></textarea>
+    <span class="char-count text-sm text-muted">{{ charCount() }} characters</span>
+  </div>
+  <div class="form-group">
+    <span class="label">Tools</span>
+    @if (tools.length === 0) {
+      <p class="text-muted text-sm">
+        No tools created yet.
+        <button type="button" class="link-btn" (click)="goToToolsTab.emit()">Go to the Tools tab</button>
+        to add tools.
+      </p>
+    } @else {
+      <div class="tool-checklist">
+        @for (tool of tools; track tool.id) {
+          <label class="tool-check">
+            <input
+              type="checkbox"
+              [checked]="isToolSelected(tool.id)"
+              (change)="toggleTool(tool.id)"
+            />
+            <span>
+              <strong>{{ tool.name }}</strong>
+              <span class="text-muted text-sm"> — {{ tool.description }}</span>
+            </span>
+          </label>
+        }
+      </div>
+    }
+  </div>
+
+  <div class="history-section">
+    <button type="button" class="history-toggle btn btn-ghost btn-sm" (click)="showHistory = !showHistory">
+      {{ showHistory ? '▼' : '▶' }} Prompt History
+    </button>
+    @if (showHistory) {
+      @if (promptHistory().length === 0) {
+        <p class="text-muted text-sm">No prompt history yet.</p>
+      } @else {
+        @if (comparePrompt) {
+          <div class="history-compare">
+            <div class="compare-col">
+              <span class="label">Current</span>
+              <pre class="compare-text">{{ node.prompt }}</pre>
+            </div>
+            <div class="compare-col">
+              <span class="label">Historical</span>
+              <pre class="compare-text">{{ comparePrompt }}</pre>
+            </div>
+          </div>
+        }
+        @for (entry of promptHistory(); track entry.versionId + entry.timestamp) {
+          <div class="history-entry">
+            <span class="text-sm text-muted">{{ formatDate(entry.timestamp) }}</span>
+            <p class="text-sm">{{ entry.prompt.slice(0, 80) }}{{ entry.prompt.length > 80 ? '…' : '' }}</p>
+            <div class="flex gap-sm">
+              <button type="button" class="btn btn-ghost btn-sm" (click)="previewPrompt(entry)">Compare</button>
+              <button type="button" class="btn btn-secondary btn-sm" (click)="applyHistoricalPrompt(entry)">
+                Use this prompt
+              </button>
+            </div>
+          </div>
+        }
+      }
+    }
+  </div>
+
+  @if (node.nextNode || node.previousNode) {
+    <div class="connections-info text-sm text-muted">
+      @if (node.previousNode) {
+        <div>Previous: {{ node.previousNode }}</div>
+      }
+      @if (node.nextNode) {
+        <div>Next: {{ node.nextNode }}</div>
+      }
+    </div>
+  }
+</div>

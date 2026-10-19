@@ -1,0 +1,145 @@
+@if (loading()) {
+  <div class="empty-state">Loading agent…</div>
+} @else {
+  @if (agent(); as a) {
+  <div class="builder">
+    <nav class="breadcrumb text-sm">
+      <a routerLink="/dashboard" (click)="navigateDashboard($event)">Dashboard</a>
+      <span class="breadcrumb-sep">›</span>
+      <span>Agents</span>
+      <span class="breadcrumb-sep">›</span>
+      <span class="breadcrumb-current">{{ displayName() }}</span>
+    </nav>
+
+    <header class="builder-header">
+      <div class="builder-header-left">
+        <a routerLink="/dashboard" class="btn btn-ghost btn-sm" (click)="navigateDashboard($event)">← Back</a>
+        <div class="form-group builder-name-group">
+          <input
+            class="input builder-name-input"
+            [class.input-error]="nameError()"
+            [value]="a.agent_name"
+            (input)="updateAgent({ agent_name: $any($event.target).value })"
+            placeholder="Agent name"
+            aria-label="Agent name"
+          />
+          @if (nameError()) {
+            <span class="field-error">Agent name is required</span>
+          }
+        </div>
+        <label class="toggle">
+          <input
+            type="checkbox"
+            [checked]="a.enable_voice"
+            (change)="updateAgent({ enable_voice: $any($event.target).checked })"
+          />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          <span class="text-sm">Voice agent</span>
+        </label>
+        @if (isDirty()) {
+          <span class="unsaved-indicator">• Unsaved changes</span>
+        }
+      </div>
+      <div class="builder-header-right">
+        @if (validationWarnings().length > 0) {
+          <span class="validation-hint text-sm" [title]="validationWarnings().join(' ')">
+            ⚠ {{ validationWarnings().length }} warning(s)
+          </span>
+        }
+        <button type="button" class="btn btn-secondary btn-sm" (click)="exportAgentJson()">
+          View JSON
+        </button>
+        <button
+          type="button"
+          class="btn btn-primary btn-sm"
+          [disabled]="saving() || !a.agent_name.trim()"
+          (click)="save()"
+        >
+          {{ saving() ? 'Saving…' : 'Save' }}
+        </button>
+      </div>
+    </header>
+
+    <div class="builder-tabs tabs">
+      <button type="button" class="tab" [class.tab-active]="activeTab() === 'graph'" (click)="setTab('graph')">
+        Flow
+      </button>
+      <button type="button" class="tab" [class.tab-active]="activeTab() === 'tools'" (click)="setTab('tools')">
+        Tools
+      </button>
+      <button type="button" class="tab" [class.tab-active]="activeTab() === 'history'" (click)="setTab('history')">
+        History
+      </button>
+      <button type="button" class="tab" [class.tab-active]="activeTab() === 'test'" (click)="setTab('test')">
+        Test
+      </button>
+    </div>
+
+    <div class="builder-content">
+      @switch (activeTab()) {
+        @case ('graph') {
+          <div class="graph-layout">
+            <div class="graph-main card">
+              <app-graph-canvas
+                [agent]="a"
+                [selectedNodeId]="selectedNodeId()"
+                (agentChange)="onAgentChange($event)"
+                (nodeSelect)="selectNode($event)"
+                (duplicateNode)="onAgentChange($event)"
+              />
+            </div>
+            @if (selectedNode(); as node) {
+              <aside class="graph-sidebar card">
+                <app-node-inspector
+                  [node]="node"
+                  [tools]="a.tools"
+                  [agent]="a"
+                  [agentId]="a.id"
+                  (nodeChange)="onAgentChange($event)"
+                  (promptBlur)="onPromptChange()"
+                  (goToToolsTab)="setTab('tools')"
+                  (usePrompt)="onAgentChange($event)"
+                />
+              </aside>
+            } @else {
+              <aside class="graph-sidebar card graph-sidebar-empty">
+                <p class="text-muted">Select a node to edit its prompt and tools.</p>
+              </aside>
+            }
+          </div>
+        }
+        @case ('tools') {
+          <app-tools-manager [agent]="a" (agentChange)="onAgentChange($event)" />
+        }
+        @case ('history') {
+          <app-version-history
+            [agentId]="a.id"
+            (restore)="onVersionRestore($event.snapshot, $event.versionNumber)"
+          />
+        }
+        @case ('test') {
+          <app-test-console [agent]="a" />
+        }
+      }
+    </div>
+  </div>
+
+  @if (showExport()) {
+    <div class="modal-overlay" (click)="closeExport()" role="presentation">
+      <div class="modal card" (click)="$event.stopPropagation()">
+        <div class="card-header flex justify-between items-center">
+          <span>View JSON</span>
+          <button type="button" class="btn btn-ghost btn-sm" (click)="closeExport()">✕</button>
+        </div>
+        <div class="card-body">
+          <pre class="export-pre text-mono">{{ exportJson() }}</pre>
+          <div class="flex gap-sm modal-actions">
+            <button type="button" class="btn btn-primary btn-sm" (click)="downloadJson()">Download JSON</button>
+            <button type="button" class="btn btn-secondary btn-sm" (click)="closeExport()">Close</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  }
+  }
+}

@@ -1,0 +1,80 @@
+<div class="modal-overlay" (click)="close()">
+  <div class="modal card live-call-modal" (click)="$event.stopPropagation()">
+    <div class="flex justify-between items-center live-call-header">
+      <div>
+        <h3>{{ session.customerName }}</h3>
+        <p class="text-muted text-sm">{{ session.phoneNumber }}</p>
+      </div>
+      <button type="button" class="btn btn-ghost btn-sm" (click)="close()" aria-label="Close">✕</button>
+    </div>
+
+    <div class="stat-pill-row">
+      <span class="live-pill"><span class="live-dot live-dot-pulse"></span>Live</span>
+      <span class="stat-pill live-call-duration" title="Call duration so far">
+        <i class="fa-solid fa-clock" aria-hidden="true"></i>
+        {{ elapsedLabel() }}
+      </span>
+      <span
+        class="stat-pill"
+        [class.stat-pill-inbound]="session.direction === 'inbound'"
+        [class.stat-pill-outbound]="session.direction === 'outbound'"
+        title="Call direction"
+      >
+        <i class="fa-solid" [class.fa-arrow-down]="session.direction === 'inbound'" [class.fa-arrow-up]="session.direction === 'outbound'" aria-hidden="true"></i>
+        {{ session.direction === 'inbound' ? 'Inbound' : 'Outbound' }}
+      </span>
+      <button
+        type="button"
+        class="btn btn-sm live-call-join"
+        [class.btn-primary]="!joining()"
+        [disabled]="joining()"
+        (click)="onJoinClick()"
+      >
+        @if (joining()) {
+          Joining…
+        } @else {
+          <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Join call
+        }
+      </button>
+    </div>
+
+    <div class="live-call-body">
+      @if (loading()) {
+        <div class="timeline">
+          <div class="timeline-message timeline-message-agent">
+            <div class="skeleton skeleton-line short"></div>
+            <div class="skeleton skeleton-line"></div>
+          </div>
+          <div class="timeline-message timeline-message-customer">
+            <div class="skeleton skeleton-line short"></div>
+            <div class="skeleton skeleton-line"></div>
+          </div>
+        </div>
+      } @else if (messages().length === 0) {
+        <p class="text-muted text-sm live-call-waiting">Call just connected — waiting for the conversation to start…</p>
+      } @else {
+        <div class="timeline">
+          @for (message of messages(); track message.id) {
+            <div class="timeline-message" [class.timeline-message-agent]="message.speaker === 'agent'" [class.timeline-message-customer]="message.speaker === 'customer'">
+              <div class="timeline-message-meta">
+                <strong>{{ message.speaker === 'agent' ? 'Agent' : 'Customer' }}</strong>
+                <span class="text-muted text-sm">{{ formatTime(message.at) }}</span>
+              </div>
+              <p class="timeline-message-text">{{ message.text }}</p>
+            </div>
+          }
+        </div>
+      }
+
+      @if (!loading()) {
+        <div class="live-call-typing">
+          <span class="live-call-typing-dot"></span>
+          <span class="live-call-typing-dot"></span>
+          <span class="live-call-typing-dot"></span>
+        </div>
+      }
+
+      <div #scrollAnchor></div>
+    </div>
+  </div>
+</div>

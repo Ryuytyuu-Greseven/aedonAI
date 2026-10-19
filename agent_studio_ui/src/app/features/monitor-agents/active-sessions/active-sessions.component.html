@@ -1,0 +1,76 @@
+<div class="active-sessions">
+  @if (loading()) {
+    <div class="active-session-grid">
+      <div class="active-session-card active-session-card-skeleton">
+        <div class="skeleton skeleton-line short"></div>
+        <div class="skeleton skeleton-line"></div>
+      </div>
+      <div class="active-session-card active-session-card-skeleton">
+        <div class="skeleton skeleton-line short"></div>
+        <div class="skeleton skeleton-line"></div>
+      </div>
+    </div>
+  } @else if (sessions().length === 0) {
+    <div class="empty-state">
+      <i class="fa-solid fa-phone-slash active-sessions-empty-icon" aria-hidden="true"></i>
+      <h3>No active calls right now</h3>
+      <p>This agent isn't on a call at the moment. New calls will appear here the moment they start.</p>
+    </div>
+  } @else {
+    <div class="active-sessions-toolbar">
+      <span class="live-pill"><span class="live-dot live-dot-pulse"></span>{{ sessions().length }} live now</span>
+    </div>
+
+    <div class="active-session-grid">
+      @for (session of sessions(); track session.id) {
+        <div class="active-session-card">
+          <div class="active-session-card-top">
+            <span class="live-dot live-dot-pulse" aria-hidden="true"></span>
+            <span class="stat-pill active-session-duration" title="Call duration so far">
+              <i class="fa-solid fa-clock" aria-hidden="true"></i>
+              {{ elapsedLabel(session) }}
+            </span>
+          </div>
+
+          <div class="active-session-info">
+            <strong>{{ session.customerName }}</strong>
+            <span class="text-muted text-sm">{{ session.phoneNumber }}</span>
+          </div>
+
+          <span
+            class="stat-pill active-session-direction"
+            [class.stat-pill-inbound]="session.direction === 'inbound'"
+            [class.stat-pill-outbound]="session.direction === 'outbound'"
+            title="Call direction"
+          >
+            <i class="fa-solid" [class.fa-arrow-down]="session.direction === 'inbound'" [class.fa-arrow-up]="session.direction === 'outbound'" aria-hidden="true"></i>
+            {{ session.direction === 'inbound' ? 'Inbound' : 'Outbound' }}
+          </span>
+
+          <div class="active-session-card-actions">
+            <button type="button" class="btn btn-secondary btn-sm active-session-view" (click)="onViewClick(session)">
+              <i class="fa-solid fa-comments" aria-hidden="true"></i> View
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm active-session-join"
+              [class.btn-primary]="!isJoining(session.id)"
+              [disabled]="isJoining(session.id)"
+              (click)="onJoinClick(session)"
+            >
+              @if (isJoining(session.id)) {
+                Joining…
+              } @else {
+                <i class="fa-solid fa-right-to-bracket" aria-hidden="true"></i> Join
+              }
+            </button>
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>
+
+@if (viewingSession(); as viewed) {
+  <app-live-call-modal [session]="viewed" (closed)="closeView()" (joinSession)="joinSession.emit($event)" />
+}

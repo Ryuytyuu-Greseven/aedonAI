@@ -1,0 +1,84 @@
+<div class="ap">
+  @if (!agentId) {
+    <div class="ap-empty">
+      <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i>
+      <p class="text-muted">Save this agent first to add properties.</p>
+    </div>
+  } @else {
+    @if (loading()) {
+      <div class="skeleton ap-skeleton"></div>
+      <div class="skeleton ap-skeleton"></div>
+    } @else if (properties().length === 0) {
+      <div class="ap-empty">
+        <i class="fa-solid fa-building" aria-hidden="true"></i>
+        <p class="text-muted">No properties yet. Add the listings this agent should pitch.</p>
+      </div>
+    } @else {
+      <ul class="ap-list">
+        @for (property of properties(); track property.id) {
+          <li class="ap-item">
+            <span class="ap-icon"><i class="fa-solid fa-building" aria-hidden="true"></i></span>
+            <span class="ap-text">
+              <strong>{{ property.name }}</strong>
+              @if (descriptionPreview(property); as preview) {
+                <small>{{ preview }}</small>
+              }
+            </span>
+            <div class="row-actions">
+              <button type="button" class="icon-action" [attr.aria-label]="'Edit ' + property.name" (click)="openEditForm(property)">
+                <i class="fa-solid fa-pen" aria-hidden="true"></i>
+                <span class="icon-action-tip">Edit</span>
+              </button>
+              <button type="button" class="icon-action ap-delete" [attr.aria-label]="'Delete ' + property.name" (click)="confirmDelete(property)">
+                <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+                <span class="icon-action-tip">Delete</span>
+              </button>
+            </div>
+          </li>
+        }
+      </ul>
+    }
+
+    <button type="button" class="ap-add" (click)="openAddForm()">
+      <i class="fa-solid fa-plus" aria-hidden="true"></i> Add property
+    </button>
+  }
+</div>
+
+@if (showFormModal) {
+  <app-modal
+    [title]="editTarget ? 'Edit property' : 'Add property'"
+    subtitle="Details the agent can use when pitching this listing."
+    [icon]="editTarget ? 'fa-pen' : 'fa-building'"
+    [width]="480"
+    (closed)="cancelForm()"
+  >
+    <div class="form-group">
+      <label class="label" for="property-name">Name</label>
+      <div class="icon-field">
+        <i class="fa-solid fa-signature" aria-hidden="true"></i>
+        <input id="property-name" type="text" class="input" [(ngModel)]="formName" placeholder="e.g. 3BHK Sea View Apartment" />
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="label" for="property-description">Description</label>
+      <textarea
+        id="property-description"
+        class="textarea"
+        rows="5"
+        [(ngModel)]="formDescription"
+        placeholder="Bedrooms, price, sqft, address, amenities — whatever's useful for the agent to know."
+      ></textarea>
+    </div>
+    @if (formError) {
+      <div class="alert-box" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ formError }}</div>
+    }
+    <ng-container ngProjectAs="[modal-footer]">
+      <button type="button" class="btn btn-ghost" (click)="cancelForm()">Cancel</button>
+      <button type="button" class="btn btn-primary" [disabled]="saving" (click)="submitForm()">
+        @if (saving) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Saving… }
+        @else { <i class="fa-solid fa-check" aria-hidden="true"></i> Save property }
+      </button>
+    </ng-container>
+  </app-modal>
+}

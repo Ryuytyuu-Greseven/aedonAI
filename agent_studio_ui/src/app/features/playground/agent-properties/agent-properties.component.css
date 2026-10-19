@@ -1,0 +1,108 @@
+.ap-skeleton {
+  height: 56px;
+  margin-bottom: 8px;
+  border-radius: 14px;
+}
+
+.ap-empty {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  border-radius: 14px;
+  background: var(--bg-tertiary);
+}
+
+.ap-empty i {
+  font-size: 16px;
+  color: var(--text-muted);
+}
+
+.ap-empty p {
+  margin: 0;
+  font-size: 12.5px;
+}
+
+.ap-list {
+  list-style: none;
+  display: grid;
+  gap: 8px;
+  margin: 0 0 10px;
+  padding: 0;
+}
+
+.ap-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 10px 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-secondary);
+  transition: border-color var(--transition);
+}
+
+.ap-item:hover {
+  border-color: var(--border-strong);
+}
+
+.ap-icon {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 11px;
+  color: var(--brand-3);
+  background: color-mix(in srgb, var(--brand-3) 14%, transparent);
+}
+
+.ap-text {
+  display: grid;
+  min-width: 0;
+  flex: 1;
+}
+
+.ap-text strong {
+  font-size: 13.5px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ap-text small {
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ap-delete {
+  --tone: var(--danger);
+}
+
+.ap-add {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px;
+  border: 1.5px dashed var(--border-strong);
+  border-radius: 14px;
+  background: transparent;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--transition), color var(--transition), background var(--transition);
+}
+
+.ap-add:hover {
+  border-color: var(--brand-1);
+  color: var(--accent);
+  background: color-mix(in srgb, var(--brand-1) 5%, transparent);
+}

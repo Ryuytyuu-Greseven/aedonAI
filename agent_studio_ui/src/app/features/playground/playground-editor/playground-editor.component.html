@@ -1,0 +1,404 @@
+<div class="pg-page list-page container">
+  <button type="button" class="pg-back" (click)="goBack()">
+    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back
+  </button>
+
+  @if (loading()) {
+    <section class="card pg-hero">
+      <div class="pg-hero-main">
+        <div class="skeleton pg-skeleton-icon"></div>
+        <div class="skeleton-lines">
+          <div class="skeleton pg-skeleton-title"></div>
+          <div class="skeleton skeleton-line short"></div>
+        </div>
+      </div>
+    </section>
+    <div class="skeleton pg-skeleton-tabs"></div>
+    <div class="pg-columns">
+      <div class="pg-main">
+        @for (i of [1, 2]; track i) {
+          <div class="card panel">
+            <div class="panel-body">
+              <div class="skeleton pg-skeleton-label"></div>
+              <div class="skeleton pg-skeleton-input"></div>
+              <div class="skeleton pg-skeleton-label"></div>
+              <div class="skeleton pg-skeleton-textarea"></div>
+            </div>
+          </div>
+        }
+      </div>
+      <aside class="pg-side">
+        <div class="card panel">
+          <div class="panel-body">
+            <div class="skeleton skeleton-line short"></div>
+            <div class="skeleton pg-skeleton-kb"></div>
+            <div class="skeleton pg-skeleton-kb"></div>
+          </div>
+        </div>
+      </aside>
+    </div>
+  } @else {
+    <!-- Hero -->
+    <section class="card pg-hero">
+      <div class="pg-hero-main">
+        <span class="pg-hero-icon"><i [class]="templateIconClass()" aria-hidden="true"></i></span>
+        <div class="pg-hero-text">
+          <div class="pg-title-row">
+            <h1>{{ form.controls.agent_name.value || template()?.name || 'New agent' }}</h1>
+            <span class="pg-status" [attr.data-status]="status()"><span></span>{{ status() }}</span>
+          </div>
+          <p class="pg-subtitle">
+            <span class="pg-template-chip"><i class="fa-solid fa-layer-group" aria-hidden="true"></i> {{ template()?.name }}</span>
+            {{ template()?.description }}
+          </p>
+        </div>
+      </div>
+
+      <div class="pg-hero-side">
+        <ol class="pg-lifecycle" aria-label="Agent lifecycle">
+          @for (step of lifecycle; track step; let i = $index) {
+            <li [class.pg-step-done]="i < lifecycleIndex()" [class.pg-step-now]="i === lifecycleIndex()">
+              <span class="pg-step-dot">
+                @if (i < lifecycleIndex()) { <i class="fa-solid fa-check" aria-hidden="true"></i> } @else { {{ i + 1 }} }
+              </span>
+              {{ step }}
+            </li>
+          }
+        </ol>
+        <div class="pg-hero-actions">
+          @if (agentId()) {
+            <button type="button" class="btn btn-secondary btn-sm" (click)="toggleHistoryPanel()">
+              <i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> History
+            </button>
+          }
+          @if (agentId() && status() === 'draft') {
+            <button type="button" class="btn btn-primary btn-sm" [disabled]="stagingAgent()" (click)="moveToStaging()">
+              @if (stagingAgent()) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Staging… }
+              @else { <i class="fa-solid fa-flask" aria-hidden="true"></i> Move to staging }
+            </button>
+          }
+          <!-- <button type="button" class="btn btn-secondary btn-sm" (click)="resetAll()">
+            <i class="fa-solid fa-arrow-rotate-left" aria-hidden="true"></i> Reset to default
+          </button> -->
+          <!-- <button type="button" class="btn btn-secondary btn-sm" [disabled]="cloning()" (click)="clone()">
+            <i class="fa-solid fa-copy" aria-hidden="true"></i> {{ cloning() ? 'Cloning…' : 'Clone' }}
+          </button> -->
+        </div>
+      </div>
+    </section>
+
+    @if (historyPanelOpen() && agentId()) {
+      <app-agent-history-panel
+        [agentId]="agentId()!"
+        [currentStageVersion]="currentStageVersion()"
+        (closed)="historyPanelOpen.set(false)"
+        (restore)="onRestoreVersion($event)"
+      />
+    }
+
+    <!-- Tabs -->
+    <div class="segmented pg-tabs" role="tablist" aria-label="Editor sections">
+      @for (tab of tabs; track tab.id) {
+        <button
+          type="button"
+          role="tab"
+          [class.segmented-on]="activeTab() === tab.id"
+          [attr.aria-selected]="activeTab() === tab.id"
+          (click)="selectTab(tab.id)"
+        >
+          <i class="fa-solid {{ tab.icon }}" aria-hidden="true"></i> {{ tab.label }}
+        </button>
+      }
+    </div>
+
+    <div class="pg-columns">
+      <div class="pg-main">
+        @if (activeTab() === 'build') {
+          <form [formGroup]="form" (ngSubmit)="save()" class="pg-tab-panel">
+            <!-- Basics -->
+            <section class="card panel">
+              <header class="panel-head">
+                <span class="panel-icon"><i class="fa-solid fa-id-card" aria-hidden="true"></i></span>
+                <div>
+                  <h2>Basics</h2>
+                  <p>Who the agent is, where it calls and how customers reach it.</p>
+                </div>
+              </header>
+              <div class="panel-body">
+                <div class="form-group">
+                  <span class="label">Agent mode</span>
+                  <div class="pg-mode-options" role="radiogroup" aria-label="Agent mode">
+                    @for (mode of agentModes; track mode) {
+                      <label class="pg-mode-option" [class.pg-mode-on]="form.controls.agent_mode.value === mode">
+                        <input type="radio" formControlName="agent_mode" [value]="mode" />
+                        <i class="fa-solid {{ agentModeIcons[mode] }}" aria-hidden="true"></i>
+                        <span>{{ agentModeLabels[mode] }}</span>
+                      </label>
+                    }
+                  </div>
+                </div>
+
+                <div class="pg-grid-3">
+                  <div class="form-group">
+                    <label class="label" for="language">Language</label>
+                    <select id="language" class="select" formControlName="language">
+                      @for (language of languages; track language.code) {
+                        <option [value]="language.code">{{ language.name }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="label" for="agent_country">Country</label>
+                    <select id="agent_country" class="select" formControlName="agent_country">
+                      <option value="">Select a country</option>
+                      @for (country of countryNames; track country) {
+                        <option [value]="country">{{ country }}</option>
+                      }
+                    </select>
+                  </div>
+                  <div class="form-group">
+                    <label class="label" for="phone_number_id">Phone number</label>
+                    <select id="phone_number_id" class="select" formControlName="phone_number_id">
+                      <option value="">
+                        {{ form.controls.agent_country.value ? 'Select a phone number' : 'Select a country first' }}
+                      </option>
+                      @for (number of availablePhoneNumbers(); track number.id) {
+                        <option [value]="number.id">{{ phoneNumberDisplayLabel(number) }}</option>
+                      }
+                    </select>
+                  </div>
+                </div>
+
+                <div class="form-group">
+                  <div class="pg-label-row">
+                    <label class="label" for="agent_name">Agent name</label>
+                    <button type="button" class="pg-reset" (click)="resetField('agent_name')"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Reset</button>
+                  </div>
+                  <div class="icon-field">
+                    <i class="fa-solid fa-robot" aria-hidden="true"></i>
+                    <input id="agent_name" type="text" class="input" formControlName="agent_name" />
+                  </div>
+                </div>
+
+                <div class="form-group pg-last">
+                  <div class="pg-label-row">
+                    <label class="label" for="greeting">Call greeting</label>
+                    <button type="button" class="pg-reset" (click)="resetField('greeting')"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Reset</button>
+                  </div>
+                  <div class="pg-bubble">
+                    <span class="pg-bubble-tag"><i class="fa-solid fa-volume-high" aria-hidden="true"></i> First thing callers hear</span>
+                    <textarea id="greeting" class="textarea" formControlName="greeting" rows="3"></textarea>
+                  </div>
+                </div>
+              </div>
+            </section>
+
+            <!-- Behaviour -->
+            <section class="card panel">
+              <header class="panel-head">
+                <span class="panel-icon"><i class="fa-solid fa-brain" aria-hidden="true"></i></span>
+                <div>
+                  <h2>Behavior</h2>
+                  <p>How the agent thinks, what it focuses on and how it should sound.</p>
+                </div>
+              </header>
+              <div class="panel-body">
+                <div class="form-group">
+                  <div class="pg-label-row">
+                    <label class="label" for="prompt">Behavior prompt</label>
+                    <button type="button" class="pg-reset" (click)="resetField('prompt')"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Reset</button>
+                  </div>
+                  <textarea id="prompt" class="textarea pg-prompt" formControlName="prompt" rows="7"></textarea>
+                </div>
+                <div class="form-group pg-last">
+                  <div class="pg-label-row">
+                    <label class="label" for="behavior">Behavior notes</label>
+                    <button type="button" class="pg-reset" (click)="resetField('behavior')"><i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Reset</button>
+                  </div>
+                  <textarea id="behavior" class="textarea" formControlName="behavior" rows="4"></textarea>
+                </div>
+              </div>
+            </section>
+
+            @if (template()?.referral_bonus_eligible) {
+              <section class="card panel">
+                <header class="panel-head">
+                  <span class="panel-icon panel-icon-warm"><i class="fa-solid fa-gift" aria-hidden="true"></i></span>
+                  <div>
+                    <h2>Referral bonus</h2>
+                    <p>The agent mentions this reward when asking callers to refer friends.</p>
+                  </div>
+                </header>
+                <div class="panel-body">
+                  <div class="pg-money">
+                    <select class="select" formControlName="referral_currency" aria-label="Referral bonus currency">
+                      @for (currency of currencies; track currency) {
+                        <option [value]="currency">{{ currency }}</option>
+                      }
+                    </select>
+                    <input type="number" min="0" class="input" formControlName="referral_amount" aria-label="Referral bonus amount" placeholder="0" />
+                  </div>
+                </div>
+              </section>
+            }
+
+            <div class="pg-actionbar">
+              <span class="pg-actionbar-hint">
+                <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+                @if (status() === 'draft') { Saving keeps this agent in Draft. }
+                @else { Saving moves this agent back to Draft and archives its current version. }
+              </span>
+              <button type="button" class="btn btn-ghost" (click)="cancel()">Cancel</button>
+              <button type="submit" class="btn btn-primary" [disabled]="saving()">
+                @if (saving()) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Saving… }
+                @else { <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save }
+              </button>
+            </div>
+          </form>
+        }
+
+        @if (activeTab() === 'integrations') {
+          <div class="pg-tab-panel">
+            <section class="card panel">
+              <header class="panel-head">
+                <span class="panel-icon"><i class="fa-solid fa-share-nodes" aria-hidden="true"></i></span>
+                <div>
+                  <h2>Export destinations</h2>
+                  <p>Where call outcomes and leads are sent when a call ends.</p>
+                </div>
+              </header>
+              <div class="panel-body">
+                <app-export-destinations [tools]="tools()" (toolsChange)="onToolsChange($event)" />
+              </div>
+            </section>
+            <div class="pg-actionbar">
+              <button type="button" class="btn btn-ghost" (click)="cancel()">Cancel</button>
+              <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="save()">
+                @if (saving()) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Saving… }
+                @else { <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save }
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (activeTab() === 'mcp-servers') {
+          <div class="pg-tab-panel">
+            <section class="card panel">
+              <header class="panel-head">
+                <span class="panel-icon"><i class="fa-solid fa-server" aria-hidden="true"></i></span>
+                <div>
+                  <h2>MCP servers</h2>
+                  <p>External tools the agent can call during a conversation.</p>
+                </div>
+              </header>
+              <div class="panel-body">
+                <app-mcp-servers-manager [mcpServers]="mcpServers()" (mcpServersChange)="onMcpServersChange($event)" />
+              </div>
+            </section>
+            <div class="pg-actionbar">
+              <button type="button" class="btn btn-ghost" (click)="cancel()">Cancel</button>
+              <button type="button" class="btn btn-primary" [disabled]="saving()" (click)="save()">
+                @if (saving()) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Saving… }
+                @else { <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save }
+              </button>
+            </div>
+          </div>
+        }
+
+        @if (activeTab() === 'preview') {
+          <div class="pg-tab-panel">
+            @if (agentId()) {
+              <app-preview-panel
+                [agentId]="agentId()!"
+                [business]="template()?.template_id"
+                (previewPassed)="onPreviewPassed()"
+              />
+            } @else {
+              <div class="card list-empty list-empty-compact">
+                <i class="fa-solid fa-floppy-disk list-empty-icon" aria-hidden="true"></i>
+                <h3>Save first</h3>
+                <p class="text-muted">Save this agent before previewing it.</p>
+              </div>
+            }
+            <div class="pg-actionbar">
+              <button type="button" class="btn btn-ghost" (click)="cancel()">Cancel</button>
+              <button type="button" class="btn btn-secondary" [disabled]="saving()" (click)="save()">
+                @if (saving()) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Saving… }
+                @else { <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save }
+              </button>
+              <button type="button" class="btn btn-primary pg-golive" (click)="openGoLiveModal()">
+                <i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i> Go live
+              </button>
+            </div>
+          </div>
+        }
+      </div>
+
+      <aside class="pg-side">
+        <section class="card panel">
+          <header class="panel-head">
+            <span class="panel-icon"><i class="fa-solid fa-book-open" aria-hidden="true"></i></span>
+            <div>
+              <h2>Knowledge base</h2>
+              <p>Reference material this agent can draw on.</p>
+            </div>
+          </header>
+          <div class="panel-body">
+            <app-agent-knowledge-bases [linkedIds]="knowledgeBaseIds()" (linkedIdsChange)="onKnowledgeBaseIdsChange($event)" />
+          </div>
+        </section>
+
+        @if (isRealEstateSales()) {
+          <section class="card panel">
+            <header class="panel-head">
+              <span class="panel-icon"><i class="fa-solid fa-building" aria-hidden="true"></i></span>
+              <div>
+                <h2>Properties</h2>
+                <p>Listings the agent can pitch on calls.</p>
+              </div>
+            </header>
+            <div class="panel-body">
+              <app-agent-properties [agentId]="agentId()" />
+            </div>
+          </section>
+        }
+      </aside>
+    </div>
+  }
+</div>
+
+@if (goLiveModalOpen()) {
+  <app-modal
+    title="Go live?"
+    subtitle="The agent becomes live and starts taking calls on the number you choose."
+    icon="fa-tower-broadcast"
+    tone="success"
+    [width]="460"
+    (closed)="cancelGoLive()"
+  >
+    <div class="form-group">
+      <label class="label" for="production_phone_number">Production phone number</label>
+      <div class="icon-field">
+        <i class="fa-solid fa-phone" aria-hidden="true"></i>
+        <select id="production_phone_number" class="select input" [value]="productionPhoneNumberId()" (change)="onProductionPhoneNumberChange($event)">
+          <option value="">Select a number</option>
+          @for (number of productionPhoneNumbers(); track number.id) {
+            <option [value]="number.id">{{ phoneNumberDisplayLabel(number) }}</option>
+          }
+        </select>
+      </div>
+      @if (productionPhoneNumbers().length === 0) {
+        <div class="note-box pg-golive-note">
+          <i class="fa-solid fa-circle-info" aria-hidden="true"></i> No production numbers found for this agent's country. Request one from Phone Numbers.
+        </div>
+      }
+    </div>
+    <ng-container ngProjectAs="[modal-footer]">
+      <button type="button" class="btn btn-ghost" (click)="cancelGoLive()">Cancel</button>
+      <button type="button" class="btn btn-primary" [disabled]="goingLive() || !productionPhoneNumberId()" (click)="confirmGoLive()">
+        @if (goingLive()) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Going live… }
+        @else { <i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i> Go live }
+      </button>
+    </ng-container>
+  </app-modal>
+}

@@ -1,0 +1,26 @@
+# Functional Requirements to build Lyre Ai Builder Mode:
+
+1) Navbar should be at the Right side of the screen. Just like edge browser, and it should be opened on hover and closed on coming out of it.
+2) Keep the dark/light theme switch at the top right side.
+3) Display the User profile at the right side top on hovering in navbar. If out of navbar, display just the First letter of the Name with in a hexagon design.
+4) Use fontawesome free icons package for angular where ever neccessary, also include the fontawesome min js file in angular json so it will be loaded and icons will work.
+5) Same way, try to use bootstrap if required for designs.
+6) Make sure the dashboard with active agents is the landing page after login.
+7) Point to remember: We have Realestate Sales agent, Survey conducting agent, Contact Centre agent, Alertinh agent, General talking agent.These are static agents we have .
+8) Add a screen as a playground, User can select the base agent and customise the prompt, it's behaviour, what actions it shall perform, how data shall be finally exported.
+9) We shall also maintaint he reset options to an agent, so if customer want a default agent, he can reset it.
+10) We are not providing of adding any additional nodes here in between static agent workflow, as they are spefic inhouse agents for general customers.
+11) These agents are voice agents by default, and over the call in any country.
+12) At final if customer wants to export the data to an API, we can ask the API and add it as a tool with tool description, so that all the data will be sent to that API.
+13) Same this data can be sent over to SMS or whatsapp or email, so that customer gets real time updates once the agebt is finished call and have something to update to customer(agent owner).
+14) There is also an option to generate the report for the Agent on a daily or weekly or monthly or from time to time intervals, so complete that particular durations call leads are generated as an excel from backend to frontend and downloaded and also sent to emails from backend itself also to whatsapp.
+15) Make sure we take the agent main behaviour, it's name, how the customer wants this agent to greet while calling. If nothing is provided, obviously we have our inhouse behaviour it will be reflected.
+16) Once agent is built, give the customer to test it in live, like a preview. So once customer clicks on preview we will draft the changes and store in backend by an api call(now it's dummy api call, mock it) and the agent gets invoked and responds to customer over call. If customer is satisfied, will launch the agent to live, if no again will edit the agent.
+17) Obviously we will list the drafted agents in playground under drafted section.
+18) same way, once customer creates the agent, either it's draft or live agent we will provide an option to clone the agent. Make sure, we clone and give the name as agentname + clone + count.
+19) Now, In Monitor Agents screen: once agents are live Customer can monitor the agents and their individual calls stats(not conversations, just leads) and how many calls they had taken or called in single day.
+20) We shall display these stats individual call wise in the agent. See on a max, customer might hvae 10 active agents and 50-100 calls individually per agent. So make the design alligent and robust.
+21) We will have Inbound calls and outband calls per every agent. Like if it's a contact centre we will have many inbound calls and if it's sales agent will have campaign calls.
+22) For sales agent, especially we shall take referal bonus value fromt the customer while building, so that we can use it while running the agent, so by mentioning it, clients might get intersted with referal bonus amount and will give their friend or others numbers. Also take the currency country liek USD, INR, AED, THAI BHATTS, POUND, EUROS, etc...
+
+** These are enough for now, will do few more once these are done. **

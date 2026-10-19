@@ -1,0 +1,117 @@
+<div class="meta-integration-section card">
+  <div class="card-header meta-integration-header">
+    <div class="meta-integration-title">
+      <i class="fa-brands fa-meta" aria-hidden="true"></i>
+      <span>Meta Integration</span>
+    </div>
+    @if (loading()) {
+      <span class="badge badge-inactive"><span class="badge-dot"></span>Checking…</span>
+    } @else if (connected()) {
+      <span class="badge badge-active"><span class="badge-dot"></span>Connected</span>
+    } @else {
+      <span class="badge badge-inactive"><span class="badge-dot"></span>Not connected</span>
+    }
+  </div>
+
+  <div class="card-body">
+    <p class="text-muted text-sm">
+      Connect your Meta Business account to bring Facebook/Instagram Pages into Aedon AI.
+    </p>
+
+    @if (loading()) {
+      <div class="meta-integration-pages">
+        <div class="skeleton skeleton-line"></div>
+        <div class="skeleton skeleton-line"></div>
+      </div>
+    } @else {
+      @if (!appIdConfigured) {
+        <p class="field-error meta-integration-config-warning">
+          Meta App ID is not configured — contact an engineer before connecting.
+        </p>
+      }
+
+      @if (!connected()) {
+        <button type="button" class="btn btn-primary" [disabled]="!appIdConfigured" (click)="connect()">
+          <i class="fa-brands fa-facebook" aria-hidden="true"></i> Connect to Meta
+        </button>
+      } @else {
+        @if ((pages()?.length ?? 0) === 0) {
+          <div class="empty-state meta-integration-empty">
+            <p>No Pages are available to connect on this Meta account.</p>
+          </div>
+        } @else {
+          <ul class="meta-integration-pages">
+            @for (page of pages(); track page.id) {
+              <li class="meta-integration-page">
+                <div class="meta-integration-page-info">
+                  <span class="meta-integration-page-name">{{ page.name }}</span>
+                  @if (agentName(page.linkedAgentId); as name) {
+                    <span class="text-muted text-sm">Assigned to {{ name }}</span>
+                  } @else {
+                    <span class="text-muted text-sm">Unassigned</span>
+                  }
+                </div>
+                <div class="meta-integration-page-actions">
+                  <span class="badge" [class.badge-active]="page.enabled" [class.badge-inactive]="!page.enabled">
+                    <span class="badge-dot"></span>{{ page.enabled ? 'Active' : 'Inactive' }}
+                  </span>
+                  <button type="button" class="btn btn-secondary btn-sm" (click)="openAssignModal(page)">
+                    {{ page.linkedAgentId ? 'Change Agent' : 'Assign Agent' }}
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-ghost btn-sm"
+                    [disabled]="pageTogglingId() === page.id"
+                    [attr.aria-label]="(page.enabled ? 'Disable ' : 'Enable ') + page.name"
+                    (click)="togglePage(page)"
+                  >
+                    {{ pageTogglingId() === page.id ? '…' : (page.enabled ? 'Disable' : 'Enable') }}
+                  </button>
+                </div>
+              </li>
+            }
+          </ul>
+        }
+
+        <div class="meta-integration-footer">
+          <button type="button" class="btn btn-ghost btn-sm meta-integration-disconnect" [disabled]="disconnecting()" (click)="disconnectAll()">
+            {{ disconnecting() ? 'Disconnecting…' : 'Disconnect Meta' }}
+          </button>
+        </div>
+      }
+    }
+  </div>
+</div>
+
+@if (assignModalPage(); as page) {
+  <div class="modal-overlay" (click)="closeAssignModal()" role="presentation">
+    <div class="modal card" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="assign-agent-title">
+      <div class="card-header" id="assign-agent-title">
+        <i class="fa-solid fa-user-tag" aria-hidden="true"></i> Assign Agent
+      </div>
+      <div class="card-body">
+        <p class="text-muted text-sm meta-integration-modal-subtitle">{{ page.name }}</p>
+        <div class="form-group">
+          <label class="label" for="assign-agent-select">Agent</label>
+          <select
+            id="assign-agent-select"
+            class="select"
+            [ngModel]="assignModalAgentId()"
+            (ngModelChange)="assignModalAgentId.set($event)"
+          >
+            <option value="">Unassigned</option>
+            @for (agent of modalAgentOptions(); track agent.id) {
+              <option [value]="agent.id">{{ agent.agent_name }}</option>
+            }
+          </select>
+        </div>
+        <div class="flex gap-sm modal-actions">
+          <button type="button" class="btn btn-primary btn-sm" [disabled]="assignSaving()" (click)="saveAssignModal()">
+            {{ assignSaving() ? 'Saving…' : 'Save' }}
+          </button>
+          <button type="button" class="btn btn-ghost btn-sm" [disabled]="assignSaving()" (click)="closeAssignModal()">Cancel</button>
+        </div>
+      </div>
+    </div>
+  </div>
+}

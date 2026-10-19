@@ -1,0 +1,61 @@
+<div class="tp-page list-page container">
+  <header class="page-head">
+    <div>
+      <span class="page-eyebrow"><i class="fa-solid fa-wand-magic-sparkles" aria-hidden="true"></i> Playground · New agent</span>
+      <h1>Choose a template</h1>
+      <p class="text-muted">Pick one of our in-house voice agents to start from, then customize it.</p>
+    </div>
+    <a routerLink="/playground/drafted" class="btn btn-secondary page-cta"><i class="fa-solid fa-file-pen" aria-hidden="true"></i> My drafts</a>
+  </header>
+
+  <ol class="tp-steps" aria-label="How it works">
+    <li class="tp-step-on"><span>1</span> Pick a template</li>
+    <li><span>2</span> Customize greeting, behaviour &amp; tools</li>
+    <li><span>3</span> Preview, then launch</li>
+  </ol>
+
+  @if (loading()) {
+    <div class="tp-grid">
+      @for (i of [1, 2, 3, 4, 5]; track i) {
+        <div class="card tp-card">
+          <div class="skeleton tp-skeleton-icon"></div>
+          <div class="skeleton skeleton-title"></div>
+          <div class="skeleton skeleton-line"></div>
+          <div class="skeleton skeleton-line short"></div>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="tp-grid">
+      @for (template of templates(); track template.template_id; let i = $index) {
+        <article
+          class="card tp-card"
+          [style.--i]="i"
+          (click)="selectTemplate(template)"
+          (keydown.enter)="selectTemplate(template)"
+          role="button"
+          tabindex="0"
+          [attr.aria-label]="'Use the ' + template.name + ' template'"
+        >
+          <div class="tp-card-top">
+            <span class="tp-icon"><i [class]="templateIcon(template)" aria-hidden="true"></i></span>
+            @if (template.referral_bonus_eligible) {
+              <span class="tp-badge"><i class="fa-solid fa-gift" aria-hidden="true"></i> Referral bonus</span>
+            }
+          </div>
+          <h3>{{ template.name }}</h3>
+          <p class="tp-desc">{{ template.description }}</p>
+
+          @if (template.default_greeting) {
+            <div class="tp-greeting">
+              <span class="tp-greeting-label"><i class="fa-solid fa-volume-high" aria-hidden="true"></i> Opens with</span>
+              <p>“{{ template.default_greeting }}”</p>
+            </div>
+          }
+
+          <span class="tp-cta">Use template <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+        </article>
+      }
+    </div>
+  }
+</div>

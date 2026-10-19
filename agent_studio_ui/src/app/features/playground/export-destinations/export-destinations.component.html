@@ -1,0 +1,92 @@
+<div class="xd">
+  @if (destinations.length === 0) {
+    <div class="xd-empty">
+      <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+      <p class="text-muted">No destinations yet. Add one below to receive call outcomes automatically.</p>
+    </div>
+  } @else {
+    <ul class="xd-list">
+      @for (tool of destinations; track tool.id) {
+        <li class="xd-item" [class.xd-item-editing]="editingId === tool.id" [attr.data-kind]="tool.kind">
+          <span class="xd-icon"><i [class]="kindMeta(tool).icon" aria-hidden="true"></i></span>
+          <span class="xd-text">
+            <strong>{{ kindMeta(tool).label }}</strong>
+            <small>{{ identifyingField(tool) }}</small>
+          </span>
+          <div class="row-actions">
+            <button type="button" class="icon-action" (click)="startEdit(tool)" [attr.aria-label]="'Edit ' + kindMeta(tool).label">
+              <i class="fa-solid fa-pen" aria-hidden="true"></i>
+              <span class="icon-action-tip">Edit</span>
+            </button>
+            <button type="button" class="icon-action xd-remove" (click)="remove(tool)" [attr.aria-label]="'Remove ' + kindMeta(tool).label">
+              <i class="fa-regular fa-trash-can" aria-hidden="true"></i>
+              <span class="icon-action-tip">Remove</span>
+            </button>
+          </div>
+        </li>
+      }
+    </ul>
+  }
+
+  <div class="xd-form">
+    <div class="xd-form-title">
+      <strong>{{ editingId ? 'Edit destination' : 'Add a destination' }}</strong>
+      @if (editingId) {
+        <button type="button" class="text-link" (click)="cancelEdit()"><i class="fa-solid fa-xmark" aria-hidden="true"></i> Cancel editing</button>
+      }
+    </div>
+
+    <div class="xd-kinds" role="radiogroup" aria-label="Destination type">
+      @for (k of kinds; track k.kind) {
+        <label class="xd-kind" [class.xd-kind-on]="formKind === k.kind" [attr.data-kind]="k.kind">
+          <input type="radio" name="dest-kind" [value]="k.kind" [(ngModel)]="formKind" />
+          <span class="xd-icon"><i [class]="k.icon" aria-hidden="true"></i></span>
+          <span class="xd-text">
+            <strong>{{ k.label }}</strong>
+            <small>{{ k.hint }}</small>
+          </span>
+        </label>
+      }
+    </div>
+
+    @if (needsUrl) {
+      <div class="xd-fields">
+        <div class="form-group">
+          <label class="label" for="dest-url">Webhook URL</label>
+          <div class="icon-field">
+            <i class="fa-solid fa-globe" aria-hidden="true"></i>
+            <input id="dest-url" type="text" class="input input-mono" [(ngModel)]="formUrl" placeholder="https://example.com/webhook" />
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="label" for="dest-description">Description</label>
+          <div class="icon-field">
+            <i class="fa-solid fa-align-left" aria-hidden="true"></i>
+            <input id="dest-description" type="text" class="input" [(ngModel)]="formDescription" placeholder="Sends lead data after each call" />
+          </div>
+        </div>
+      </div>
+    }
+
+    @if (needsRecipient) {
+      <div class="form-group">
+        <label class="label" for="dest-recipient">Recipient</label>
+        <div class="icon-field">
+          <i class="fa-solid" [class.fa-at]="formKind === 'email'" [class.fa-phone]="formKind !== 'email'" aria-hidden="true"></i>
+          <input id="dest-recipient" type="text" class="input" [(ngModel)]="formRecipient" [placeholder]="formKind === 'email' ? 'owner@example.com' : '+1 555 0100'" />
+        </div>
+      </div>
+    }
+
+    @if (error) {
+      <div class="alert-box" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ error }}</div>
+    }
+
+    <div class="xd-form-actions">
+      <button type="button" class="btn btn-secondary btn-sm" (click)="save()">
+        <i class="fa-solid" [class.fa-check]="editingId" [class.fa-plus]="!editingId" aria-hidden="true"></i>
+        {{ editingId ? 'Update destination' : 'Add destination' }}
+      </button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,87 @@
+<div class="hd-backdrop" (click)="close()" role="presentation">
+  <aside class="hd-drawer" (click)="$event.stopPropagation()" role="dialog" aria-modal="true" aria-labelledby="hd-title">
+    <header class="hd-head">
+      <span class="panel-icon"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i></span>
+      <div class="hd-titles">
+        <h2 id="hd-title">Version history</h2>
+        <p>Every staged version of this agent. Open one to compare or restore it.</p>
+      </div>
+      <button type="button" class="hd-close" (click)="close()" aria-label="Close history">
+        <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+      </button>
+    </header>
+
+    <div class="hd-body">
+      @if (loading()) {
+        @for (i of [1, 2, 3]; track i) {
+          <div class="hd-skeleton">
+            <div class="skeleton skeleton-line short"></div>
+            <div class="skeleton skeleton-line"></div>
+          </div>
+        }
+      } @else if (currentStageVersion <= 0) {
+        <div class="hd-empty">
+          <span><i class="fa-solid fa-flask" aria-hidden="true"></i></span>
+          <strong>No history yet</strong>
+          <p class="text-muted">History is tracked once this agent is staged.</p>
+        </div>
+      } @else if (versions().length === 0) {
+        <div class="hd-empty">
+          <span><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i></span>
+          <strong>No versions yet</strong>
+          <p class="text-muted">Save your agent to create the first version.</p>
+        </div>
+      } @else {
+        <ol class="hd-timeline">
+          @for (version of versions(); track version.id; let first = $first; let i = $index) {
+            <li [style.--i]="i">
+              <span class="hd-dot" [class.hd-dot-latest]="first"></span>
+              <button type="button" class="hd-version" (click)="selectVersion(version)">
+                <span class="hd-version-top">
+                  <span class="hd-version-no">v{{ version.versionNumber }}</span>
+                  <strong>{{ version.label }}</strong>
+                  @if (first) { <span class="hd-latest">Latest</span> }
+                </span>
+                <span class="hd-time"><i class="fa-regular fa-clock" aria-hidden="true"></i> {{ formatDate(version.timestamp) }}</span>
+                @if (version.summary) {
+                  <span class="hd-summary">{{ version.summary }}</span>
+                }
+                <span class="hd-open">Compare &amp; restore <i class="fa-solid fa-arrow-right" aria-hidden="true"></i></span>
+              </button>
+            </li>
+          }
+        </ol>
+      }
+    </div>
+  </aside>
+</div>
+
+@if (selectedVersion(); as version) {
+  <app-modal
+    [title]="'Version ' + version.versionNumber + ' — ' + version.label"
+    [subtitle]="formatDate(version.timestamp)"
+    icon="fa-code-compare"
+    [width]="620"
+    (closed)="closeDetail()"
+  >
+    @if (version.summary) {
+      <p class="hd-detail-summary">{{ version.summary }}</p>
+    }
+    <div class="hd-legend">
+      <span class="hd-legend-add">+ added</span>
+      <span class="hd-legend-del">− removed</span>
+      <span class="text-muted">compared with the previous version</span>
+    </div>
+    <div class="hd-diff">
+      @for (line of diffLines(); track $index) {
+        <div class="hd-diff-line hd-diff-{{ line.status }}">{{ line.value }}</div>
+      }
+    </div>
+    <ng-container ngProjectAs="[modal-footer]">
+      <button type="button" class="btn btn-ghost" (click)="closeDetail()">Close</button>
+      <button type="button" class="btn btn-primary" (click)="restoreVersion(version)">
+        <i class="fa-solid fa-rotate-left" aria-hidden="true"></i> Restore this version
+      </button>
+    </ng-container>
+  </app-modal>
+}

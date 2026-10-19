@@ -1,0 +1,289 @@
+/* Account menu: circular avatar trigger + profile dropdown (hover on desktop, click/tap everywhere). */
+:host {
+  --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+
+.avatar-wrapper {
+  position: relative;
+}
+
+/* Invisible bridge so the hover menu doesn't close while crossing the gap */
+.avatar-wrapper::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  height: 12px;
+}
+
+.avatar-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  height: 42px;
+  padding: 0 12px 0 5px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: inherit;
+  cursor: pointer;
+  transition: background var(--transition), border-color var(--transition);
+}
+
+.avatar-trigger:hover,
+.avatar-expanded .avatar-trigger {
+  background: var(--bg-hover);
+  border-color: var(--border-color);
+}
+
+.avatar-circle {
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--gradient-brand);
+  color: #fff;
+  font-family: var(--font-display);
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.avatar-trigger-name {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.avatar-caret {
+  font-size: 10px;
+  color: var(--text-muted);
+  transition: transform 0.35s var(--spring);
+}
+
+.avatar-panel {
+  position: absolute;
+  top: calc(100% + 10px);
+  right: 0;
+  width: 290px;
+  padding: 8px;
+  z-index: 2;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-strong);
+  border-radius: 18px;
+  box-shadow: var(--shadow-md);
+  transform-origin: top right;
+  opacity: 0;
+  visibility: hidden;
+  transform: translateY(-6px) scale(0.94);
+  transition:
+    opacity 0.2s var(--ease),
+    transform 0.35s var(--spring),
+    visibility 0s linear 0.35s;
+}
+
+/* Open state (hover on desktop, click/tap anywhere) */
+.avatar-expanded .avatar-panel {
+  opacity: 1;
+  visibility: visible;
+  transform: none;
+  transition:
+    opacity 0.2s var(--ease),
+    transform 0.35s var(--spring),
+    visibility 0s;
+}
+
+.avatar-expanded .avatar-caret {
+  transform: rotate(180deg);
+}
+
+@media (hover: hover) and (min-width: 768px) {
+  .avatar-wrapper:hover .avatar-panel {
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    transition:
+      opacity 0.2s var(--ease),
+      transform 0.35s var(--spring),
+      visibility 0s;
+  }
+
+  .avatar-wrapper:hover .avatar-caret {
+    transform: rotate(180deg);
+  }
+}
+
+.avatar-panel-head {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 16px 14px;
+  margin-bottom: 6px;
+  border-radius: 12px;
+  overflow: hidden;
+  background:
+    radial-gradient(160px 90px at 0% 0%, rgba(124, 108, 255, 0.22), transparent 70%),
+    radial-gradient(160px 90px at 100% 100%, rgba(34, 211, 197, 0.16), transparent 70%),
+    var(--bg-tertiary);
+}
+
+.avatar-circle-lg {
+  width: 48px;
+  height: 48px;
+  font-size: 19px;
+}
+
+.avatar-panel-identity {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.avatar-panel-identity strong {
+  font-size: 14px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.avatar-email {
+  font-size: 12px;
+  color: var(--text-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.avatar-role {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 4px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.03em;
+  background: var(--info-bg);
+  color: var(--info);
+}
+
+.avatar-role-admin {
+  background: rgba(255, 138, 92, 0.14);
+  color: var(--brand-3);
+}
+
+.avatar-menu {
+  display: grid;
+  gap: 2px;
+}
+
+.avatar-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 10px 12px;
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-primary);
+  font-family: inherit;
+  font-size: 13.5px;
+  font-weight: 500;
+  text-align: left;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background var(--transition), color var(--transition);
+}
+
+.avatar-menu-item:hover {
+  background: var(--bg-hover);
+  text-decoration: none;
+}
+
+.avatar-menu-item > i {
+  width: 18px;
+  text-align: center;
+  color: var(--text-secondary);
+  transition: transform 0.3s var(--spring), color var(--transition);
+}
+
+.avatar-menu-item:hover > i {
+  color: var(--brand-1);
+  transform: scale(1.15);
+}
+
+.avatar-menu-hint {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--text-muted);
+}
+
+.avatar-logout {
+  margin-top: 6px;
+  border-top: 1px solid var(--border-color);
+  border-radius: 0 0 10px 10px;
+  color: var(--danger);
+}
+
+.avatar-logout > i,
+.avatar-logout:hover > i {
+  color: var(--danger);
+}
+
+.avatar-logout:hover {
+  background: var(--danger-bg);
+}
+
+/* Menu rows cascade in each time the panel opens */
+.avatar-panel .avatar-menu-item {
+  opacity: 0;
+  transform: translateY(4px);
+  transition:
+    opacity 0.25s var(--ease),
+    transform 0.3s var(--ease),
+    background var(--transition);
+}
+
+.avatar-expanded .avatar-menu-item {
+  opacity: 1;
+  transform: none;
+  transition-delay: calc(60ms + var(--i, 0) * 35ms), calc(60ms + var(--i, 0) * 35ms), 0s;
+}
+
+@media (hover: hover) and (min-width: 768px) {
+  .avatar-wrapper:hover .avatar-menu-item {
+    opacity: 1;
+    transform: none;
+    transition-delay: calc(60ms + var(--i, 0) * 35ms), calc(60ms + var(--i, 0) * 35ms), 0s;
+  }
+}
+
+@media (max-width: 900px) {
+  .avatar-trigger-name {
+    display: none;
+  }
+}
+
+@media (max-width: 640px) {
+  .avatar-caret {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :host *,
+  :host *::before,
+  :host *::after {
+    transition-duration: 0.01ms !important;
+  }
+}

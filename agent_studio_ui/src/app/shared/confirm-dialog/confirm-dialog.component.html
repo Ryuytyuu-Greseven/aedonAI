@@ -1,0 +1,17 @@
+@if (confirmDialogService.request(); as request) {
+  <app-modal
+    [title]="request.title"
+    [icon]="request.tone === 'danger' ? 'fa-triangle-exclamation' : 'fa-circle-question'"
+    [tone]="request.tone"
+    [width]="420"
+    (closed)="cancel()"
+  >
+    <p class="confirm-copy">{{ request.message }}</p>
+    <ng-container ngProjectAs="[modal-footer]">
+      <button type="button" class="btn btn-ghost" (click)="cancel()">{{ request.cancelLabel }}</button>
+      <button type="button" class="btn" [class.btn-danger]="request.tone === 'danger'" [class.btn-primary]="request.tone !== 'danger'" (click)="confirm()">
+        {{ request.confirmLabel }}
+      </button>
+    </ng-container>
+  </app-modal>
+}

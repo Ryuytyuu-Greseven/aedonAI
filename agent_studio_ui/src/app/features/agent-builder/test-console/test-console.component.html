@@ -1,0 +1,105 @@
+<div class="test-console card">
+  <div class="card-header console-header">
+    <span>Simulation Console</span>
+    <div class="console-controls">
+      <label class="text-sm">
+        Scenario
+        <select class="select select-sm" [(ngModel)]="scenario">
+          @for (s of scenarios; track s[0]) {
+            <option [value]="s[0]">{{ s[1] }}</option>
+          }
+        </select>
+      </label>
+      <label class="text-sm">
+        Start from node
+        <select class="select select-sm" [(ngModel)]="startNodeId">
+          <option [ngValue]="null">First node</option>
+          @for (node of agent.nodes; track node.id) {
+            <option [ngValue]="node.id">{{ node.name }}</option>
+          }
+        </select>
+      </label>
+      @if (agent.enable_voice) {
+        <label class="toggle toggle-sm">
+          <input type="checkbox" [(ngModel)]="voiceInput" />
+          <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          <span class="text-sm">Simulate Voice</span>
+        </label>
+      }
+    </div>
+  </div>
+  <div class="card-body console-body">
+    <div class="message-log" #logRef>
+      @if (traces().length === 0) {
+        <div class="empty-state">
+          <p>Enter a message and send to simulate agent execution.</p>
+        </div>
+      }
+      @for (block of traces(); track $index; let bi = $index) {
+        <div class="exchange">
+          <div class="message message-user">
+            @if (block.userMessage.isVoice) {
+              <span class="voice-tag">🎤 [Voice]</span>
+            }
+            {{ block.userMessage.text }}
+          </div>
+          @for (step of block.steps; track $index; let si = $index) {
+            <div class="trace-entry">
+              <div class="trace-node-name">▶ {{ step.nodeName }}</div>
+              <button
+                type="button"
+                class="trace-toggle btn btn-ghost btn-sm"
+                (click)="toggleStep(stepKey(bi, si))"
+              >
+                {{ expandedStep === stepKey(bi, si) ? 'Hide' : 'Show' }} prompt
+              </button>
+              @if (expandedStep === stepKey(bi, si)) {
+                <pre class="trace-prompt text-sm">{{ step.prompt }}</pre>
+              }
+              @for (call of step.toolCalls; track call.toolName) {
+                <details class="tool-call">
+                  <summary class="text-sm">Tool: {{ call.toolName }}</summary>
+                  <pre class="text-sm text-mono">Args: {{ call.args | json }}</pre>
+                  @if (call.error) {
+                    <p class="text-sm error-text">{{ call.error }}</p>
+                  } @else {
+                    <pre class="text-sm text-mono">Return: {{ call.output }}</pre>
+                  }
+                </details>
+              }
+              <p class="trace-output text-sm">{{ step.output }}</p>
+            </div>
+          }
+          <div class="message message-agent">
+            <span class="message-label">Agent</span>
+            {{ block.finalResponse }}
+          </div>
+        </div>
+      }
+      @if (running()) {
+        <div class="message message-system">Processing…</div>
+      }
+    </div>
+    <div class="console-input">
+      @if (agent.enable_voice && voiceInput) {
+        <span class="mic-icon" title="Voice input">🎤</span>
+      }
+      <input
+        class="input"
+        [(ngModel)]="userInput"
+        placeholder="Type a test message…"
+        (keydown.enter)="runSimulation()"
+        [disabled]="running()"
+      />
+      <button
+        type="button"
+        class="btn btn-primary"
+        (click)="runSimulation()"
+        [disabled]="running() || !userInput.trim()"
+      >
+        Send
+      </button>
+      <button type="button" class="btn btn-ghost" (click)="clearConsole()">Clear console</button>
+    </div>
+  </div>
+</div>

@@ -1,0 +1,47 @@
+<div class="monitor-list container">
+  <div class="monitor-list-header">
+    <h1>Monitor Agents</h1>
+    <p class="text-muted">Call activity for your live agents.</p>
+  </div>
+
+  @if (loading()) {
+    <div class="agent-grid">
+      @for (i of [1, 2, 3]; track i) {
+        <div class="card skeleton-card">
+          <div class="skeleton skeleton-title"></div>
+          <div class="skeleton skeleton-line"></div>
+        </div>
+      }
+    </div>
+  } @else if (monitored().length === 0) {
+    <div class="empty-state card">
+      <h3>No live agents yet</h3>
+      <p>Go live with an agent from the Playground to start monitoring its calls.</p>
+      <a routerLink="/playground/new" class="btn btn-primary">Create your first agent</a>
+    </div>
+  } @else {
+    <div class="agent-grid">
+      @for (item of monitored(); track item.agent.id) {
+        <div
+          class="card monitor-card"
+          (click)="openAgent(item.agent.id)"
+          role="button"
+          tabindex="0"
+          (keydown.enter)="openAgent(item.agent.id)"
+        >
+          <div class="card-body">
+            <div class="monitor-card-top">
+              <h3>{{ item.agent.agent_name }}</h3>
+              <span class="live-pill"><span class="live-dot"></span>Live</span>
+            </div>
+            <div class="total-figure">
+              <span class="total-value">{{ item.stats.total }}</span>
+              <span class="total-label text-muted">calls · last 14 days</span>
+            </div>
+            <app-call-split-bar [inbound]="item.stats.inbound" [outbound]="item.stats.outbound" />
+          </div>
+        </div>
+      }
+    </div>
+  }
+</div>

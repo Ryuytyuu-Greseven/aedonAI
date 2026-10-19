@@ -1,0 +1,95 @@
+@if (!agentId) {
+  <p class="text-muted text-sm">Save the agent to start a preview chat.</p>
+} @else if (!started()) {
+  <div class="chat-intro">
+    <span class="chat-intro-icon"><i class="fa-solid fa-comments" aria-hidden="true"></i></span>
+    <p class="text-muted text-sm chat-intro-text">
+      Chat with your agent and watch it respond in real time before going live.
+    </p>
+    <button type="button" class="btn btn-primary" (click)="startChat()">
+      <i class="fa-solid fa-comments" aria-hidden="true"></i> Start Chat
+    </button>
+  </div>
+} @else {
+  <div class="chat-window surface-1">
+    <div class="chat-header">
+      <span class="chat-avatar chat-avatar-agent"><i class="fa-solid fa-robot" aria-hidden="true"></i></span>
+      <div class="chat-header-meta">
+        <strong class="chat-header-name">Agent</strong>
+        <span class="chat-header-status">
+          @if (agentTyping()) {
+            <span class="chat-status-dot chat-status-dot-typing"></span> typing…
+          } @else if (sessionEnded()) {
+            <span class="chat-status-dot chat-status-dot-ended"></span> ended
+          } @else {
+            <span class="chat-status-dot chat-status-dot-online"></span> online
+          }
+        </span>
+      </div>
+    </div>
+
+    <div class="chat-scroll">
+      @for (entry of transcript(); track entry.id) {
+        <div class="chat-row" [class.chat-row-agent]="entry.speaker === 'agent'" [class.chat-row-you]="entry.speaker === 'customer'">
+          @if (entry.speaker === 'agent') {
+            <span class="chat-avatar chat-avatar-agent chat-avatar-sm"><i class="fa-solid fa-robot" aria-hidden="true"></i></span>
+          }
+          <div class="chat-bubble">
+            <p class="chat-bubble-text">{{ entry.text }}</p>
+            <span class="chat-bubble-time">{{ formatTime(entry.at) }}</span>
+          </div>
+          @if (entry.speaker === 'customer') {
+            <span class="chat-avatar chat-avatar-you chat-avatar-sm"><i class="fa-solid fa-user" aria-hidden="true"></i></span>
+          }
+        </div>
+      }
+
+      @if (agentTyping()) {
+        <div class="chat-row chat-row-agent">
+          <span class="chat-avatar chat-avatar-agent chat-avatar-sm"><i class="fa-solid fa-robot" aria-hidden="true"></i></span>
+          <div class="chat-bubble chat-bubble-typing" aria-label="Agent is typing">
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+            <span class="typing-dot"></span>
+          </div>
+        </div>
+      }
+    </div>
+
+    <div class="chat-composer">
+      <input
+        type="text"
+        class="chat-input"
+        [(ngModel)]="messageDraft"
+        placeholder="Type a message…"
+        aria-label="Chat message"
+        [disabled]="sessionEnded()"
+        (keydown.enter)="sendMessage()"
+      />
+      <button
+        type="button"
+        class="chat-send"
+        [disabled]="!messageDraft.trim() || sessionEnded()"
+        (click)="sendMessage()"
+        aria-label="Send message"
+      >
+        <i class="fa-solid fa-paper-plane" aria-hidden="true"></i>
+      </button>
+    </div>
+  </div>
+
+  <div class="flex gap-sm chat-end-row">
+    @if (sessionEnded()) {
+      <button type="button" class="btn btn-secondary btn-sm" (click)="startNewChat()">
+        <i class="fa-solid fa-rotate-right" aria-hidden="true"></i> New Chat
+      </button>
+      <p class="text-sm preview-status-success">
+        <i class="fa-solid fa-circle-check" aria-hidden="true"></i> Chat completed successfully.
+      </p>
+    } @else {
+      <button type="button" class="btn btn-primary btn-sm" [disabled]="!canEndChat" (click)="endChat()">
+        End Chat
+      </button>
+    }
+  </div>
+}

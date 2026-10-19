@@ -1,0 +1,20 @@
+.admin-settings {
+  padding: 32px 24px;
+  margin: 25px;
+  background: color-mix(in srgb, var(--bg-secondary) 82%, transparent);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+.admin-settings-header {
+  margin-bottom: 24px;
+}
+
+.admin-settings-header h1 {
+  margin: 0 0 4px;
+  background: linear-gradient(135deg, var(--text-primary), var(--accent));
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}

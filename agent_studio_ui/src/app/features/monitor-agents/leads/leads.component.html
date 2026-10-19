@@ -1,0 +1,151 @@
+<div class="leads">
+  <div class="leads-toggle" role="tablist">
+    <button type="button" class="leads-toggle-btn" [class.leads-toggle-active]="view() === 'agent'" (click)="setView('agent')">
+      Agent Leads
+    </button>
+    <button type="button" class="leads-toggle-btn" [class.leads-toggle-active]="view() === 'page'" (click)="setView('page')">
+      Page Leads
+    </button>
+  </div>
+
+  @if (view() === 'agent') {
+    @if (agentLoading()) {
+      <div class="lead-list">
+        @for (i of [1, 2, 3]; track i) {
+          <div class="card lead-card">
+            <div class="skeleton skeleton-line short"></div>
+            <div class="skeleton skeleton-line"></div>
+            <div class="skeleton skeleton-line"></div>
+          </div>
+        }
+      </div>
+    } @else if (agentLeads().length === 0) {
+      <div class="empty-state">
+        <p>No agent leads yet. Leads appear here once a call results in a "lead" outcome.</p>
+      </div>
+    } @else {
+      <div class="lead-list">
+        @for (lead of agentLeads(); track $index) {
+          <div class="card lead-card">
+            <div class="lead-header">
+              <div class="lead-who">
+                <strong>{{ lead.customer_name ?? 'Unknown caller' }}</strong>
+                <span class="text-muted text-sm">{{ lead.phone_number }}</span>
+              </div>
+              @if (lead.outcome || lead.qualification) {
+                <div class="lead-badges">
+                  @if (lead.outcome) {
+                    <span
+                      class="badge lead-badge-outcome"
+                      [class.lead-badge-success]="lead.outcome === 'success'"
+                      [class.lead-badge-drop]="lead.outcome === 'drop'"
+                      [title]="lead.outcome === 'success' ? 'Added to Actions' : 'Not added to Actions'"
+                    >
+                      <span class="badge-dot"></span>{{ lead.outcome === 'success' ? 'Success' : 'Drop' }}
+                    </span>
+                  }
+                  @if (lead.qualification) {
+                    <span
+                      class="badge"
+                      [class.badge-active]="lead.qualification === 'qualified'"
+                      [class.badge-inactive]="lead.qualification === 'unqualified'"
+                      [class.lead-badge-follow-up]="lead.qualification === 'needs_follow_up'"
+                    >
+                      {{ qualificationLabel(lead.qualification) }}
+                    </span>
+                  }
+                </div>
+              }
+            </div>
+
+            @if (lead.intent_summary) {
+              <p class="lead-summary text-sm">{{ lead.intent_summary }}</p>
+            }
+
+            @if (lead.follow_up_action) {
+              <div class="lead-action">
+                <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+                <span>{{ lead.follow_up_action }}</span>
+              </div>
+            }
+
+            <div class="lead-footer">
+              <span class="text-muted text-sm">Captured {{ formatDateTime(lead.created_at) }}</span>
+              @if (lead.call) {
+                <button type="button" class="btn btn-secondary btn-sm" (click)="viewCall(lead)">View call</button>
+              }
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="flex justify-between items-center leads-pagination">
+        <span class="text-muted text-sm">{{ agentTotal() }} lead{{ agentTotal() === 1 ? '' : 's' }} · Page {{ agentPage() }} of {{ agentTotalPages() }}</span>
+        <div class="flex gap-sm">
+          <button type="button" class="btn btn-secondary btn-sm" [disabled]="agentPage() === 1" (click)="prevAgentLeadsPage()">Previous</button>
+          <button type="button" class="btn btn-secondary btn-sm" [disabled]="agentPage() === agentTotalPages()" (click)="nextAgentLeadsPage()">Next</button>
+        </div>
+      </div>
+    }
+  } @else {
+    @if (pageLoading()) {
+      <div class="lead-list">
+        @for (i of [1, 2]; track i) {
+          <div class="card lead-card">
+            <div class="skeleton skeleton-line short"></div>
+            <div class="skeleton skeleton-line"></div>
+          </div>
+        }
+      </div>
+    } @else if (pageLeads().length === 0) {
+      <div class="empty-state">
+        <p>No Page leads yet. Leads appear here as Facebook form submissions come in on any connected Page.</p>
+      </div>
+    } @else {
+      <div class="lead-list">
+        @for (lead of pageLeads(); track $index) {
+          <div class="card lead-card">
+            <div class="lead-header">
+              <div class="lead-who">
+                <strong>{{ lead.full_name }}</strong>
+                <span class="text-muted text-sm">{{ lead.phone_number }}</span>
+              </div>
+              <span class="badge badge-inactive">{{ pageName(lead.page_id) }}</span>
+            </div>
+
+            <p class="lead-summary text-sm">{{ lead.email }}</p>
+
+            @if (customFieldEntries(lead).length > 0) {
+              <div class="lead-custom-fields">
+                @for (entry of customFieldEntries(lead); track entry[0]) {
+                  <span class="lead-custom-field"><span class="text-muted">{{ entry[0] }}:</span> {{ entry[1] }}</span>
+                }
+              </div>
+            }
+
+            <div class="lead-footer">
+              <span class="text-muted text-sm">Submitted {{ formatDateTime(lead.submitted_at) }}</span>
+              <span
+                class="badge lead-call-attempts"
+                [class.badge-active]="lead.call_attempts_count > 0"
+                [class.badge-inactive]="lead.call_attempts_count === 0"
+                [title]="lead.call_attempts_count + ' agent call attempt' + (lead.call_attempts_count === 1 ? '' : 's') + ' for this lead'"
+              >
+                <i class="fa-solid fa-phone" aria-hidden="true"></i>
+                {{ callAttemptsLabel(lead) }}
+              </span>
+            </div>
+          </div>
+        }
+      </div>
+
+      <div class="flex justify-between items-center leads-pagination">
+        <span class="text-muted text-sm">{{ pageTotal() }} lead{{ pageTotal() === 1 ? '' : 's' }} · Page {{ pagePage() }} of {{ pageTotalPages() }}</span>
+        <div class="flex gap-sm">
+          <button type="button" class="btn btn-secondary btn-sm" [disabled]="pagePage() === 1" (click)="prevPageLeadsPage()">Previous</button>
+          <button type="button" class="btn btn-secondary btn-sm" [disabled]="pagePage() === pageTotalPages()" (click)="nextPageLeadsPage()">Next</button>
+        </div>
+      </div>
+    }
+  }
+</div>

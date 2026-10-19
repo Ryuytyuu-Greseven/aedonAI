@@ -1,0 +1,80 @@
+.inspector {
+  padding: 16px;
+}
+
+.inspector h3 {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-secondary);
+  margin-bottom: 16px;
+}
+
+.tool-checklist {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.tool-check {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.tool-check input {
+  margin-top: 3px;
+}
+
+.connections-info {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.char-count {
+  display: block;
+  text-align: right;
+  margin-top: 4px;
+}
+
+.link-btn {
+  border: none;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+  font: inherit;
+  text-decoration: underline;
+  padding: 0;
+}
+
+.history-section {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-color);
+}
+
+.history-entry {
+  padding: 8px 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.history-compare {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.compare-text {
+  font-size: 11px;
+  background: var(--bg-tertiary);
+  padding: 8px;
+  border-radius: var(--radius-sm);
+  max-height: 100px;
+  overflow: auto;
+  white-space: pre-wrap;
+  margin: 4px 0 0;
+}

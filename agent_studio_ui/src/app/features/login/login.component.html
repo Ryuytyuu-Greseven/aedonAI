@@ -1,0 +1,57 @@
+<app-auth-layout>
+  <h1 class="login-heading">Welcome back</h1>
+  <p class="text-muted login-subtitle">Sign in to your account to continue</p>
+
+  <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="login-form">
+    <div class="form-group">
+      <label class="label" for="email">Email</label>
+      <div class="login-input-wrap">
+        <i class="fa-solid fa-envelope login-input-icon" aria-hidden="true"></i>
+        <input
+          id="email"
+          type="email"
+          class="input login-input"
+          formControlName="email"
+          autocomplete="false"
+          placeholder="you@company.com"
+        />
+      </div>
+      @if (form.controls.email.invalid && form.controls.email.touched) {
+        <p class="caption field-error">Enter a valid email address.</p>
+      }
+    </div>
+
+    <div class="form-group">
+      <label class="label" for="password">Password</label>
+      <div class="login-input-wrap">
+        <i class="fa-solid fa-lock login-input-icon" aria-hidden="true"></i>
+        <input
+          id="password"
+          type="password"
+          class="input login-input"
+          formControlName="password"
+          autocomplete="false"
+          placeholder="••••••••"
+        />
+      </div>
+      @if (form.controls.password.invalid && form.controls.password.touched) {
+        <p class="caption field-error">Password is required.</p>
+      }
+    </div>
+
+    <div class="login-link-row">
+      <a class="login-link" routerLink="/forgot-password" [queryParams]="emailQueryParams()">Forgot password?</a>
+    </div>
+
+    @if (error()) {
+      <p class="caption field-error">{{ error() }}</p>
+    }
+
+    <button type="submit" class="btn btn-primary login-submit" [disabled]="loading()">
+      @if (loading()) {
+        <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i>
+      }
+      {{ loading() ? 'Signing in…' : 'Sign in' }}
+    </button>
+  </form>
+</app-auth-layout>

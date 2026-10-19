@@ -1,0 +1,215 @@
+@if (loading()) {
+  <div class="monitor-detail container">
+    <div class="monitor-detail-header">
+      <div class="skeleton detail-skeleton-back-link"></div>
+      <div class="skeleton detail-skeleton-title"></div>
+      <div class="skeleton detail-skeleton-subtitle"></div>
+    </div>
+    <div class="skeleton detail-skeleton-tabs"></div>
+    <div class="stat-hero-row">
+      @for (i of [1, 2, 3]; track i) {
+        <div class="card stat-hero-card">
+          <div class="skeleton skeleton-line short"></div>
+          <div class="skeleton detail-skeleton-stat-value"></div>
+        </div>
+      }
+    </div>
+    <div class="card chart-card">
+      <div class="skeleton detail-skeleton-chart"></div>
+    </div>
+  </div>
+} @else if (agent()) {
+  @let currentAgent = agent()!;
+  <div class="monitor-detail container">
+    <div class="monitor-detail-header">
+      <a routerLink="/monitor" class="back-link text-sm"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to Monitor Agents</a>
+      <div class="monitor-detail-title">
+        <h1>{{ currentAgent.agent_name }}</h1>
+        <span class="live-pill"><span class="live-dot"></span>Live</span>
+      </div>
+      <p class="text-muted">Last 14 days of call activity</p>
+    </div>
+
+    <div class="tabs monitor-tabs">
+      <button type="button" class="tab" [class.tab-active]="activeTab() === 'overview'" (click)="setTab('overview')">
+        Overview
+      </button>
+      <button type="button" class="tab" [class.tab-active]="activeTab() === 'call-log'" (click)="setTab('call-log')">
+        Call Log
+      </button>
+      <!-- Active Sessions and Actions tabs are hidden for now — see the MonitorTab note in monitor-detail.component.ts -->
+      <button type="button" class="tab" [class.tab-active]="activeTab() === 'leads'" (click)="setTab('leads')">
+        Leads
+      </button>
+      <button type="button" class="tab" [class.tab-active]="activeTab() === 'reports'" (click)="setTab('reports')">
+        Reports
+      </button>
+    </div>
+
+    @if (stats(); as stats) {
+      @if (activeTab() === 'overview') {
+        @let today = todayStats()!;
+        <div class="overview-row">
+          <div class="card stat-ring-card">
+            <span class="stat-ring-today-badge">Today</span>
+
+            <div class="stat-ring-body">
+              <div class="stat-ring-wrap">
+                <svg class="stat-ring" viewBox="0 0 160 160" width="160" height="160" role="img"
+                  [attr.aria-label]="'Today: inbound is ' + inboundSharePct() + '% of ' + todayTotal() + ' total calls: ' + today.inbound + ' inbound, ' + today.outbound + ' outbound'">
+                  <circle class="stat-ring-track" cx="80" cy="80" r="52" />
+                  <circle class="stat-ring-arc stat-ring-arc-inbound" cx="80" cy="80" r="52"
+                    [style.stroke-dasharray]="inboundArc().dasharray" [style.stroke-dashoffset]="inboundArc().dashoffset" />
+                  <circle class="stat-ring-arc stat-ring-arc-outbound" cx="80" cy="80" r="52"
+                    [style.stroke-dasharray]="outboundArc().dasharray" [style.stroke-dashoffset]="outboundArc().dashoffset" />
+                </svg>
+
+                @if (today.inbound > 0) {
+                  <span class="stat-ring-pct stat-ring-pct-inbound" [style.left.%]="inboundLabelPos().left" [style.top.%]="inboundLabelPos().top">
+                    {{ inboundSharePct() }}%
+                  </span>
+                }
+                @if (today.outbound > 0) {
+                  <span class="stat-ring-pct stat-ring-pct-outbound" [style.left.%]="outboundLabelPos().left" [style.top.%]="outboundLabelPos().top">
+                    {{ outboundSharePct() }}%
+                  </span>
+                }
+
+                <div class="stat-ring-center">
+                  <i class="fa-solid fa-phone-volume stat-ring-icon" aria-hidden="true"></i>
+                  <span class="stat-ring-value">{{ todayTotal() }}</span>
+                  <span class="stat-ring-label">total calls</span>
+                </div>
+              </div>
+
+              <div class="stat-ring-legend">
+                <div class="stat-ring-legend-item">
+                  <span class="stat-label"><span class="series-dot series-dot-inbound"></span>Inbound</span>
+                  <span class="stat-ring-legend-value">{{ today.inbound }}</span>
+                </div>
+                <div class="stat-ring-legend-item">
+                  <span class="stat-label"><span class="series-dot series-dot-outbound"></span>Outbound</span>
+                  <span class="stat-ring-legend-value">{{ today.outbound }}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="card active-sessions-summary-card">
+            <div class="active-sessions-summary-icon">
+              <i class="fa-solid fa-headset" aria-hidden="true"></i>
+            </div>
+            <div class="active-sessions-summary-body">
+              <span class="active-sessions-summary-value">{{ activeSessionsCount() }}</span>
+              <span class="active-sessions-summary-label">Active Sessions</span>
+            </div>
+          </div>
+
+          <div class="card chart-card">
+            <div class="chart-card-header">
+              <button type="button" class="btn btn-secondary btn-sm btn-icon" [disabled]="!canGoBack()" (click)="goBack()" aria-label="Show previous 10 days">
+                <i class="fa-solid fa-chevron-left" aria-hidden="true"></i>
+              </button>
+              <span class="chart-window-label">{{ chartWindowLabel() }} <span class="text-muted">· 10 days</span></span>
+              <button type="button" class="btn btn-secondary btn-sm btn-icon" [disabled]="!canGoForward()" (click)="goForward()" aria-label="Show next 10 days">
+                <i class="fa-solid fa-chevron-right" aria-hidden="true"></i>
+              </button>
+            </div>
+
+            <div class="chart">
+              <div class="chart-gridlines">
+                @for (line of gridlineSteps(); track line) {
+                  <div class="chart-gridline" [style.bottom.%]="gridlineOffset(line)">
+                    <span class="chart-gridline-label">{{ line }}</span>
+                  </div>
+                }
+              </div>
+              @for (day of visibleDays(); track day.date) {
+                <div class="chart-bar">
+                  <div
+                    class="chart-segment-inbound"
+                    [style.height.%]="segmentHeight(day.inbound)"
+                    [title]="formatDay(day.date) + ': ' + day.inbound + ' inbound'"
+                  ></div>
+                  <div
+                    class="chart-segment-outbound"
+                    [style.height.%]="segmentHeight(day.outbound)"
+                    [title]="formatDay(day.date) + ': ' + day.outbound + ' outbound'"
+                  ></div>
+                </div>
+              }
+            </div>
+            <div class="chart-x-axis">
+              @for (day of visibleDays(); track day.date) {
+                <span class="chart-x-label">{{ formatDayShort(day.date) }}</span>
+              }
+            </div>
+          </div>
+        </div>
+
+        <details class="breakdown-details">
+          <summary>View as table</summary>
+          <div class="breakdown-table-wrap">
+            <table class="breakdown-table">
+              <caption class="sr-only">Daily inbound and outbound call breakdown</caption>
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col">Inbound</th>
+                  <th scope="col">Outbound</th>
+                  <th scope="col">Total Calls</th>
+                  <th scope="col">Total Mins</th>
+                </tr>
+              </thead>
+              <tbody>
+                @for (day of visibleDays(); track day.date) {
+                  <tr>
+                    <td>{{ formatDay(day.date) }}</td>
+                    <td>{{ day.inbound }}</td>
+                    <td>{{ day.outbound }}</td>
+                    <td>{{ day.inbound + day.outbound }}</td>
+                    <td>{{ 30  }} mins</td>
+                  </tr>
+                }
+              </tbody>
+            </table>
+          </div>
+        </details>
+      } @else if (activeTab() === 'reports') {
+        <div class="card reports-card">
+          <div class="card-body">
+            <app-agent-reports [agentId]="currentAgent.id" [agentName]="currentAgent.agent_name" />
+          </div>
+        </div>
+      } @else if (activeTab() === 'call-log') {
+        <div class="card call-log-card">
+          <div class="card-body">
+            <app-call-log [agentId]="currentAgent.id" (openCall)="openCall($event)" />
+          </div>
+        </div>
+      } @else if (activeTab() === 'active-sessions') {
+        <div class="card active-sessions-card">
+          <div class="card-body">
+            <app-active-sessions [agentId]="currentAgent.id" (joinSession)="onJoinSession($event)" />
+          </div>
+        </div>
+      } @else if (activeTab() === 'actions') {
+        <div class="card action-items-card">
+          <div class="card-body">
+            <app-action-items [agentId]="currentAgent.id" (openCall)="openCall($event)" />
+          </div>
+        </div>
+      } @else {
+        <div class="card leads-card">
+          <div class="card-body">
+            <app-leads [agentId]="currentAgent.id" (openCall)="openCall($event)" />
+          </div>
+        </div>
+      }
+    }
+  </div>
+
+  @if (selectedCall(); as call) {
+    <app-call-detail-modal [record]="call" (closed)="closeCallDetail()" />
+  }
+}
