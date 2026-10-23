@@ -348,13 +348,18 @@
           </div>
         </section>
 
-        @if (isRealEstateSales()) {
+        @if (isSalesAgent()) {
           <section class="card panel">
             <header class="panel-head">
               <span class="panel-icon"><i class="fa-solid fa-building" aria-hidden="true"></i></span>
               <div>
-                <h2>Properties</h2>
-                <p>Listings the agent can pitch on calls.</p>
+                @if (template()?.template_id === 'real_estate_sales') {
+                  <h2>Properties</h2>
+                  <p>Listings the agent can pitch on calls.</p>
+                } @else {
+                  <h2>Products</h2>
+                  <p>Products the agent can pitch on calls.</p>
+                }
               </div>
             </header>
             <div class="panel-body">

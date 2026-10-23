@@ -21,6 +21,8 @@ export class AgentPropertiesComponent implements OnChanges {
 
   /** `null` until the agent has been saved at least once — properties require a real agent id. */
   @Input({ required: true }) agentId: string | null = null;
+  /** Monitor view: list only — hides add/edit/delete (editing stays in the playground). */
+  @Input() readOnly = false;
 
   readonly loading = signal(true);
   readonly properties = signal<Property[]>([]);

@@ -1,0 +1,270 @@
+.product-stats {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+
+/* ── Products (read-only list) ───────────────────────── */
+
+.products-panel {
+  padding: 0;
+}
+
+.products-panel-head {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 16px 20px;
+  cursor: pointer;
+  list-style: none;
+}
+
+.products-panel-head::-webkit-details-marker {
+  display: none;
+}
+
+.products-panel-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  border-radius: var(--radius-md);
+  background: var(--accent-muted);
+  color: var(--accent);
+}
+
+.products-panel-title {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+}
+
+.products-panel-chevron {
+  color: var(--text-muted);
+  transition: transform var(--transition);
+}
+
+.products-panel[open] .products-panel-chevron {
+  transform: rotate(180deg);
+}
+
+.products-panel-body {
+  padding: 0 20px 20px;
+}
+
+/* ── Stats table ─────────────────────────────────────── */
+
+.stats-card {
+  padding: 20px;
+}
+
+.stats-card-head h3 {
+  margin: 0 0 4px;
+}
+
+.stats-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 12px;
+  margin: 16px 0;
+}
+
+.stats-toolbar .form-group {
+  margin-bottom: 0;
+}
+
+.stats-search-group {
+  flex: 1;
+  min-width: 200px;
+  max-width: 320px;
+}
+
+.range-toggle {
+  display: inline-flex;
+  gap: 4px;
+  padding: 4px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.range-toggle-btn {
+  padding: 6px 12px;
+  border: none;
+  background: transparent;
+  border-radius: calc(var(--radius-md) - 2px);
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.range-toggle-btn:hover {
+  color: var(--text-primary);
+}
+
+.range-toggle-active {
+  background: var(--bg-primary);
+  color: var(--accent);
+  box-shadow: var(--shadow-sm);
+}
+
+.stats-hint {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  margin-bottom: 12px;
+  border-radius: var(--radius-md);
+  background: var(--info-bg);
+  color: var(--info);
+}
+
+.table-scroll {
+  overflow-x: auto;
+}
+
+.stats-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.stats-table th {
+  text-align: left;
+  padding: 0;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.stats-table td {
+  padding: 10px;
+  border-bottom: 1px solid var(--border-color);
+  white-space: nowrap;
+}
+
+.stats-table tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.stats-table .num {
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+  padding: 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font: inherit;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.stats-table th.num .sort-btn {
+  justify-content: flex-end;
+}
+
+.sort-btn:hover,
+.sort-btn:focus-visible {
+  color: var(--text-primary);
+}
+
+.sort-icon {
+  font-size: 11px;
+  opacity: 0.4;
+}
+
+.sort-icon-active {
+  opacity: 1;
+  color: var(--accent);
+}
+
+th[aria-sort='ascending'] .sort-btn,
+th[aria-sort='descending'] .sort-btn {
+  color: var(--text-primary);
+}
+
+.product-cell {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  max-width: 200px;
+  white-space: normal;
+}
+
+.product-cell small {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.enquiry-count {
+  font-weight: 600;
+}
+
+.row-quiet td {
+  color: var(--text-muted);
+}
+
+.row-quiet .product-cell strong {
+  color: var(--text-secondary);
+}
+
+.stats-skeleton-cell {
+  height: 14px;
+  width: 70%;
+}
+
+.stats-pagination {
+  margin-top: 12px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+@media (max-width: 640px) {
+  .stats-card {
+    padding: 16px;
+  }
+
+  .stats-toolbar .form-group {
+    flex: 1 1 100%;
+    max-width: none;
+    min-width: 0;
+  }
+
+  .range-toggle {
+    width: 100%;
+  }
+
+  .range-toggle-btn {
+    flex: 1;
+    min-width: 0;
+    padding: 6px 4px;
+    font-size: 12px;
+  }
+
+  .products-panel-head {
+    padding: 14px 16px;
+  }
+
+  .products-panel-title small {
+    display: none;
+  }
+
+  .products-panel-body {
+    padding: 0 12px 12px;
+  }
+}

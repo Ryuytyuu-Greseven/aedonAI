@@ -39,9 +39,7 @@ import { AgentKnowledgeBasesComponent } from '../agent-knowledge-bases/agent-kno
 import { AgentPropertiesComponent } from '../agent-properties/agent-properties.component';
 import { PreviewPanelComponent } from '../preview-panel/preview-panel.component';
 import { ModalComponent } from '../../../shared/modal/modal.component';
-
-/** Real backend template id for Real Estate Sales — confirmed live, not the stale id in agent-templates.mock.ts. */
-const REAL_ESTATE_SALES_TEMPLATE_ID = 'real_estate_sales';
+import { isSalesTemplate } from '../../../shared/constants/agent-templates.constant';
 
 type PlaygroundField = 'agent_name' | 'greeting' | 'prompt' | 'behavior';
 type EditorTab = 'build' | 'integrations' | 'mcp-servers' | 'preview';
@@ -127,7 +125,7 @@ export class PlaygroundEditorComponent implements OnInit {
     const status = this.status();
     return status === 'disabled' ? LIFECYCLE.length - 1 : LIFECYCLE.indexOf(status);
   });
-  readonly isRealEstateSales = computed(() => this.template()?.template_id === REAL_ESTATE_SALES_TEMPLATE_ID);
+  readonly isSalesAgent = computed(() => isSalesTemplate(this.template()?.template_id));
   readonly agentId = signal<string | null>(null);
   readonly status = signal<AgentStatus>('draft');
   readonly currentStageVersion = signal(0);

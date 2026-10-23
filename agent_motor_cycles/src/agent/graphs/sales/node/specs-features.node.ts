@@ -3,6 +3,7 @@ import { SalesState } from '../state/sales.state';
 import { llmInstance } from './../../../llms/google.llm';
 import * as Prompts from '../prompt/sales.prompts';
 import { retrieveSpecsFeaturesContext } from '../tool/rag.tools';
+import { recordProductEnquiry } from '../tool/product-enquiry.store';
 
 // Specs & Features — grounded primarily by Pinecone knowledge-base retrieval (see
 // vectorsearch.md); falls back to whatever the model's own free-text
@@ -11,6 +12,8 @@ import { retrieveSpecsFeaturesContext } from '../tool/rag.tools';
 export async function Specs_Features_Node(state: SalesState) {
   const promptText = await Prompts.getPrompt('specs_features', state.currentLanguage);
   const focusProp = state.properties[state.currentPropertyIndex ?? 0];
+  // Product Stats: asking about a model's specs is an enquiry about it.
+  void recordProductEnquiry(state, focusProp, 'discussed');
 
   const structuredContext = focusProp
     ? `\n\nModel: ${focusProp.name}\nDetails on file: ${focusProp.description ?? 'none — speak generally and offer to have the showroom team confirm details.'}`

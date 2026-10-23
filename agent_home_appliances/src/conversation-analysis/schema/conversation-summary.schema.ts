@@ -36,6 +36,10 @@ export class ConversationSummary extends Document {
   @Prop({ type: [String], default: [] })
   propertiesDiscussed: string[];
 
+  /** `sales_properties` ids matching propertiesDiscussed (unknown names dropped). */
+  @Prop({ type: [String], default: [] })
+  propertiesDiscussedIds: string[];
+
   @Prop({ type: [String], default: [] })
   amenitiesOrFacilitiesRequested: string[];
 

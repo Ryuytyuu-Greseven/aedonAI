@@ -24,6 +24,17 @@ export const SalesStateAnnotation = Annotation.Root({
   sessionId: Annotation<string>(),
   customerId: Annotation<string>(),
   customerPhNo: Annotation<string>(),
+  // Call-log id (Twilio/Exotel CallSid, or the webrtc session id) and whether
+  // this is real traffic or a playground preview — both sent by the gateway
+  // on every turn; only used to tag product enquiry events.
+  callId: Annotation<string | null>({
+    reducer: (left, right) => right ?? left,
+    default: () => null,
+  }),
+  channel: Annotation<'live' | 'preview' | null>({
+    reducer: (left, right) => right ?? left,
+    default: () => null,
+  }),
   extractedJson: Annotation<object>(),
   // The full agentDetails payload from the socket, kept as its own channel
   // (not just the derived scalars below) so any IAgent field is available to

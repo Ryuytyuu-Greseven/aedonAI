@@ -1,6 +1,6 @@
 #!/bin/bash
 
-SERVICE_NAME=${SERVICE_NAME:-"lyreai-agent-sales-agent"}
+SERVICE_NAME=${SERVICE_NAME:-"lyreai-agent-motorcycles-sales-agent"}
 REGION=${REGION:-"asia-south1"}
 PROJECT_ID=$(gcloud config get-value project 2>/dev/null)
 

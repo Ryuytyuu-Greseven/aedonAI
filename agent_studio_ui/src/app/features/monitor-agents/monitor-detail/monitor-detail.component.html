@@ -34,6 +34,11 @@
       <button type="button" class="tab" [class.tab-active]="activeTab() === 'overview'" (click)="setTab('overview')">
         Overview
       </button>
+      @if (isSalesAgent()) {
+        <button type="button" class="tab" [class.tab-active]="activeTab() === 'product-stats'" (click)="setTab('product-stats')">
+          Product Stats
+        </button>
+      }
       <button type="button" class="tab" [class.tab-active]="activeTab() === 'call-log'" (click)="setTab('call-log')">
         Call Log
       </button>
@@ -175,6 +180,8 @@
             </table>
           </div>
         </details>
+      } @else if (activeTab() === 'product-stats') {
+        <app-product-stats [agentId]="currentAgent.id" />
       } @else if (activeTab() === 'reports') {
         <div class="card reports-card">
           <div class="card-body">

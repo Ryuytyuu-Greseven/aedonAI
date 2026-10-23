@@ -11,7 +11,11 @@
     } @else if (properties().length === 0) {
       <div class="ap-empty">
         <i class="fa-solid fa-building" aria-hidden="true"></i>
-        <p class="text-muted">No properties yet. Add the listings this agent should pitch.</p>
+        @if (readOnly) {
+          <p class="text-muted">No products on file for this agent. Add them from the agent's Playground.</p>
+        } @else {
+          <p class="text-muted">No properties yet. Add the listings this agent should pitch.</p>
+        }
       </div>
     } @else {
       <ul class="ap-list">
@@ -24,6 +28,7 @@
                 <small>{{ preview }}</small>
               }
             </span>
+            @if (!readOnly) {
             <div class="row-actions">
               <button type="button" class="icon-action" [attr.aria-label]="'Edit ' + property.name" (click)="openEditForm(property)">
                 <i class="fa-solid fa-pen" aria-hidden="true"></i>
@@ -34,18 +39,21 @@
                 <span class="icon-action-tip">Delete</span>
               </button>
             </div>
+            }
           </li>
         }
       </ul>
     }
 
-    <button type="button" class="ap-add" (click)="openAddForm()">
-      <i class="fa-solid fa-plus" aria-hidden="true"></i> Add property
-    </button>
+    @if (!readOnly) {
+      <button type="button" class="ap-add" (click)="openAddForm()">
+        <i class="fa-solid fa-plus" aria-hidden="true"></i> Add property
+      </button>
+    }
   }
 </div>
 
-@if (showFormModal) {
+@if (showFormModal && !readOnly) {
   <app-modal
     [title]="editTarget ? 'Edit property' : 'Add property'"
     subtitle="Details the agent can use when pitching this listing."

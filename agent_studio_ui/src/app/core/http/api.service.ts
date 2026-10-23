@@ -11,8 +11,10 @@ import { ApiUser, UserProfileResponse } from '../models/profile.model';
 import { MetaPage } from '../models/meta-integration.model';
 import { AgentLead, LeadsPage, LeadsQuery, PageLead } from '../models/lead.model';
 import { CreatePropertyInput, Property, UpdatePropertyInput } from '../models/property.model';
+import { ProductStatsPage, ProductStatsQuery } from '../models/product-stats.model';
 import { ApiEndpoints } from './api-config';
 import { ApiProperty, fromApiProperty, toCreatePropertyRequest, toUpdatePropertyRequest } from './property-mapper';
+import { ApiProductStatsResponse, fromApiProductStatsResponse } from './product-stats-mapper';
 import {
   ApiConnectedPageResponse,
   ApiGetPagesResponse,
@@ -230,6 +232,21 @@ export class ApiService {
     return this.http
       .get<ApiLeadsResponse<ApiAgentLead>>(ApiEndpoints.agents.leads(agentId), { params })
       .pipe(map(fromApiAgentLeadsResponse));
+  }
+
+  getProductStats(agentId: string, query: ProductStatsQuery = {}): Observable<ProductStatsPage> {
+    const params: Record<string, string | number> = {};
+    if (query.page !== undefined) params['page'] = query.page;
+    if (query.limit !== undefined) params['limit'] = query.limit;
+    if (query.search) params['search'] = query.search;
+    if (query.fromDate) params['fromDate'] = query.fromDate;
+    if (query.toDate) params['toDate'] = query.toDate;
+    if (query.sort) params['sort'] = query.sort;
+    if (query.order) params['order'] = query.order;
+
+    return this.http
+      .get<ApiProductStatsResponse>(ApiEndpoints.agents.productStats(agentId), { params })
+      .pipe(map(fromApiProductStatsResponse));
   }
 
   // ── Sales properties (Real Estate Sales agents only) ─────

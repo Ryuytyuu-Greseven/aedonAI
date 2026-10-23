@@ -14,6 +14,8 @@ interface LiveSession {
   companyId: string | null;
   customerId: string | null;
   customerPhone: string | null;
+  callId: string | null;
+  channel: 'live' | 'preview' | null;
   transcript: ConversationTurn[];
 }
 
@@ -37,6 +39,8 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
       companyId: null,
       customerId: null,
       customerPhone: null,
+      callId: null,
+      channel: null,
       transcript: [],
     });
 
@@ -51,7 +55,9 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
           session.agentId = msg.agentDetails?.id ?? msg.agentDetails?.agent_id ?? session.agentId;
           session.companyId = msg.agentDetails?.companyId ?? session.companyId;
           session.customerId = msg.customerId ?? session.customerId;
-          session.customerPhone = msg.customerPhNo ?? session.customerPhone;
+          session.customerPhone = msg.customerPhNo || session.customerPhone;
+          session.callId = msg.callId ?? session.callId;
+          session.channel = msg.channel ?? session.channel;
           // The sentinel that kicks off the greeting isn't something the
           // customer actually said — keep it out of the transcript.
           if (typeof msg.text === 'string' && msg.text !== 'SYSTEM_START_CONVERSATION') {
@@ -102,6 +108,8 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
           companyId: session.companyId,
           customerId: session.customerId,
           customerPhone: session.customerPhone,
+          callId: session.callId,
+          channel: session.channel,
         })
         .catch((err) => this.logger.error('Failed to enqueue conversation for analysis:', err));
     }

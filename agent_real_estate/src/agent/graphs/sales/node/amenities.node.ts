@@ -3,6 +3,7 @@ import { SalesState } from '../state/sales.state';
 import { llmInstance } from './../../../llms/google.llm';
 import * as Prompts from '../prompt/sales.prompts';
 import { retrieveAmenitiesContext } from '../tool/rag.tools';
+import { recordProductEnquiry } from '../tool/product-enquiry.store';
 
 // Amenities — grounded primarily by Pinecone knowledge-base retrieval (see
 // vectorsearch.md); falls back to whatever the property's own free-text
@@ -11,6 +12,8 @@ import { retrieveAmenitiesContext } from '../tool/rag.tools';
 export async function Amenities_Node(state: SalesState) {
   const promptText = await Prompts.getPrompt('amenities', state.currentLanguage);
   const focusProp = state.properties[state.currentPropertyIndex ?? 0];
+  // Product Stats: asking about a property's amenities is an enquiry about it.
+  void recordProductEnquiry(state, focusProp, 'discussed');
 
   const structuredContext = focusProp
     ? `\n\nProperty: ${focusProp.name}\nDetails on file: ${focusProp.description ?? 'none — speak generally and offer to confirm details with a specialist.'}`

@@ -18,6 +18,7 @@ import { AuthenticatedUser } from '../common/interfaces/user.interface';
 import { AgentsService } from './agents.service';
 import { CreateAgentDto } from './dto/create-agent.dto';
 import { GoLiveDto } from './dto/go-live.dto';
+import { ListProductStatsQueryDto } from './dto/list-product-stats-query.dto';
 import { UpdateAgentDto } from './dto/update-agent.dto';
 
 @UseGuards(JwtAuthGuard)
@@ -98,6 +99,15 @@ export class AgentsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.agentsService.listLeads(id, user.companyId, query);
+  }
+
+  @Get(':id/product-stats')
+  productStats(
+    @Param('id') id: string,
+    @Query() query: ListProductStatsQueryDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.agentsService.productStats(id, user.companyId, query);
   }
 
   @Delete(':id')

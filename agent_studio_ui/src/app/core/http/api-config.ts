@@ -61,6 +61,8 @@ export const ApiEndpoints = {
     historyByAgentId: (agentId: string) => `/agents/by-agent-id/${agentId}/history`,
     /** Real, thin shape — no qualification/intent/follow-up/call linkage. See backend-openspec/specs/leads/spec.md. */
     leads: (id: string) => `/agents/${id}/leads`,
+    /** Per-product enquiry stats for sales agents — see agent_studio_server change add-product-enquiry-stats. */
+    productStats: (id: string) => `/agents/${id}/product-stats`,
   },
 
   calls: {

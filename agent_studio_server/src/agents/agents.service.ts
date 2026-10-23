@@ -14,14 +14,21 @@ import { AgentLeadsRepository } from '../repos/agent-leads.repository';
 import { AgentsRepository } from '../repos/agents.repository';
 import { KnowledgeBasesRepository } from '../repos/knowledge-bases.repository';
 import { LiveAgentsRepository } from '../repos/live-agents.repository';
+import {
+  ProductEnquiriesRepository,
+  ProductStatsRow,
+} from '../repos/product-enquiries.repository';
 import { CreateAgentDto } from './dto/create-agent.dto';
 import { GoLiveDto } from './dto/go-live.dto';
+import { ListProductStatsQueryDto } from './dto/list-product-stats-query.dto';
 import { UpdateAgentDto } from './dto/update-agent.dto';
 import { Agent, AgentDocument } from '../schemas/agent.schema';
 import { AgentLead } from '../schemas/agent-leads.schema';
 import { LiveAgent, LiveAgentDocument } from '../schemas/live-agent.schema';
 
 const MAX_CLONE_RETRIES = 5;
+const DEFAULT_PRODUCT_STATS_RANGE_DAYS = 14;
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 function escapeRegExp(value: string): string {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -53,6 +60,7 @@ export class AgentsService {
     private readonly agentHistoriesRepository: AgentHistoriesRepository,
     private readonly knowledgeBasesRepository: KnowledgeBasesRepository,
     private readonly agentLeadsRepository: AgentLeadsRepository,
+    private readonly productEnquiriesRepository: ProductEnquiriesRepository,
     private readonly templatesService: TemplatesService,
   ) { }
 
@@ -427,6 +435,47 @@ export class AgentsService {
       page: query.page ?? 1,
       limit: query.limit ?? 20,
     };
+  }
+
+  /**
+   * Per-product enquiry counts for this agent's `sales_properties` over a date
+   * range (default: last 14 days) — every product is listed, including ones
+   * with no enquiries. Preview-channel traffic is excluded; see
+   * `product_enquiries` collection.
+   */
+  async productStats(
+    id: string,
+    companyId: string | null,
+    query: ListProductStatsQueryDto,
+  ): Promise<{
+    items: ProductStatsRow[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
+    const agent = await this.findById(id, companyId);
+    const to = query.toDate ? new Date(query.toDate) : new Date();
+    const from = query.fromDate
+      ? new Date(query.fromDate)
+      : new Date(to.getTime() - DEFAULT_PRODUCT_STATS_RANGE_DAYS * DAY_MS);
+    if (from > to) {
+      throw new BadRequestException('fromDate must be on or before toDate');
+    }
+    const page = query.page ?? 1;
+    const limit = query.limit ?? 20;
+
+    const { items, total } =
+      await this.productEnquiriesRepository.aggregateStatsForAgent({
+        agentId: String(agent._id),
+        from,
+        to,
+        search: query.search,
+        sort: query.sort ?? 'enquiries',
+        order: query.order ?? 'desc',
+        page,
+        limit,
+      });
+    return { items, total, page, limit };
   }
 
   /**

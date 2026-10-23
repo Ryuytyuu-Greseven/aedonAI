@@ -29,6 +29,7 @@ export interface ConversationSummaryInput {
   sentiment: 'positive' | 'neutral' | 'negative' | null;
   budgetMentioned: string | null;
   propertiesDiscussed: string[];
+  propertiesDiscussedIds: string[];
   amenitiesOrFacilitiesRequested: string[];
   otherInterests: string[];
   nextSteps: string | null;

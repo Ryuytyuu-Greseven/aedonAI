@@ -1,6 +1,7 @@
 import WebSocket from 'ws';
 import { Injectable, Logger } from '@nestjs/common';
 import { UserConfig } from '../types/assistant.types';
+import { CallChannel } from '../../call-logs/interfaces/call-log.interface';
 import { getAgentUrl } from '../../common/config/business-agents.registry';
 import { CallLogService } from '../../call-logs/services/call-log.service';
 import { AgentsRepository } from '../../call-logs/repositories/agents.repository';
@@ -86,10 +87,12 @@ export class AgentRouterService {
         agentDetails,
         sessionId,
         threadId: sessionId,
+        callId,
+        channel: resolveChannel(config),
         systemInstruction: config.systemInstruction ?? '',
         business: config.business ?? '',
         customerId: '',
-        customerPhNo: '',
+        customerPhNo: config.phoneNumber ?? '',
         language: effectiveLanguage,
       }),
     );
@@ -158,4 +161,13 @@ export class AgentRouterService {
       if (ws.readyState === WebSocket.OPEN) ws.close();
     }
   }
+}
+
+/**
+ * Playground traffic is 'preview': explicitly tagged phone previews, and every
+ * webrtc session (real customer calls only ever arrive via Twilio/Exotel).
+ */
+export function resolveChannel(config: UserConfig): CallChannel {
+  if (config.channel === 'preview') return 'preview';
+  return (config.provider ?? 'webrtc') === 'webrtc' ? 'preview' : 'live';
 }

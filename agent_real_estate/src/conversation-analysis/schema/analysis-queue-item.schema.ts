@@ -26,6 +26,12 @@ export class AnalysisQueueItem extends Document {
   @Prop({ type: String, default: null })
   customerPhone: string | null;
 
+  @Prop({ type: String, default: null })
+  callId: string | null;
+
+  @Prop({ type: String, default: null })
+  channel: 'live' | 'preview' | null;
+
   @Prop({ default: 0 })
   attempts: number;
 

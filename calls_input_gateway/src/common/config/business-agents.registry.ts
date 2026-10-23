@@ -19,7 +19,13 @@ export const BUSINESS_AGENT_URLS: Record<string, string> = {
   bank_contact_centre: process.env.BANK_CONTACT_CENTER ?? 'ws://localhost:4010',
   healthcare_agent: process.env.HEALTHCARE_CENTER ?? 'ws://localhost:4011',
   lovebyt: process.env.LOVEBYT_AGENT_URL ?? 'ws://localhost:4005',
+  // The three sales agents — keyed by their agent_studio template id, which
+  // is what the UI sends as `business` (agent.base_template_id).
   real_estate_sales: process.env.SALES_AGENT_URL ?? 'ws://localhost:4006',
+  motor_cycles_sales:
+    process.env.MOTOR_CYCLES_AGENT_URL ?? 'ws://localhost:4013',
+  home_appliances_sales:
+    process.env.HOME_APPLIANCES_AGENT_URL ?? 'ws://localhost:4014',
   'credit cards': process.env.CREDITCARDS_AGENT_URL ?? 'ws://localhost:4007',
   'ecom-customer-service':
     process.env.ECOM_CUTOMER_SERVICE ?? 'ws://localhost:4011',

@@ -21,4 +21,8 @@ export interface EnqueueConversationInput {
   companyId?: string | null;
   customerId?: string | null;
   customerPhone?: string | null;
+  /** Provider CallSid (or webrtc session id) — joins to `call_logs._id`. */
+  callId?: string | null;
+  /** 'preview' for playground traffic; product enquiries carry it so stats can exclude them. */
+  channel?: 'live' | 'preview' | null;
 }

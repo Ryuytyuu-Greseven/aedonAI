@@ -10,6 +10,8 @@ export interface AgentTemplate {
 
 const TEMPLATE_ICONS: Record<string, string> = {
   real_estate_sales: 'fa-solid fa-house-chimney',
+  motor_cycles_sales: 'fa-solid fa-motorcycle',
+  home_appliances_sales: 'fa-solid fa-blender',
   'template-real-estate-sales': 'fa-solid fa-house-chimney',
   'template-survey': 'fa-solid fa-clipboard-list',
   'template-contact-centre': 'fa-solid fa-headset',

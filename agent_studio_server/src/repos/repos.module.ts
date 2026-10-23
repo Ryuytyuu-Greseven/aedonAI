@@ -28,6 +28,10 @@ import { LiveAgent, LiveAgentSchema } from '../schemas/live-agent.schema';
 import { MetaLead, MetaLeadSchema } from '../schemas/meta-leads.schema';
 import { PhoneNumber, PhoneNumberSchema } from '../schemas/phone-number.schema';
 import {
+  ProductEnquiry,
+  ProductEnquirySchema,
+} from '../schemas/product-enquiry.schema';
+import {
   ReportFrequencyPreference,
   ReportFrequencyPreferenceSchema,
 } from '../schemas/report-frequency.schema';
@@ -54,6 +58,7 @@ import { KnowledgeBasesRepository } from './knowledge-bases.repository';
 import { LiveAgentsRepository } from './live-agents.repository';
 import { MetaLeadsRepository } from './meta-leads.repository';
 import { PhoneNumbersRepository } from './phone-numbers.repository';
+import { ProductEnquiriesRepository } from './product-enquiries.repository';
 import { ReportFrequencyRepository } from './report-frequency.repository';
 import { RevokedTokensRepository } from './revoked-tokens.repository';
 import { SalesPropertiesRepository } from './sales-properties.repository';
@@ -76,6 +81,7 @@ import { UsersRepository } from './users.repository';
       { name: MetaLead.name, schema: MetaLeadSchema },
       { name: AgentLead.name, schema: AgentLeadSchema },
       { name: SalesProperty.name, schema: SalesPropertySchema },
+      { name: ProductEnquiry.name, schema: ProductEnquirySchema },
       {
         name: CommandControlUser.name,
         schema: CommandControlUserSchema,
@@ -103,6 +109,7 @@ import { UsersRepository } from './users.repository';
     MetaLeadsRepository,
     AgentLeadsRepository,
     SalesPropertiesRepository,
+    ProductEnquiriesRepository,
     CommandControlRepository,
     ReportFrequencyRepository,
   ],
@@ -122,6 +129,7 @@ import { UsersRepository } from './users.repository';
     MetaLeadsRepository,
     AgentLeadsRepository,
     SalesPropertiesRepository,
+    ProductEnquiriesRepository,
     CommandControlRepository,
     ReportFrequencyRepository,
   ],

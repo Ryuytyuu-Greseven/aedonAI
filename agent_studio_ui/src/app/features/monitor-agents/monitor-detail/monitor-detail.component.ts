@@ -13,11 +13,13 @@ import { CallLogComponent } from '../call-log/call-log.component';
 import { CallDetailModalComponent } from '../call-detail-modal/call-detail-modal.component';
 import { ActionItemsComponent } from '../action-items/action-items.component';
 import { LeadsComponent } from '../leads/leads.component';
+import { ProductStatsComponent } from '../product-stats/product-stats.component';
+import { isSalesTemplate } from '../../../shared/constants/agent-templates.constant';
 
 // 'active-sessions' and 'actions' tabs are hidden for now (screens not ready / no
 // requirement yet) — kept in the union and their template branches left intact so
 // re-enabling later is just adding the tab buttons back. See monitor-detail.component.html.
-type MonitorTab = 'overview' | 'reports' | 'call-log' | 'active-sessions' | 'actions' | 'leads';
+type MonitorTab = 'overview' | 'product-stats' | 'reports' | 'call-log' | 'active-sessions' | 'actions' | 'leads';
 
 const RING_RADIUS = 52;
 const RING_CIRCUMFERENCE = 2 * Math.PI * RING_RADIUS;
@@ -26,7 +28,7 @@ const CHART_WINDOW_SIZE = 10;
 @Component({
   selector: 'app-monitor-detail',
   standalone: true,
-  imports: [RouterLink, AgentReportsComponent, CallLogComponent, CallDetailModalComponent, ActionItemsComponent, ActiveSessionsComponent, LeadsComponent],
+  imports: [RouterLink, AgentReportsComponent, CallLogComponent, CallDetailModalComponent, ActionItemsComponent, ActiveSessionsComponent, LeadsComponent, ProductStatsComponent],
   templateUrl: './monitor-detail.component.html',
   styleUrl: './monitor-detail.component.css',
 })
@@ -46,6 +48,8 @@ export class MonitorDetailComponent implements OnInit {
   readonly chartWindowOffset = signal(0);
   /** Shown in Overview while the Active Sessions tab is hidden — see the `MonitorTab` note above. */
   readonly activeSessionsCount = signal(0);
+  /** Only sales agents have products (`sales_properties`), so only they get the Product Stats tab. */
+  readonly isSalesAgent = computed(() => isSalesTemplate(this.agent()?.base_template_id));
 
   private windowBounds(offset: number): { start: number; end: number } {
     const total = this.stats()?.byDay.length ?? 0;

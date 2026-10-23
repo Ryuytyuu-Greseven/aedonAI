@@ -5,6 +5,7 @@ import { llmInstance } from './../../../llms/google.llm';
 import * as Prompts from '../prompt/sales.prompts';
 import { lookupFaq } from '../tool/sales.tools';
 import { retrievePresentationContext } from '../tool/rag.tools';
+import { recordProductEnquiry } from '../tool/product-enquiry.store';
 
 // Presentation — deep-dive on the focus model's free-text description
 // (price included — it's baked into the same blob, not a separate field we
@@ -78,11 +79,20 @@ export async function Model_Presentation_Node(state: SalesState) {
     updates.currentPropertyIndex = result.requestedIndex;
   }
 
+  // Product Stats: the model presented this turn, plus the one the customer
+  // just asked about if they switched.
+  void recordProductEnquiry(state, focusProp, 'discussed');
+  if (updates.currentPropertyIndex !== undefined && updates.currentPropertyIndex !== currentIdx) {
+    void recordProductEnquiry(state, properties[updates.currentPropertyIndex], 'discussed');
+  }
+
   if (result.purchaseIntent && focusProp) {
     updates.purchaseIntentPropertyId = focusProp.id;
+    void recordProductEnquiry(state, focusProp, 'purchase_intent');
   }
 
   if (result.shortlistProperty && focusProp) {
+    void recordProductEnquiry(state, focusProp, 'shortlisted');
     const alreadyShortlisted = state.shortlistedPropertyIds.includes(focusProp.id);
     if (!alreadyShortlisted) {
       updates.shortlistedPropertyIds = [...state.shortlistedPropertyIds, focusProp.id];

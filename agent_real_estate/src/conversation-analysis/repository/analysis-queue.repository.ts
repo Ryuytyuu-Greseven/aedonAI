@@ -37,6 +37,8 @@ export async function enqueue(input: EnqueueConversationInput): Promise<void> {
         companyId: input.companyId ?? null,
         customerId: input.customerId ?? null,
         customerPhone: input.customerPhone ?? null,
+        callId: input.callId ?? null,
+        channel: input.channel ?? null,
         attempts: 0,
         lastError: null,
         enqueuedAt: new Date(),

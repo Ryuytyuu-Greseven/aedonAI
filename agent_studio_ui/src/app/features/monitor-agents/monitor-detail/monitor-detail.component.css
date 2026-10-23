@@ -32,6 +32,14 @@
 .monitor-tabs {
   margin-bottom: 24px;
   align-items: center;
+  /* Five tabs don't fit a phone — scroll the row instead of widening the page. */
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.monitor-tabs .tab {
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .detail-skeleton-back-link {

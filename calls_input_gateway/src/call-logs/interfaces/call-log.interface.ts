@@ -1,5 +1,10 @@
 export type CallProvider = 'twilio' | 'exotel' | 'webrtc';
 export type CallDirection = 'inbound' | 'outbound';
+/**
+ * Whether a session is real customer traffic or a playground preview —
+ * forwarded to the domain agents so their stats can exclude previews.
+ */
+export type CallChannel = 'live' | 'preview';
 export type CallStatus = 'in_progress' | 'completed';
 export type ConversationSpeaker = 'customer' | 'ai_agent' | 'human_agent';
 

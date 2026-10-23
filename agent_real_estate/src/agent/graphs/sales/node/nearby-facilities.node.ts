@@ -3,6 +3,7 @@ import { SalesState } from '../state/sales.state';
 import { llmInstance } from './../../../llms/google.llm';
 import * as Prompts from '../prompt/sales.prompts';
 import { retrieveNearbyFacilitiesContext } from '../tool/rag.tools';
+import { recordProductEnquiry } from '../tool/product-enquiry.store';
 
 // Nearby Facilities — grounded primarily by Pinecone knowledge-base
 // retrieval (see vectorsearch.md); falls back to whatever the property's own
@@ -10,6 +11,8 @@ import { retrieveNearbyFacilitiesContext } from '../tool/rag.tools';
 export async function Nearby_Facilities_Node(state: SalesState) {
   const promptText = await Prompts.getPrompt('nearby_facilities', state.currentLanguage);
   const focusProp = state.properties[state.currentPropertyIndex ?? 0];
+  // Product Stats: asking what's near a property is an enquiry about it.
+  void recordProductEnquiry(state, focusProp, 'discussed');
 
   const structuredContext = focusProp
     ? `\n\nProperty: ${focusProp.name}\nDetails on file: ${focusProp.description ?? 'none — speak generally and offer to confirm exact landmarks with a specialist.'}`

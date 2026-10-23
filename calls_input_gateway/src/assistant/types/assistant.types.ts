@@ -1,4 +1,5 @@
 import {
+  CallChannel,
   CallDirection,
   CallProvider,
 } from '../../call-logs/interfaces/call-log.interface';
@@ -22,6 +23,11 @@ export interface UserConfig {
    */
   callId?: string;
   direction?: CallDirection;
+  /**
+   * 'preview' for agent_studio playground calls. Unset means: webrtc
+   * sessions are previews, telephony sessions are live — see resolveChannel.
+   */
+  channel?: CallChannel;
   /** Customer's phone number — telephony (twilio/exotel) sessions only. */
   phoneNumber?: string;
   /** Business's phone number — telephony (twilio/exotel) sessions only. */

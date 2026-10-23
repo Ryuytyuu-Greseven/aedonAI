@@ -4,6 +4,7 @@ import { SalesState } from '../state/sales.state';
 import { llmInstance } from './../../../llms/google.llm';
 import * as Prompts from '../prompt/sales.prompts';
 import { raiseServiceRequestTicket, saveLeadToCrm } from '../tool/sales.tools';
+import { recordProductEnquiry } from '../tool/product-enquiry.store';
 
 // Closing — final confirmation on the disclosed price, then (if not already
 // captured during Discovery_Node) ask when the customer can visit the site,
@@ -55,6 +56,7 @@ export async function Closing_Node(state: SalesState) {
 
   if (!alreadyAgreed && result.agreedToProceed && focusProp) {
     updates.purchaseIntentPropertyId = focusProp.id;
+    void recordProductEnquiry(state, focusProp, 'purchase_intent');
   }
 
   // Capture the visit date whenever the LLM extracts one — including a
@@ -80,6 +82,7 @@ export async function Closing_Node(state: SalesState) {
     });
     if (ticket.confirmed) {
       updates.serviceRequestRaised = true;
+      void recordProductEnquiry(state, focusProp, 'site_visit');
     }
 
     if (!state.leadSaved) {

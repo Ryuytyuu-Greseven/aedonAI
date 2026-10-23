@@ -69,7 +69,7 @@
   </div>
 
   @if (messages().length > 0) {
-    <div class="preview-conversation surface-1">
+    <div #conversation class="preview-conversation surface-1">
       @for (message of messages(); track message.id) {
         <div
           class="preview-message"

@@ -1,6 +1,7 @@
 import * as QueueRepo from '../repository/analysis-queue.repository.js';
 import * as SummaryRepo from '../repository/conversation-summary.repository.js';
 import { analyzeConversation } from '../service/conversation-analyzer.service.js';
+import * as CatalogueRepo from '../repository/product-catalogue.repository.js';
 import { AnalysisQueueItem } from '../schema/analysis-queue-item.schema.js';
 
 const IDLE_POLL_INTERVAL_MS = 15_000;
@@ -62,7 +63,10 @@ export class AnalysisWorker {
 
   private async processOne(job: AnalysisQueueItem): Promise<void> {
     try {
-      const analysis = await analyzeConversation(job.transcript);
+      const catalogue = job.agentId
+        ? await CatalogueRepo.findProductsForAgent(job.agentId, job.companyId)
+        : [];
+      const analysis = await analyzeConversation(job.transcript, catalogue);
       await SummaryRepo.saveSummary({
         conversationId: job.conversationId,
         agentId: job.agentId,
@@ -71,6 +75,22 @@ export class AnalysisWorker {
         customerPhone: job.customerPhone,
         ...analysis,
       });
+      if (job.agentId) {
+        const discussedIds = new Set(analysis.propertiesDiscussedIds);
+        await CatalogueRepo.recordDiscussedProducts(
+          {
+            conversationId: job.conversationId,
+            agentId: job.agentId,
+            companyId: job.companyId,
+            callId: job.callId,
+            customerPhone: job.customerPhone || null,
+            channel: job.channel === 'preview' ? 'preview' : 'live',
+            // When the call happened, not when the queue got to it.
+            at: job.transcript.at(-1)?.timestamp ?? job.enqueuedAt,
+          },
+          catalogue.filter((p) => discussedIds.has(p.id)),
+        );
+      }
       await QueueRepo.markDone(String(job._id));
     } catch (error: any) {
       console.error(`[ConversationAnalysis] Failed to analyze conversation ${job.conversationId}:`, error);

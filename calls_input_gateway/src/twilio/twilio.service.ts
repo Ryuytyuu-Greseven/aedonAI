@@ -7,6 +7,8 @@ export interface OutboundCallOptions {
   voice?: string;
   systemInstruction?: string;
   from?: string;
+  /** 'preview' when placed by the agent_studio playground. */
+  channel?: string;
 }
 
 @Injectable()
@@ -56,6 +58,7 @@ export class TwilioService {
       voice: options.voice ?? 'Aoede',
       systemInstruction: options.systemInstruction ?? '',
     });
+    if (options.channel) params.set('channel', options.channel);
 
     const call = await this.client.calls.create({
       to,

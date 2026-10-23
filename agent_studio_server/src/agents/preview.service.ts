@@ -41,6 +41,9 @@ export class PreviewService {
       agentId: dto.agentId,
       to: dto.countryCode + dto.phone,
       from: '',
+      // Lets the gateway tag this call so downstream stats (e.g. product
+      // enquiries) can exclude playground previews from real traffic.
+      channel: 'preview',
     };
 
     try {

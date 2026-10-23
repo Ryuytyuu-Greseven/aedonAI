@@ -1,14 +1,19 @@
 import {
+  afterNextRender,
   Component,
   DestroyRef,
+  effect,
+  ElementRef,
   EventEmitter,
   inject,
+  Injector,
   Input,
   OnChanges,
   OnDestroy,
   Output,
   signal,
   SimpleChanges,
+  viewChild,
 } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { buildAgentSetup } from '../../../core/audio-processor/agent-setup';
@@ -37,6 +42,7 @@ export class WebCallPreviewComponent implements OnChanges, OnDestroy {
   private readonly agentService = inject(AgentService);
   private readonly toast = inject(ToastService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly injector = inject(Injector);
 
   @Input({ required: true }) agentId!: string;
   @Output() passed = new EventEmitter<void>();
@@ -48,12 +54,28 @@ export class WebCallPreviewComponent implements OnChanges, OnDestroy {
   readonly previewPassed = signal(false);
   readonly micLevel = signal(0);
 
+  private readonly conversation = viewChild<ElementRef<HTMLElement>>('conversation');
+
   /** Static set of bars for the voice visualizer; each gets a staggered animation. */
   readonly waveBars = Array.from({ length: 9 });
 
   private completedTurns = 0;
   private captionBuffer = '';
   private subscribed = false;
+
+  constructor() {
+    // Keep the newest message in view: scroll the conversation to the bottom after each render that adds one.
+    effect(() => {
+      this.messages();
+      afterNextRender(
+        () => {
+          const el = this.conversation()?.nativeElement;
+          if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+        },
+        { injector: this.injector },
+      );
+    });
+  }
 
   ngOnChanges(changes: SimpleChanges): void {
     if (changes['agentId'] && !changes['agentId'].firstChange) {

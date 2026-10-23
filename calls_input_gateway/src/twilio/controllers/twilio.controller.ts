@@ -40,6 +40,7 @@ export class TwilioController {
     @Query('business') businessOverride: string | undefined,
     @Query('voice') voice = 'Aoede',
     @Query('systemInstruction') systemInstruction = '',
+    @Query('channel') channel: string | undefined,
     @Res() res: any,
   ): void {
     const calledNumber = body?.To;
@@ -70,6 +71,7 @@ export class TwilioController {
       direction,
       ...(customerNumber ? { customerNumber } : {}),
       ...(businessNumber ? { businessNumber } : {}),
+      ...(channel === 'preview' ? { channel } : {}),
     });
 
     this.logger.log(
@@ -105,6 +107,8 @@ export class TwilioController {
       voice?: string;
       systemInstruction?: string;
       from?: string;
+      /** 'preview' when placed by the agent_studio playground. */
+      channel?: string;
     },
   ): Promise<{ callSid: string; provider: string }> {
     // const provider = resolveProvider(body.to);
@@ -128,6 +132,7 @@ export class TwilioController {
         voice: body.voice,
         systemInstruction: body.systemInstruction,
         from: body.from,
+        channel: body.channel,
       });
       return { callSid, provider };
     } catch (error) {

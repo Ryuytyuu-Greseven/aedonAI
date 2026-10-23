@@ -14,6 +14,7 @@ Produce:
 - sentiment: overall tone of the customer across the call — positive, neutral, or negative.
 - budgetMentioned: the budget or price range the customer stated, in their own words, or null if none was mentioned.
 - propertiesDiscussed: names of products or product lines (and models, sizes, or finishes, if mentioned) that were actually discussed or shown interest in.
+- propertiesDiscussedIds: for each entry in propertiesDiscussed that matches an entry in the product catalogue given above the transcript, that entry's id (copied exactly). It only counts if the customer asked about it or the agent described it to them — the agent reading out a list of available products does not count. Leave out anything that isn't in the catalogue.
 - amenitiesOrFacilitiesRequested: specific specs, features, or delivery/installation/service details the customer asked about (e.g. "capacity", "energy rating", "installation", "nearest store").
 - otherInterests: any other notable interests, concerns, or requests the customer raised that don't fit the above (e.g. finance/EMI questions, exchanging an old appliance, waiting for a sale, competitor or online price comparisons, objections, referral interest).
 - nextSteps: any concrete next step agreed on (a store visit date, a callback time, a service request raised), or null if none.

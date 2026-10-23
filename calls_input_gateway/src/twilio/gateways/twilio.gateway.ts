@@ -200,6 +200,7 @@ export class TwilioGateway implements OnGatewayConnection, OnGatewayDisconnect {
     const direction = params.direction === 'outbound' ? 'outbound' : 'inbound';
     const phoneNumber = params.customerNumber || undefined;
     const agentNumber = params.businessNumber || undefined;
+    const channel = params.channel === 'preview' ? 'preview' : undefined;
 
     this.logger.log(
       `[TwilioGateway] Stream start — streamSid=${adapter.streamSid} callSid=${adapter.callSid} business=${business} provider=${provider} direction=${direction}`,
@@ -237,6 +238,7 @@ export class TwilioGateway implements OnGatewayConnection, OnGatewayDisconnect {
       direction,
       phoneNumber,
       agentNumber,
+      channel,
       agentId: TELEPHONY_AGENT_ID,
     });
   }

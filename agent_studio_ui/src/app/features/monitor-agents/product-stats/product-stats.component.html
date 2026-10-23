@@ -1,0 +1,131 @@
+<div class="product-stats">
+
+  <div class="card stats-card">
+    <div class="stats-card-head">
+      <div>
+        <h3>Enquiries by product</h3>
+        <p class="text-muted text-sm">Which products callers are asking about. Playground test calls aren't counted.</p>
+      </div>
+    </div>
+
+    <div class="stats-toolbar">
+      <div class="form-group stats-search-group">
+        <label class="label" for="product-stats-search">Search</label>
+        <input
+          id="product-stats-search"
+          type="search"
+          class="input"
+          placeholder="Search products"
+          [ngModel]="search()"
+          (ngModelChange)="onSearchInput($event)"
+        />
+      </div>
+      <div class="form-group">
+        <span class="label" id="product-stats-range-label">Period</span>
+        <div class="range-toggle" role="group" aria-labelledby="product-stats-range-label">
+          @for (days of rangeOptions; track days) {
+            <button
+              type="button"
+              class="range-toggle-btn"
+              [class.range-toggle-active]="rangeDays() === days"
+              [attr.aria-pressed]="rangeDays() === days"
+              (click)="setRange(days)"
+            >
+              {{ days }} days
+            </button>
+          }
+        </div>
+      </div>
+    </div>
+
+    @if (error()) {
+      <div class="empty-state">
+        <p>Couldn't load product stats.</p>
+        <button type="button" class="btn btn-secondary btn-sm" (click)="load()">
+          <i class="fa-solid fa-rotate-right" aria-hidden="true"></i> Retry
+        </button>
+      </div>
+    } @else if (!loading() && total() === 0) {
+      <div class="empty-state">
+        @if (search().trim()) {
+          <p>No products match "{{ search().trim() }}".</p>
+        } @else {
+          <p>This agent has no products yet. Add them from the agent's Playground and their enquiries will show here.</p>
+        }
+      </div>
+    } @else {
+      @if (!loading() && noEnquiriesYet()) {
+        <div class="stats-hint text-sm">
+          <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+          No enquiries in the last {{ rangeDays() }} days yet. Counts fill in as callers ask about products.
+        </div>
+      }
+
+      <div class="table-scroll">
+        <table class="stats-table" [attr.aria-busy]="loading()">
+          <caption class="sr-only">Product enquiries for the last {{ rangeDays() }} days</caption>
+          <thead>
+            <tr>
+              @for (col of columns; track col.key) {
+                <th scope="col" [class.num]="col.numeric" [attr.aria-sort]="ariaSort(col.key)">
+                  <button type="button" class="sort-btn" [title]="col.hint ?? ''" (click)="sortBy(col.key)">
+                    {{ col.label }}
+                    <i
+                      class="fa-solid sort-icon"
+                      [class.fa-sort]="sort() !== col.key"
+                      [class.fa-sort-up]="sort() === col.key && order() === 'asc'"
+                      [class.fa-sort-down]="sort() === col.key && order() === 'desc'"
+                      [class.sort-icon-active]="sort() === col.key"
+                      aria-hidden="true"
+                    ></i>
+                  </button>
+                </th>
+              }
+            </tr>
+          </thead>
+          <tbody>
+            @if (loading()) {
+              @for (i of [1, 2, 3, 4, 5]; track i) {
+                <tr>
+                  @for (col of columns; track col.key) {
+                    <td><div class="skeleton skeleton-block stats-skeleton-cell"></div></td>
+                  }
+                </tr>
+              }
+            } @else {
+              @for (row of rows(); track row.property_id) {
+                <tr [class.row-quiet]="row.enquiries === 0">
+                  <td>
+                    <div class="product-cell">
+                      <strong>{{ row.name }}</strong>
+                      @if (row.description) {
+                        <small class="text-muted" [title]="row.description">{{ row.description }}</small>
+                      }
+                    </div>
+                  </td>
+                  <td class="num">
+                    <span class="enquiry-count">{{ row.enquiries }}</span>
+                  </td>
+                  <td class="num">{{ row.unique_callers }}</td>
+                  <td class="num">{{ row.shortlisted }}</td>
+                  <td class="num">{{ row.purchase_intent }}</td>
+                  <td class="num">{{ row.site_visits }}</td>
+                  <td class="num">{{ formatConversion(row) }}</td>
+                  <td [title]="formatDateTime(row.last_enquired_at)">{{ formatRelative(row.last_enquired_at) }}</td>
+                </tr>
+              }
+            }
+          </tbody>
+        </table>
+      </div>
+
+      <div class="flex justify-between items-center stats-pagination">
+        <span class="text-muted text-sm">{{ total() }} product{{ total() === 1 ? '' : 's' }} · Page {{ page() }} of {{ totalPages() }}</span>
+        <div class="flex gap-sm">
+          <button type="button" class="btn btn-secondary btn-sm" [disabled]="loading() || page() === 1" (click)="prevPage()">Previous</button>
+          <button type="button" class="btn btn-secondary btn-sm" [disabled]="loading() || page() === totalPages()" (click)="nextPage()">Next</button>
+        </div>
+      </div>
+    }
+  </div>
+</div>

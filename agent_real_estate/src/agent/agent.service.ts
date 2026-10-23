@@ -17,6 +17,8 @@ interface AgentMessage {
   business?: string;
   customerId?: string;
   customerPhNo?: string;
+  callId?: string;
+  channel?: 'live' | 'preview';
 }
 
 @Injectable()
@@ -45,6 +47,8 @@ export class AgentService {
           sessionId: msg.sessionId,
           customerId: msg.customerId ?? '',
           customerPhNo: msg.customerPhNo ?? '',
+          callId: msg.callId,
+          channel: msg.channel,
           // Passed through as-is (no `?? ''` coercion here) — SalesState's
           // `right ?? left` reducers on these channels are what preserve the
           // previously known value across the session when a turn's
