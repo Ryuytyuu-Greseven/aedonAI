@@ -4,7 +4,8 @@ import { AudioDriverService } from './audio-driver.service';
 
 function build(env: Record<string, string> = {}) {
   const config = {
-    get: (key: string) => ({ STT_PROVIDER: 'sarvam', ...env })[key],
+    get: (key: string) =>
+      ({ STT_PROVIDER: 'sarvam', INITIAL_LISTEN_DELAY_MS: '0', ...env })[key],
   };
   const deepgram = {
     openConnection: jest.fn().mockResolvedValue(undefined),

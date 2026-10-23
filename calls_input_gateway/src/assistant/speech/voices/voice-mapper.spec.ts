@@ -14,18 +14,18 @@ describe('voice mapper', () => {
 
   it('resolves a code to the provider voice', () => {
     expect(resolveVoice('google', 'male_1')).toBe('Charon');
-    expect(resolveVoice('sarvam', 'male_1')).toBe('shubh');
+    expect(resolveVoice('sarvam', 'male_1')).toBe(SARVAM_VOICES.male_1);
     expect(resolveVoice('deepgram', 'female_2')).toBe('aura-2-andromeda-en');
   });
 
   it('keeps a raw Google voice name working on Google, and defaults it elsewhere', () => {
     expect(resolveVoice('google', 'Aoede')).toBe('Aoede');
-    expect(resolveVoice('sarvam', 'Aoede')).toBe('simran');
+    expect(resolveVoice('sarvam', 'Aoede')).toBe(SARVAM_VOICES.female_1);
   });
 
   it('falls back to the default voice when none is set', () => {
     expect(resolveVoice('google', undefined)).toBe('Aoede');
-    expect(resolveVoice('sarvam', null)).toBe('simran');
+    expect(resolveVoice('sarvam', null)).toBe(SARVAM_VOICES.female_1);
     expect(resolveVoice('deepgram', '')).toBe('aura-2-thalia-en');
   });
 });

@@ -2,6 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v2 } from '@google-cloud/speech';
 import { DeepGram } from '../stt/deepgram/transcribe';
+import { mulawToLinear16 } from '../helpers/audio.helper';
 import { SarvamSttService } from '../stt/sarvam/sarvam-stt.service';
 import {
   resolveSttFallback,
@@ -35,6 +36,55 @@ interface AudioSession {
   preferredLanguage: string | null;
   /** Audio held while the fallback provider connects; null when not switching. */
   switchBuffer: { chunks: Buffer<ArrayBuffer>[]; bytes: number } | null;
+  /** Epoch ms before which caller audio is dropped (see INITIAL_LISTEN_DELAY_MS). */
+  listenFrom: number;
+  listening: boolean;
+  /** Consecutive quiet audio seen since the window ended. */
+  quietMs: number;
+}
+
+// Caller audio is ignored for this long after a call connects, so the
+// agent's greeting isn't cut short by the caller's "hello?" and that early
+// speech never becomes a turn. Overridable via INITIAL_LISTEN_DELAY_MS.
+const DEFAULT_INITIAL_LISTEN_DELAY_MS = 3500;
+
+// When the window ends mid-sentence, keep ignoring until the caller pauses
+// this long, so a sentence begun during the greeting is dropped whole rather
+// than its tail becoming a fragment turn ("…in red.") and a barge-in…
+const QUIET_BEFORE_LISTEN_MS = 300;
+// …but never more than this past the window — steady background noise must
+// not leave the agent deaf.
+const MAX_SETTLE_MS = 2000;
+// RMS (16-bit PCM) below which a chunk counts as quiet. Telephony silence and
+// line hiss sit well under this; speech is typically 1000+.
+const QUIET_RMS = 400;
+
+function chunkStats(
+  audio: Buffer,
+  encoding: 'LINEAR16' | 'MULAW',
+  sampleRateHertz: number,
+): { durationMs: number; rms: number } {
+  const pcm = encoding === 'MULAW' ? mulawToLinear16(audio) : audio;
+  const samples = Math.floor(pcm.length / 2);
+  let sumSquares = 0;
+  for (let i = 0; i < samples; i++) {
+    const v = pcm.readInt16LE(i * 2);
+    sumSquares += v * v;
+  }
+  return {
+    durationMs: (samples / sampleRateHertz) * 1000,
+    rms: samples ? Math.sqrt(sumSquares / samples) : 0,
+  };
+}
+
+function parseListenDelay(raw: string | undefined): number {
+  if (raw === undefined || raw.trim() === '') {
+    return DEFAULT_INITIAL_LISTEN_DELAY_MS;
+  }
+  const value = Number(raw);
+  return Number.isFinite(value) && value >= 0
+    ? value
+    : DEFAULT_INITIAL_LISTEN_DELAY_MS;
 }
 
 // SDK/socket failures arrive as DOM-style ErrorEvents as well as Errors.
@@ -76,6 +126,8 @@ export class AudioDriverService {
   private readonly STT_SERVICE: SttProviderName;
   /** STT_FALLBACK_PROVIDER — who takes over a failed Sarvam call. */
   private readonly STT_FALLBACK: 'deepgram' | null;
+  /** INITIAL_LISTEN_DELAY_MS — caller audio ignored at the start of a call. */
+  private readonly INITIAL_LISTEN_DELAY_MS: number;
 
   constructor(
     private readonly configService: ConfigService,
@@ -87,6 +139,9 @@ export class AudioDriverService {
     );
     this.STT_FALLBACK = resolveSttFallback(
       configService.get<string>('STT_FALLBACK_PROVIDER'),
+    );
+    this.INITIAL_LISTEN_DELAY_MS = parseListenDelay(
+      configService.get<string>('INITIAL_LISTEN_DELAY_MS'),
     );
     const location =
       configService.get<string>('GOOGLE_CLOUD_LOCATION_IN') || 'global';
@@ -122,6 +177,9 @@ export class AudioDriverService {
       sttProvider: this.STT_SERVICE,
       preferredLanguage: null,
       switchBuffer: null,
+      listenFrom: Date.now() + this.INITIAL_LISTEN_DELAY_MS,
+      listening: this.INITIAL_LISTEN_DELAY_MS === 0,
+      quietMs: 0,
     };
     this.sessions.set(sessionId, session);
     if (this.STT_SERVICE === 'deepgram') {
@@ -159,6 +217,27 @@ export class AudioDriverService {
   feedAudio(sessionId: string, audio: any): void {
     const session = this.sessions.get(sessionId);
     if (!session) return;
+
+    // Opening window: drop caller audio before any STT provider sees it —
+    // nothing said here is transcribed, queued, or treated as a barge-in.
+    if (!session.listening) {
+      const now = Date.now();
+      if (now < session.listenFrom) return;
+      const { durationMs, rms } = chunkStats(
+        audio as Buffer,
+        session.encoding,
+        session.sampleRateHertz,
+      );
+      session.quietMs = rms < QUIET_RMS ? session.quietMs + durationMs : 0;
+      const settled =
+        session.quietMs >= QUIET_BEFORE_LISTEN_MS ||
+        now >= session.listenFrom + MAX_SETTLE_MS;
+      if (!settled) return;
+      session.listening = true;
+      this.logger.log(
+        `[AudioDriver] Listening to caller on ${sessionId} (ignored first ${this.INITIAL_LISTEN_DELAY_MS} ms)`,
+      );
+    }
 
     if (session.switchBuffer) {
       const buffer = session.switchBuffer;

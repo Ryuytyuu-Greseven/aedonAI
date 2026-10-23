@@ -38,6 +38,7 @@ jest.mock('sarvamai', () => ({
 }));
 
 import { SarvamTtsService } from './sarvam-tts.service';
+import { SARVAM_VOICES } from '../../speech/voices/sarvam.voices';
 
 async function* reply(...parts: string[]) {
   for (const text of parts) yield { text };
@@ -89,7 +90,7 @@ describe('SarvamTtsService', () => {
       type: 'config',
       data: expect.objectContaining({
         language_code: 'te-IN',
-        speaker: 'priya',
+        speaker: SARVAM_VOICES.female_2,
         speech_sample_rate: 24000,
         output_audio_codec: 'linear16',
       }),
