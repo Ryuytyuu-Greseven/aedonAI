@@ -1,9 +1,14 @@
 <div class="modal-overlay" (click)="close()">
-  <div class="modal card call-detail-modal" (click)="$event.stopPropagation()">
+  <div class="modal card call-detail-modal" role="dialog" aria-labelledby="call-detail-title" (click)="$event.stopPropagation()">
     <div class="flex justify-between items-center call-detail-header">
       <div>
-        <h3>{{ record.customer_name ?? 'Call detail' }}</h3>
-        <p class="text-muted text-sm">{{ formatDateTime(record.occurred_at) }} · {{ record.phone_number }}</p>
+        <h3 id="call-detail-title">{{ record.customer_name ?? record.phone_number ?? 'Web call' }}</h3>
+        <p class="text-muted text-sm">
+          {{ formatDateTime(record.occurred_at) }}
+          @if (record.customer_name && record.phone_number) {
+            · {{ record.phone_number }}
+          }
+        </p>
       </div>
       <button type="button" class="btn btn-ghost btn-sm" (click)="close()" aria-label="Close">✕</button>
     </div>
@@ -13,89 +18,74 @@
         <i class="fa-solid fa-clock" aria-hidden="true"></i>
         {{ formatDuration(record.duration_seconds) }}
       </span>
-      <span class="stat-pill"
-        [title]="detail() ? ('Prompt: ' + detail()!.tokenUsage.promptTokens.toLocaleString() + ' · Completion: ' + detail()!.tokenUsage.completionTokens.toLocaleString()) : 'Loading token breakdown…'">
-        <i class="fa-solid fa-coins" aria-hidden="true"></i>
-        {{ record.total_tokens ? record.total_tokens.toLocaleString(): 'NA' }} tokens
-      </span>
       <span class="stat-pill" [class.stat-pill-inbound]="record.direction === 'inbound'"
         [class.stat-pill-outbound]="record.direction === 'outbound'" title="Call direction">
         <i class="fa-solid" [class.fa-arrow-down]="record.direction === 'inbound'"
           [class.fa-arrow-up]="record.direction === 'outbound'" aria-hidden="true"></i>
-        {{ record.direction ? (record.direction === 'inbound' ? 'Inbound' : 'Outbound') : 'Outbound' }}
+        {{ record.direction === 'inbound' ? 'Inbound' : 'Outbound' }}
       </span>
-      <span class="stat-pill" [class.stat-pill-success]="record.outcome === 'completed'"
-        [class.stat-pill-warning]="record.outcome === 'no_answer'" title="Call outcome">
-        {{ outcomeLabel(record.outcome) }}
+      <span class="stat-pill" title="How the customer reached the agent">
+        <i class="fa-solid" [class.fa-phone]="record.provider !== 'webrtc'" [class.fa-globe]="record.provider === 'webrtc'"
+          aria-hidden="true"></i>
+        {{ record.provider === 'webrtc' ? 'Web call' : 'Phone call' }}
       </span>
-      <span class="stat-pill" title="Telephony + LLM cost for this call">
-        <i class="fa-solid fa-sack-dollar" aria-hidden="true"></i>
-        {{ currencyService.format(record.cost_usd) }}
+      <span class="stat-pill" title="Customer and agent messages in this call">
+        <i class="fa-solid fa-comments" aria-hidden="true"></i>
+        {{ record.message_count }} message{{ record.message_count === 1 ? '' : 's' }}
       </span>
+      @if (record.status === 'in_progress') {
+        <span class="stat-pill stat-pill-warning" title="This call hasn't ended yet">In progress</span>
+      }
     </div>
 
     <div class="call-detail-body">
       @if (loading()) {
-      <div class="timeline">
-        <div class="timeline-message timeline-message-agent">
-          <div class="skeleton skeleton-line short"></div>
-          <div class="skeleton skeleton-line"></div>
+        <div class="timeline" aria-busy="true">
+          <div class="timeline-message timeline-message-agent">
+            <div class="skeleton skeleton-line short"></div>
+            <div class="skeleton skeleton-line"></div>
+          </div>
+          <div class="timeline-message timeline-message-customer">
+            <div class="skeleton skeleton-line short"></div>
+            <div class="skeleton skeleton-line"></div>
+          </div>
+          <div class="timeline-message timeline-message-agent">
+            <div class="skeleton skeleton-line short"></div>
+            <div class="skeleton skeleton-line"></div>
+          </div>
         </div>
-        <div class="timeline-message timeline-message-customer">
-          <div class="skeleton skeleton-line short"></div>
-          <div class="skeleton skeleton-line"></div>
+      } @else if (error()) {
+        <div class="empty-state">
+          <p>Couldn't load this conversation.</p>
+          <button type="button" class="btn btn-secondary btn-sm" (click)="load()">Retry</button>
         </div>
-        <div class="timeline-message timeline-message-agent">
-          <div class="skeleton skeleton-line short"></div>
-          <div class="skeleton skeleton-line"></div>
-        </div>
-      </div>
       } @else if (detail()) {
-      @let callDetail = detail()!;
-      <div class="timeline">
-        @for (event of callDetail.timeline; track event.id) {
-        @switch (event.kind) {
-        @case ('message') {
-        <div class="timeline-message" [class.timeline-message-agent]="event.speaker === 'agent'"
-          [class.timeline-message-customer]="event.speaker === 'customer'">
-          <div class="timeline-message-meta">
-            <strong>{{ event.speaker === 'agent' ? 'Agent' : 'Customer' }}</strong>
-            <span class="text-muted text-sm">{{ formatTime(event.at) }}</span>
-            <span class="text-muted text-sm" title="Cost of this message">{{ currencyService.format(event.cost_usd)
-              }}</span>
+        @let callDetail = detail()!;
+        @if (callDetail.summary) {
+          <div class="call-summary">
+            <strong class="text-sm">Summary</strong>
+            <p>{{ callDetail.summary }}</p>
           </div>
-          <p class="timeline-message-text">{{ event.text }}</p>
-          @if (event.reasoning) {
-          <button type="button" class="reasoning-toggle" (click)="toggleReasoning(event.id)">
-            <i class="fa-solid" [class.fa-caret-right]="!isReasoningExpanded(event.id)"
-              [class.fa-caret-down]="isReasoningExpanded(event.id)" aria-hidden="true"></i>
-            {{ isReasoningExpanded(event.id) ? 'Hide AI reasoning' : 'Show AI reasoning' }}
-          </button>
-          @if (isReasoningExpanded(event.id)) {
-          <p class="reasoning-text">{{ event.reasoning }}</p>
-          }
-          }
-        </div>
         }
-        @case ('tool_execution') {
-        <div class="timeline-tool" [class.timeline-tool-error]="event.status === 'error'">
-          <div class="timeline-tool-header">
-            <i class="fa-solid fa-wrench" aria-hidden="true"></i>
-            <strong>{{ event.toolName }}</strong>
-            <span class="tool-status-badge" [class.tool-status-success]="event.status === 'success'"
-              [class.tool-status-error]="event.status === 'error'">
-              {{ event.status === 'success' ? 'Success' : 'Error' }}
-            </span>
-            <span class="text-muted text-sm" [title]="'Tool call latency'">{{ event.durationMs }}ms</span>
-            <span class="text-muted text-sm timeline-tool-time">{{ formatTime(event.at) }}</span>
+        @if (callDetail.messages.length === 0) {
+          <div class="empty-state">
+            <p>No conversation was recorded for this call.</p>
           </div>
-          <p class="timeline-tool-input text-mono text-sm">{{ formatToolInput(event.input) }}</p>
-          <p class="timeline-tool-output text-sm">{{ event.output }}</p>
-        </div>
+        } @else {
+          <div class="timeline">
+            @for (message of callDetail.messages; track message.id) {
+              <div class="timeline-message" [class.timeline-message-agent]="message.speaker === 'agent'"
+                [class.timeline-message-customer]="message.speaker === 'customer'"
+                [class.timeline-message-human]="message.speaker === 'human'">
+                <div class="timeline-message-meta">
+                  <strong>{{ speakerLabel(message.speaker) }}</strong>
+                  <span class="text-muted text-sm">{{ formatTime(message.at) }}</span>
+                </div>
+                <p class="timeline-message-text">{{ message.text }}</p>
+              </div>
+            }
+          </div>
         }
-        }
-        }
-      </div>
       }
     </div>
   </div>

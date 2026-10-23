@@ -1,13 +1,12 @@
 import { Component, computed, EventEmitter, inject, Input, OnChanges, Output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { CallDirection, CallOutcome, CallRecord } from '../../../core/models/call-record.model';
+import { CallDirection, CallRecord } from '../../../core/models/call-record.model';
 import { CallRecordService } from '../../../core/services/call-record.service';
-import { CurrencyService } from '../../../core/services/currency.service';
 
 const PAGE_SIZE = 10;
 
 type DirectionFilter = 'all' | CallDirection;
-type OutcomeFilter = 'all' | CallOutcome;
+type SourceFilter = 'all' | 'phone' | 'web';
 
 @Component({
   selector: 'app-call-log',
@@ -18,16 +17,16 @@ type OutcomeFilter = 'all' | CallOutcome;
 })
 export class CallLogComponent implements OnChanges {
   private readonly callRecordService = inject(CallRecordService);
-  readonly currencyService = inject(CurrencyService);
 
   @Input({ required: true }) agentId!: string;
   @Output() openCall = new EventEmitter<CallRecord>();
 
   readonly loading = signal(true);
+  readonly error = signal(false);
   readonly records = signal<CallRecord[]>([]);
 
   readonly direction = signal<DirectionFilter>('all');
-  readonly outcome = signal<OutcomeFilter>('all');
+  readonly source = signal<SourceFilter>('all');
   readonly dateFrom = signal<string>('');
   readonly dateTo = signal<string>('');
   readonly search = signal<string>('');
@@ -37,16 +36,19 @@ export class CallLogComponent implements OnChanges {
     let list = this.records();
     const dir = this.direction();
     if (dir !== 'all') list = list.filter((r) => r.direction === dir);
-    const oc = this.outcome();
-    if (oc !== 'all') list = list.filter((r) => r.outcome === oc);
+    const src = this.source();
+    if (src !== 'all') list = list.filter((r) => (r.provider === 'webrtc' ? 'web' : 'phone') === src);
+    // Compare calendar days in the viewer's timezone, matching the date inputs.
     const from = this.dateFrom();
-    if (from) list = list.filter((r) => r.occurred_at.slice(0, 10) >= from);
+    if (from) list = list.filter((r) => localDateKey(r.occurred_at) >= from);
     const to = this.dateTo();
-    if (to) list = list.filter((r) => r.occurred_at.slice(0, 10) <= to);
+    if (to) list = list.filter((r) => localDateKey(r.occurred_at) <= to);
     const query = this.search().trim().toLowerCase();
     if (query) {
       list = list.filter(
-        (r) => r.phone_number.toLowerCase().includes(query) || (r.customer_name?.toLowerCase().includes(query) ?? false)
+        (r) =>
+          (r.phone_number?.toLowerCase().includes(query) ?? false) ||
+          (r.customer_name?.toLowerCase().includes(query) ?? false)
       );
     }
     return [...list].sort((a, b) => new Date(b.occurred_at).getTime() - new Date(a.occurred_at).getTime());
@@ -60,16 +62,27 @@ export class CallLogComponent implements OnChanges {
   });
 
   readonly hasAnyFilter = computed(
-    () => this.direction() !== 'all' || this.outcome() !== 'all' || !!this.dateFrom() || !!this.dateTo() || !!this.search()
+    () => this.direction() !== 'all' || this.source() !== 'all' || !!this.dateFrom() || !!this.dateTo() || !!this.search()
   );
 
   ngOnChanges(): void {
     if (!this.agentId) return;
-    this.loading.set(true);
     this.page.set(1);
-    this.callRecordService.getRecordsForAgent(this.agentId).subscribe((records) => {
-      this.records.set(records);
-      this.loading.set(false);
+    this.load();
+  }
+
+  load(): void {
+    this.loading.set(true);
+    this.error.set(false);
+    this.callRecordService.getRecordsForAgent(this.agentId).subscribe({
+      next: (records) => {
+        this.records.set(records);
+        this.loading.set(false);
+      },
+      error: () => {
+        this.error.set(true);
+        this.loading.set(false);
+      },
     });
   }
 
@@ -78,8 +91,8 @@ export class CallLogComponent implements OnChanges {
     this.page.set(1);
   }
 
-  setOutcome(value: OutcomeFilter): void {
-    this.outcome.set(value);
+  setSource(value: SourceFilter): void {
+    this.source.set(value);
     this.page.set(1);
   }
 
@@ -100,7 +113,7 @@ export class CallLogComponent implements OnChanges {
 
   clearFilters(): void {
     this.direction.set('all');
-    this.outcome.set('all');
+    this.source.set('all');
     this.dateFrom.set('');
     this.dateTo.set('');
     this.search.set('');
@@ -128,21 +141,17 @@ export class CallLogComponent implements OnChanges {
     });
   }
 
-  formatDuration(seconds: number): string {
+  formatDuration(seconds: number | null): string {
+    if (seconds === null) return '—';
     if (seconds < 60) return `${seconds}s`;
     const minutes = Math.floor(seconds / 60);
     const remainder = seconds % 60;
     return remainder === 0 ? `${minutes}m` : `${minutes}m ${remainder}s`;
   }
+}
 
-  outcomeLabel(outcome: CallOutcome): string {
-    switch (outcome) {
-      case 'lead':
-        return 'Lead';
-      case 'no_answer':
-        return 'No answer';
-      case 'completed':
-        return 'Completed';
-    }
-  }
+function localDateKey(iso: string): string {
+  const d = new Date(iso);
+  const pad = (n: number) => String(n).padStart(2, '0');
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 }

@@ -1,7 +1,12 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { AgentsService } from '../agents/agents.service';
+import type {
+  CallSummary,
+  CallTranscript,
+} from '../common/interfaces/call-logs.interface';
 import { CallRecordsRepository } from '../repos/call-records.repository';
 import { CallLog } from '../schemas/call-logs.schema';
+import { toCallSummary, toCallTranscript } from './call-log.mapper';
 
 export interface DayCallStats {
   date: string;
@@ -28,22 +33,50 @@ export class MonitoringService {
   constructor(
     private readonly callRecordsRepository: CallRecordsRepository,
     private readonly agentsService: AgentsService,
-  ) { }
+  ) {}
 
+  /** Raw call log documents — used by Reporting's export. */
   async getRecordsForAgent(agentId: string): Promise<CallLog[]> {
     const agentDetails = await this.agentsService.findById(agentId);
     return this.callRecordsRepository.filterByAgentId(agentDetails.agent_id);
   }
 
-  async getStatsForAgent(agentId: string): Promise<AgentCallStats> {
-    await this.agentsService.findById(agentId);
+  async listCallsForAgent(
+    agentId: string,
+    companyId: string | null,
+  ): Promise<CallSummary[]> {
+    const agent = await this.agentsService.findById(agentId, companyId);
+    const rows = await this.callRecordsRepository.listByAgentId(agent.agent_id);
+    return rows.map(toCallSummary);
+  }
+
+  async getCallTranscript(
+    agentId: string,
+    callId: string,
+    companyId: string | null,
+  ): Promise<CallTranscript> {
+    const agent = await this.agentsService.findById(agentId, companyId);
+    const log = await this.callRecordsRepository.findOneForAgent(
+      callId,
+      agent.agent_id,
+    );
+    if (!log) throw new NotFoundException(`Call ${callId} not found`);
+    return toCallTranscript(log);
+  }
+
+  async getStatsForAgent(
+    agentId: string,
+    companyId?: string | null,
+  ): Promise<AgentCallStats> {
+    const agent = await this.agentsService.findById(agentId, companyId);
 
     const windowStart = new Date();
     windowStart.setHours(0, 0, 0, 0);
     windowStart.setDate(windowStart.getDate() - (TRAILING_WINDOW_DAYS - 1));
 
+    // call_logs are keyed by the agent's agent_id, not its Mongo _id.
     const records = await this.callRecordsRepository.filterByAgentIdSince(
-      agentId,
+      agent.agent_id,
       windowStart,
     );
 

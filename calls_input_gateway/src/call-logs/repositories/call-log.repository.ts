@@ -44,17 +44,19 @@ export class CallLogRepository {
     return doc ? this.toInterface(doc) : null;
   }
 
+  /** Resolves false when no call log exists for `callId` (entry dropped). */
   async appendConversationEntry(
     callId: string,
     entry: CallConversationEntry,
-  ): Promise<void> {
-    await this.callLogModel.updateOne(
+  ): Promise<boolean> {
+    const result = await this.callLogModel.updateOne(
       { _id: callId },
       {
         $push: { call_conversation: entry },
         $set: { updated_at: new Date() },
       },
     );
+    return result.matchedCount > 0;
   }
 
   async appendConnectedHumanAgent(

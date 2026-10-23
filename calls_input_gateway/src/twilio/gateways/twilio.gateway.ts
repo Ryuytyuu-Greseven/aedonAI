@@ -13,13 +13,6 @@ import { DEFAULT_BUSINESS } from '../../common/config/business-agents.registry';
 
 const CALL_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
 
-/**
- * Placeholder agent-invocation id for telephony calls (Twilio/Exotel).
- * Neither provider carries a real per-call agent invocation id yet — swap
- * this for the real value once that's wired up.
- */
-const TELEPHONY_AGENT_ID = 'replace_me_later';
-
 interface AudioRecord {
   chunks: Buffer[];
   startedAt: number;
@@ -239,7 +232,8 @@ export class TwilioGateway implements OnGatewayConnection, OnGatewayDisconnect {
       phoneNumber,
       agentNumber,
       channel,
-      agentId: TELEPHONY_AGENT_ID,
+      // Resolved from agentNumber in initiateAgentState.
+      agentId: '',
     });
   }
 

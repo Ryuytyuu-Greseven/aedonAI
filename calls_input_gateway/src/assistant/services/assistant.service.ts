@@ -224,6 +224,12 @@ export class AssistantService {
       : null;
 
     session.agentMongoId = agentPlain?._id ? String(agentPlain._id) : undefined;
+    // Telephony setups carry no agentId of their own — adopt the resolved
+    // Agent's agent_id so call_logs (and the router's fallback lookup) are
+    // attributed to the right agent instead of an empty id.
+    if (agentPlain?.agent_id) {
+      session.config.agentId = String(agentPlain.agent_id);
+    }
 
     const initialLanguage = agentDetails?.currentLanguage || session.language;
     session.language = initialLanguage;
@@ -286,7 +292,7 @@ export class AssistantService {
       direction: session.config.direction ?? 'inbound',
       phoneNumber: session.config.phoneNumber,
       agentTemplateId: session.config.business ?? 'unknown',
-      agentId: session.config.agentId ?? 'unknown',
+      agentId: session.config.agentId || 'unknown',
       agentNumber: session.config.agentNumber,
     });
 

@@ -217,6 +217,6 @@
   </div>
 
   @if (selectedCall(); as call) {
-    <app-call-detail-modal [record]="call" (closed)="closeCallDetail()" />
+    <app-call-detail-modal [agentId]="currentAgent.id" [record]="call" (closed)="closeCallDetail()" />
   }
 }

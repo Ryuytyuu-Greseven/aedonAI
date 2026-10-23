@@ -1,7 +1,12 @@
 import { Component, EventEmitter, inject, Input, OnInit, Output, signal } from '@angular/core';
-import { CallDetail, CallRecord } from '../../../core/models/call-record.model';
+import { CallDetail, CallRecord, CallSpeaker } from '../../../core/models/call-record.model';
 import { CallRecordService } from '../../../core/services/call-record.service';
-import { CurrencyService } from '../../../core/services/currency.service';
+
+const SPEAKER_LABELS: Record<CallSpeaker, string> = {
+  agent: 'Agent',
+  customer: 'Customer',
+  human: 'Human agent',
+};
 
 @Component({
   selector: 'app-call-detail-modal',
@@ -11,53 +16,50 @@ import { CurrencyService } from '../../../core/services/currency.service';
 })
 export class CallDetailModalComponent implements OnInit {
   private readonly callRecordService = inject(CallRecordService);
-  readonly currencyService = inject(CurrencyService);
 
+  /** The agent's API id — `record.agent_id` is its agent_id, which the route doesn't take. */
+  @Input({ required: true }) agentId!: string;
   @Input({ required: true }) record!: CallRecord;
   @Output() closed = new EventEmitter<void>();
 
   readonly loading = signal(true);
+  readonly error = signal(false);
   readonly detail = signal<CallDetail | null>(null);
-  private readonly expandedReasoning = signal<ReadonlySet<string>>(new Set());
 
   ngOnInit(): void {
-    try {
-      this.callRecordService.getCallDetail(this.record.id).subscribe((detail) => {
+    this.load();
+  }
+
+  load(): void {
+    this.loading.set(true);
+    this.error.set(false);
+    this.callRecordService.getCallDetail(this.agentId, this.record.id).subscribe({
+      next: (detail) => {
         this.detail.set(detail);
         this.loading.set(false);
-      });
-    } catch (error) {
-      console.log('Unable to fetch call record');
-    }
+      },
+      error: () => {
+        this.error.set(true);
+        this.loading.set(false);
+      },
+    });
   }
 
   close(): void {
     this.closed.emit();
   }
 
-  toggleReasoning(turnId: string): void {
-    this.expandedReasoning.update((current) => {
-      const next = new Set(current);
-      if (next.has(turnId)) {
-        next.delete(turnId);
-      } else {
-        next.add(turnId);
-      }
-      return next;
-    });
-  }
-
-  isReasoningExpanded(turnId: string): boolean {
-    return this.expandedReasoning().has(turnId);
+  speakerLabel(speaker: CallSpeaker): string {
+    return SPEAKER_LABELS[speaker];
   }
 
   formatDateTime(iso: string): string {
     return new Date(iso).toLocaleString(undefined, {
       month: 'short',
       day: 'numeric',
+      year: 'numeric',
       hour: 'numeric',
       minute: '2-digit',
-      second: '2-digit',
     });
   }
 
@@ -65,27 +67,11 @@ export class CallDetailModalComponent implements OnInit {
     return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' });
   }
 
-  formatDuration(seconds: number): string {
+  formatDuration(seconds: number | null): string {
+    if (seconds === null) return 'In progress';
     if (seconds < 60) return `${seconds}s`;
     const minutes = Math.floor(seconds / 60);
     const remainder = seconds % 60;
     return remainder === 0 ? `${minutes}m` : `${minutes}m ${remainder}s`;
-  }
-
-  outcomeLabel(outcome: CallRecord['outcome']): string {
-    switch (outcome) {
-      case 'lead':
-        return 'Lead';
-      case 'no_answer':
-        return 'No answer';
-      case 'completed':
-        return 'Completed';
-    }
-  }
-
-  formatToolInput(input: Record<string, unknown>): string {
-    return Object.entries(input)
-      .map(([key, value]) => `${key}: ${value}`)
-      .join('  ·  ');
   }
 }

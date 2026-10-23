@@ -55,7 +55,7 @@
 }
 
 .direction-pill,
-.outcome-pill {
+.status-pill {
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -75,17 +75,12 @@
   color: var(--accent);
 }
 
-.outcome-lead {
-  background: var(--accent-muted);
-  color: var(--accent);
-}
-
-.outcome-completed {
+.status-completed {
   background: var(--success-bg);
   color: var(--success);
 }
 
-.outcome-no-answer {
+.status-in-progress {
   background: var(--warning-bg);
   color: var(--warning);
 }

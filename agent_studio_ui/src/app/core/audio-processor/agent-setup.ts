@@ -36,6 +36,9 @@ export function buildAgentSetup(agent: Agent): AudioProcessorSetup {
 function agentE164(agent: Agent): string | null {
   const code = agent.country_code?.trim();
   const number = agent.phone_number?.trim();
-  if (!code || !number) return null;
+  if (!number) return null;
+  // Some agents store the number already in E.164 — don't prefix it twice.
+  if (number.startsWith('+')) return number;
+  if (!code) return null;
   return `${code}${number}`;
 }

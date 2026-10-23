@@ -22,20 +22,38 @@ export class CallLogService {
     );
   }
 
+  /**
+   * Never rejects — call sites fire-and-forget this per turn, so a failed
+   * write is logged here rather than surfacing as an unhandled rejection.
+   */
   async logMessage(
     callId: string,
     input: LogConversationEntryInput,
   ): Promise<void> {
     if (!input.message?.trim()) return;
 
-    await this.callLogRepository.appendConversationEntry(callId, {
-      id: randomUUID(),
-      message: input.message.trim(),
-      speaker: input.speaker,
-      human_agent_id: input.humanAgentId ?? null,
-      intents: input.intents ?? [],
-      timestamp: new Date(),
-    });
+    try {
+      const appended = await this.callLogRepository.appendConversationEntry(
+        callId,
+        {
+          id: randomUUID(),
+          message: input.message.trim(),
+          speaker: input.speaker,
+          human_agent_id: input.humanAgentId ?? null,
+          intents: input.intents ?? [],
+          timestamp: new Date(),
+        },
+      );
+      if (!appended) {
+        this.logger.warn(
+          `[CallLog] No call log for ${callId} — dropped ${input.speaker} message`,
+        );
+      }
+    } catch (err) {
+      this.logger.error(
+        `[CallLog] Failed to log ${input.speaker} message for ${callId}: ${err}`,
+      );
+    }
   }
 
   async connectHumanAgent(
@@ -69,9 +87,14 @@ export class CallLogService {
     });
   }
 
+  /** Never rejects — fired-and-forgotten from session cleanup. */
   async endCallLog(callId: string): Promise<void> {
-    await this.callLogRepository.finalize(callId);
-    this.logger.log(`[CallLog] Ended call ${callId}`);
+    try {
+      await this.callLogRepository.finalize(callId);
+      this.logger.log(`[CallLog] Ended call ${callId}`);
+    } catch (err) {
+      this.logger.error(`[CallLog] Failed to end call ${callId}: ${err}`);
+    }
   }
 
   async getCallLog(callId: string): Promise<CallLog | null> {

@@ -2,7 +2,7 @@ import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
 import { Agent } from '../models/agent.model';
 import { AgentTemplate } from '../models/agent-template.model';
-import { AgentCallStats, CallRecord } from '../models/call-record.model';
+import { AgentCallStats, CallDetail, CallRecord } from '../models/call-record.model';
 import { AuthSession, ForgotPasswordRequest, LoginCredentials, MessageResponse, ResetPasswordRequest } from '../models/auth.model';
 import { CreateSalesAgentAccountInput, SalesAgentAccount } from '../models/sales-agent-account.model';
 import { KnowledgeBase, NewKnowledgeBaseFileInput } from '../models/knowledge-base.model';
@@ -29,7 +29,7 @@ import {
   fromApiAgentLeadsResponse,
   fromApiMetaLeadsResponse,
 } from './lead-mapper';
-import { ApiCallRecord, fromApiCallRecord } from './call-record-mapper';
+import { ApiCallDetail, ApiCallRecord, fromApiCallDetail, fromApiCallRecord } from './call-record-mapper';
 import {
   fromApiAgent,
   fromApiAgentHistory,
@@ -386,6 +386,12 @@ export class ApiService {
     return this.http
       .get<ApiCallRecord[]>(ApiEndpoints.calls.list(agentId))
       .pipe(map((records) => records.map(fromApiCallRecord)));
+  }
+
+  getCallDetail(agentId: string, callId: string): Observable<CallDetail> {
+    return this.http
+      .get<ApiCallDetail>(ApiEndpoints.calls.detail(agentId, callId))
+      .pipe(map(fromApiCallDetail));
   }
 
   getCallStats(agentId: string): Observable<AgentCallStats> {

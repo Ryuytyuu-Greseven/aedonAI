@@ -60,7 +60,7 @@ export class CallLog {
   @Prop({ type: String, required: true })
   _id: string;
 
-  @Prop({ type: String, required: true, enum: ['twilio', 'exotel'] })
+  @Prop({ type: String, required: true, enum: ['twilio', 'exotel', 'webrtc'] })
   provider: CallProvider;
 
   @Prop({ type: String, required: true, enum: ['inbound', 'outbound'] })

@@ -14,12 +14,11 @@
       </select>
     </div>
     <div class="form-group">
-      <label class="label" for="filter-outcome">Outcome</label>
-      <select id="filter-outcome" class="select" [ngModel]="outcome()" (ngModelChange)="setOutcome($event)">
+      <label class="label" for="filter-source">Source</label>
+      <select id="filter-source" class="select" [ngModel]="source()" (ngModelChange)="setSource($event)">
         <option value="all">All</option>
-        <option value="lead">Lead</option>
-        <option value="completed">Completed</option>
-        <option value="no_answer">No answer</option>
+        <option value="phone">Phone calls</option>
+        <option value="web">Web calls</option>
       </select>
     </div>
     <div class="form-group">
@@ -45,10 +44,9 @@
           <th scope="col">Customer Name</th>
           <th scope="col">Phone Number</th>
           <th scope="col">Direction</th>
-          <th scope="col">Outcome</th>
+          <th scope="col">Status</th>
           <th scope="col">Duration</th>
-          <th scope="col">Total tokens</th>
-          <th scope="col">Cost</th>
+          <th scope="col">Messages</th>
         </tr>
       </thead>
       <tbody>
@@ -75,13 +73,15 @@
           <td>
             <div class="skeleton skeleton-block call-log-skeleton-cell"></div>
           </td>
-          <td>
-            <div class="skeleton skeleton-block call-log-skeleton-cell"></div>
-          </td>
         </tr>
         }
       </tbody>
     </table>
+  </div>
+  } @else if (error()) {
+  <div class="empty-state">
+    <p>Couldn't load calls for this agent.</p>
+    <button type="button" class="btn btn-secondary btn-sm" (click)="load()">Retry</button>
   </div>
   } @else if (records().length === 0) {
   <div class="empty-state">
@@ -102,10 +102,9 @@
           <th scope="col">Customer Name</th>
           <th scope="col">Phone Number</th>
           <th scope="col">Direction</th>
-          <th scope="col">Outcome</th>
+          <th scope="col">Status</th>
           <th scope="col" title="Total call length">Duration</th>
-          <th scope="col" title="Total tokens consumed generating this call">Total tokens</th>
-          <th scope="col" title="Telephony + LLM cost for this call">Cost</th>
+          <th scope="col" title="Customer and agent messages in this call">Messages</th>
         </tr>
       </thead>
       <tbody>
@@ -113,7 +112,13 @@
         <tr class="call-log-row" (click)="rowClick(record)" tabindex="0" (keydown.enter)="rowClick(record)">
           <td>{{ formatDateTime(record.occurred_at) }}</td>
           <td>{{ record.customer_name ?? '—' }}</td>
-          <td>{{ record.phone_number }}</td>
+          <td>
+            @if (record.phone_number) {
+            {{ record.phone_number }}
+            } @else {
+            <span class="text-muted" title="Playground web call — no caller number">Web call</span>
+            }
+          </td>
           <td>
             <span class="direction-pill" [class.direction-inbound]="record.direction === 'inbound'"
               [class.direction-outbound]="record.direction === 'outbound'">
@@ -123,15 +128,13 @@
             </span>
           </td>
           <td>
-            <span class="outcome-pill" [class.outcome-lead]="record.outcome === 'lead'"
-              [class.outcome-completed]="record.outcome === 'completed'"
-              [class.outcome-no-answer]="record.outcome === 'no_answer'">
-              {{ outcomeLabel(record.outcome) }}
+            <span class="status-pill" [class.status-completed]="record.status === 'completed'"
+              [class.status-in-progress]="record.status === 'in_progress'">
+              {{ record.status === 'in_progress' ? 'In progress' : 'Completed' }}
             </span>
           </td>
           <td>{{ formatDuration(record.duration_seconds) }}</td>
-          <td>{{ record.total_tokens ? record.total_tokens.toLocaleString() : 'NA' }}</td>
-          <td>{{ currencyService.format(record.cost_usd) }}</td>
+          <td>{{ record.message_count }}</td>
         </tr>
         }
       </tbody>

@@ -33,10 +33,11 @@ export interface UserConfig {
   /** Business's phone number — telephony (twilio/exotel) sessions only. */
   agentNumber?: string;
   /**
-   * Id of the agent *invocation* handling this session — supplied by the
-   * client in the `setup` message for webrtc/chat sessions; a fixed
-   * placeholder for twilio/exotel calls until those carry a real one too.
-   * Distinct from `business`, which identifies the agent *template*.
+   * The Agent doc's `agent_id` — supplied by the client in the `setup`
+   * message for webrtc/chat sessions; for twilio/exotel calls it starts
+   * empty and initiateAgentState fills it from the Agent resolved by the
+   * business number. Distinct from `business`, which identifies the agent
+   * *template*.
    */
   agentId: string;
 }

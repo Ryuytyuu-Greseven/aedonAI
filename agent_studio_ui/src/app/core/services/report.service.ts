@@ -6,8 +6,8 @@ import { ApiService } from '../http/api.service';
 import { AuthService } from './auth.service';
 
 export function toCsv(rows: CallRecord[]): string {
-  const header = ['id', 'direction', 'occurred_at', 'outcome'];
-  const lines = rows.map((r) => [r.id, r.direction, r.occurred_at, r.outcome].join(','));
+  const header = ['id', 'direction', 'occurred_at', 'status'];
+  const lines = rows.map((r) => [r.id, r.direction, r.occurred_at, r.status].join(','));
   return [header.join(','), ...lines].join('\n');
 }
 

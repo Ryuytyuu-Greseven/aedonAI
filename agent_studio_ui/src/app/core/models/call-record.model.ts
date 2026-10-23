@@ -1,51 +1,36 @@
 export type CallDirection = 'inbound' | 'outbound';
-export type CallOutcome = 'lead' | 'no_answer' | 'completed';
+export type CallProvider = 'twilio' | 'exotel' | 'webrtc';
+export type CallStatus = 'in_progress' | 'completed';
 
 export interface CallRecord {
   id: string;
   agent_id: string;
+  provider: CallProvider;
   direction: CallDirection;
+  status: CallStatus;
   occurred_at: string;
-  outcome: CallOutcome;
-  duration_seconds: number;
-  total_tokens: number;
-  phone_number: string;
+  ended_at: string | null;
+  /** Null while the call is still in progress. */
+  duration_seconds: number | null;
+  /** Customer's number — null for web (playground) calls, which have none. */
+  phone_number: string | null;
   customer_name: string | null;
-  cost_usd: number;
+  message_count: number;
+  summary: string | null;
 }
 
-export interface TokenUsage {
-  promptTokens: number;
-  completionTokens: number;
-  totalTokens: number;
+/** `human` is a person who joined the call; `agent` is the AI agent. */
+export type CallSpeaker = 'customer' | 'agent' | 'human';
+
+export interface CallMessage {
+  id: string;
+  speaker: CallSpeaker;
+  text: string;
+  at: string;
 }
 
-export type CallTimelineEvent =
-  | {
-      kind: 'message';
-      id: string;
-      speaker: 'agent' | 'customer';
-      text: string;
-      at: string;
-      reasoning?: string;
-      cost_usd: number;
-    }
-  | {
-      kind: 'tool_execution';
-      id: string;
-      toolName: string;
-      input: Record<string, unknown>;
-      output: string;
-      status: 'success' | 'error';
-      durationMs: number;
-      at: string;
-    };
-
-export interface CallDetail {
-  callId: string;
-  agentId: string;
-  timeline: CallTimelineEvent[];
-  tokenUsage: TokenUsage;
+export interface CallDetail extends CallRecord {
+  messages: CallMessage[];
 }
 
 export interface DayCallStats {

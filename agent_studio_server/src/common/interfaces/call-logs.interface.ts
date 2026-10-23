@@ -1,4 +1,4 @@
-export type CallProvider = 'twilio' | 'exotel';
+export type CallProvider = 'twilio' | 'exotel' | 'webrtc';
 export type CallDirection = 'inbound' | 'outbound';
 export type CallStatus = 'in_progress' | 'completed';
 export type ConversationSpeaker = 'customer' | 'ai_agent' | 'human_agent';
@@ -68,4 +68,34 @@ export interface LogConversationEntryInput {
 
 export interface ConnectHumanAgentInput {
   agentId: string;
+}
+
+/** One row of `GET /agents/:id/calls` — no transcript, so the list stays light. */
+export interface CallSummary {
+  id: string;
+  agent_id: string;
+  provider: CallProvider;
+  direction: CallDirection;
+  status: CallStatus;
+  occurred_at: Date;
+  ended_at: Date | null;
+  /** Null while the call is still in progress. */
+  duration_seconds: number | null;
+  /** Customer's number — null for web calls, which have none. */
+  phone_number: string | null;
+  customer_name: string | null;
+  message_count: number;
+  summary: string | null;
+}
+
+export interface CallTranscriptMessage {
+  id: string;
+  speaker: ConversationSpeaker;
+  text: string;
+  at: Date;
+}
+
+/** `GET /agents/:id/calls/:callId` — a call with its full conversation. */
+export interface CallTranscript extends CallSummary {
+  messages: CallTranscriptMessage[];
 }

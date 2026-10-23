@@ -49,9 +49,8 @@ const FOLLOW_UPS: Record<LeadQualification, string[]> = {
 // Only the mock ids ('agent-1'/'agent-2'/'agent-3') ever appear as a `CallRecord.agent_id` here —
 // real backend agents (live Mongo ids) never match one, so leads are generated per requested
 // `agentId` below rather than filtered from a fixed pool keyed to those fake ids. Each lead still
-// borrows a real `MOCK_CALL_RECORDS` entry (any original agent) for its `call` field, so "View
-// call" resolves through `CallRecordService.getCallDetail()`, which only knows these mock ids.
-const LEAD_OUTCOME_CALLS = MOCK_CALL_RECORDS.filter((r) => r.outcome === 'lead');
+// borrows a `MOCK_CALL_RECORDS` entry (any original agent) for its `call` field.
+const LEAD_OUTCOME_CALLS = MOCK_CALL_RECORDS.filter((r) => r.customer_name !== null);
 
 /** Deterministic per-agent Agent Leads — same agentId always yields the same leads within a session. */
 export function generateAgentLeadsFor(agentId: string): AgentLead[] {
@@ -76,7 +75,7 @@ export function generateAgentLeadsFor(agentId: string): AgentLead[] {
       agent_id: agentId,
       call,
       customer_name: call.customer_name,
-      phone_number: call.phone_number,
+      phone_number: call.phone_number ?? '',
       email: '',
       custom_fields: {},
       source: 'call',
