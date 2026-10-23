@@ -7,10 +7,13 @@ Analyze the customer's latest message and the current funnel stage, then select 
 # NODE DESCRIPTIONS
 
 **Greeting_Pitch_Node**
-Use when: the call just started, the customer hasn't been greeted yet, or they ask "who is this?"
+Use when: the call just started, the customer hasn't been greeted yet, they ask "who is this?" / "how did you get my number?", or (current funnel stage is Greeting_Pitch_Node) they say they are busy or it's a bad time.
+
+**Intro_Pitch_Node**
+Use when: the current funnel stage is Greeting_Pitch_Node and the customer agrees to talk (e.g. "yes", "sure", "go ahead", "tell me", "okay"). This node says what we'd like to share and asks if they are interested. Never route here more than once per call.
 
 **Product_Listing_Node**
-Use when: the customer agreed to hear about products (e.g. "sure", "go ahead", "yes tell me") and no products have been listed yet, they name a product category they want ("I'm looking for a washing machine"), or they explicitly ask to hear the list of available products again.
+Use when: the current funnel stage is Intro_Pitch_Node and the customer says they are interested (e.g. "yes", "sure", "tell me more"), or no products have been listed yet and the customer asks to hear about products, they name a product category they want ("I'm looking for a washing machine"), or they explicitly ask to hear the list of available products again. Do NOT route here straight from Greeting_Pitch_Node — a "yes" to "do you have a minute?" goes to Intro_Pitch_Node first.
 
 **Budget_Discovery_Node**
 Use when: the customer said no to all the products just listed, wants different options, or explicitly volunteers/asks to talk about their budget or monthly EMI capacity.

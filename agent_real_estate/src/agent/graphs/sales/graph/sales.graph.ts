@@ -52,6 +52,7 @@ const workflow = new StateGraph(SalesStateAnnotation)
   // Existing nodes
   .addNode('Semantic_Router_Node', Nodes.Semantic_Router_Node)
   .addNode('Greeting_Pitch_Node', Nodes.Greeting_Pitch_Node)
+  .addNode('Intro_Pitch_Node', Nodes.Intro_Pitch_Node)
   .addNode('Budget_Discovery_Node', Nodes.Budget_Discovery_Node)
   .addNode('Property_Listing_Node', Nodes.Property_Listing_Node)
   .addNode('Presentation_Node', Nodes.Presentation_Node)
@@ -77,8 +78,11 @@ const workflow = new StateGraph(SalesStateAnnotation)
   // Router dispatches to the appropriate node
   .addConditionalEdges('Semantic_Router_Node', routeFromRouter)
 
-  // Greeting: wait for customer response
+  // Greeting: short "have a minute?" opener — wait for customer response
   .addEdge('Greeting_Pitch_Node', '__end__')
+
+  // Intro pitch: say what we'd like to share, wait for a yes/no on interest
+  .addEdge('Intro_Pitch_Node', '__end__')
 
   // Budget Discovery: if budget captured, chain directly into property listing
   .addConditionalEdges('Budget_Discovery_Node', checkBudgetDiscovery)

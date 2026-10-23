@@ -19,7 +19,7 @@ export class PreviewPanelComponent {
 
   readonly modes: { id: PreviewMode; label: string; icon: string; hint: string }[] = [
     { id: 'call', label: 'Phone call', icon: 'fa-phone', hint: 'Agent calls a real number' },
-    { id: 'chat', label: 'Chat', icon: 'fa-comments', hint: 'Type and see replies' },
+    // { id: 'chat', label: 'Chat', icon: 'fa-comments', hint: 'Type and see replies' },
     { id: 'web-call', label: 'Web call', icon: 'fa-microphone', hint: 'Talk from your browser' },
   ];
 

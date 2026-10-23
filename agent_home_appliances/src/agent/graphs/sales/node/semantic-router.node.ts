@@ -19,6 +19,7 @@ export async function Semantic_Router_Node(state: SalesState) {
     z.object({
       routeDestination: z.enum([
         'Greeting_Pitch_Node',
+        'Intro_Pitch_Node',
         'Budget_Discovery_Node',
         'Discovery_Node',
         'Product_Listing_Node',

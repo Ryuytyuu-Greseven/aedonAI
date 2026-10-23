@@ -1,5 +1,6 @@
 export { Semantic_Router_Node } from './semantic-router.node.js';
 export { Greeting_Pitch_Node } from './greeting-pitch.node.js';
+export { Intro_Pitch_Node } from './intro-pitch.node.js';
 export { Budget_Discovery_Node } from './budget-discovery.node.js';
 export { Discovery_Node } from './discovery.node.js';
 export { Product_Listing_Node } from './product-listing.node.js';
