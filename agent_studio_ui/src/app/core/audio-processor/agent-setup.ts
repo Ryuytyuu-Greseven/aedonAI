@@ -1,5 +1,6 @@
 import { Agent } from '../models/agent.model';
-import { AudioProcessorSetup, DEFAULT_VOICE_NAME } from './audio-processor.types';
+import { AudioProcessorSetup } from './audio-processor.types';
+import { DEFAULT_AGENT_VOICE } from '../../shared/constants/agent-voices.constant';
 
 /**
  * Build the audio_processor `setup` payload for a Playground agent.
@@ -14,7 +15,8 @@ export function buildAgentSetup(agent: Agent): AudioProcessorSetup {
     generationConfig: {
       speechConfig: {
         voiceConfig: {
-          prebuiltVoiceConfig: { voiceName: DEFAULT_VOICE_NAME },
+          // The agent's voice code — the gateway maps it to the active TTS provider's voice.
+          prebuiltVoiceConfig: { voiceName: agent.voice || DEFAULT_AGENT_VOICE },
         },
       },
     },

@@ -2,9 +2,15 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { v2 } from '@google-cloud/speech';
 import { DeepGram } from '../stt/deepgram/transcribe';
+import { SarvamSttService } from '../stt/sarvam/sarvam-stt.service';
+import {
+  resolveSttFallback,
+  resolveSttProvider,
+  SttProviderName,
+} from '../speech/speech.config';
 
 export interface AudioDriverCallbacks {
-  /** language is the STT-detected code ('en' | 'hi' | 'te' | 'ta' | 'kn'). */
+  /** language is the STT-detected short code ('en', 'hi', 'te', …). */
   onTranscript: (text: string, language: string) => void;
   onBargeIn: () => void;
 }
@@ -23,7 +29,23 @@ interface AudioSession {
   callbacks: AudioDriverCallbacks;
   encoding: 'LINEAR16' | 'MULAW';
   sampleRateHertz: number;
+  /** Provider actually serving this call — differs from STT_PROVIDER after a fallback. */
+  sttProvider: SttProviderName;
+  /** Last applyPreferredLanguage value, re-applied if the provider changes. */
+  preferredLanguage: string | null;
+  /** Audio held while the fallback provider connects; null when not switching. */
+  switchBuffer: { chunks: Buffer<ArrayBuffer>[]; bytes: number } | null;
 }
+
+// SDK/socket failures arrive as DOM-style ErrorEvents as well as Errors.
+const describeError = (err: unknown): string =>
+  typeof (err as { message?: unknown })?.message === 'string'
+    ? (err as { message: string }).message
+    : String(err);
+
+// Cap on audio held during a provider switch (~5 s of 16 kHz PCM) — Deepgram
+// normally connects in under a second.
+const MAX_SWITCH_BUFFER_BYTES = 5 * 16000 * 2;
 
 /**
  * AudioDriverService — owns the Google Cloud STT lifecycle per session.
@@ -50,12 +72,22 @@ export class AudioDriverService {
   private readonly recognizerPath: string;
   private readonly sessions = new Map<string, AudioSession>();
 
-  private STT_SERVICE = 'deepgram';
+  /** STT_PROVIDER — deepgram (default) | google | sarvam. */
+  private readonly STT_SERVICE: SttProviderName;
+  /** STT_FALLBACK_PROVIDER — who takes over a failed Sarvam call. */
+  private readonly STT_FALLBACK: 'deepgram' | null;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly deepgramService: DeepGram,
+    private readonly sarvamSttService: SarvamSttService,
   ) {
+    this.STT_SERVICE = resolveSttProvider(
+      configService.get<string>('STT_PROVIDER'),
+    );
+    this.STT_FALLBACK = resolveSttFallback(
+      configService.get<string>('STT_FALLBACK_PROVIDER'),
+    );
     const location =
       configService.get<string>('GOOGLE_CLOUD_LOCATION_IN') || 'global';
 
@@ -69,7 +101,7 @@ export class AudioDriverService {
     this.recognizerPath = `projects/${projectId}/locations/${location}/recognizers/${recognizerId}`;
 
     this.logger.log(
-      `[AudioDriver] Initialized. Recognizer: ${this.recognizerPath}`,
+      `[AudioDriver] Initialized. STT provider: ${this.STT_SERVICE}${this.STT_SERVICE === 'sarvam' ? ` (fallback: ${this.STT_FALLBACK ?? 'none'})` : ''}. Recognizer: ${this.recognizerPath}`,
     );
   }
 
@@ -87,10 +119,15 @@ export class AudioDriverService {
       callbacks,
       encoding: audioConfig?.encoding ?? 'LINEAR16',
       sampleRateHertz: audioConfig?.sampleRateHertz ?? 16000,
+      sttProvider: this.STT_SERVICE,
+      preferredLanguage: null,
+      switchBuffer: null,
     };
     this.sessions.set(sessionId, session);
     if (this.STT_SERVICE === 'deepgram') {
       await this.deepgramService.openConnection(sessionId, session);
+    } else if (this.STT_SERVICE === 'sarvam') {
+      await this.openSarvam(sessionId, session);
     } else {
       this.openStream(sessionId, session);
     }
@@ -103,9 +140,14 @@ export class AudioDriverService {
    * anything) — fire-and-forget, same as other STT-switch triggers.
    */
   applyPreferredLanguage(sttKey: string, language: string): void {
-    if (this.STT_SERVICE !== 'deepgram') return;
     const session = this.sessions.get(sttKey);
-    if (!session) return;
+    if (session) session.preferredLanguage = language;
+    const provider = session?.sttProvider ?? this.STT_SERVICE;
+    if (provider === 'sarvam') {
+      this.sarvamSttService.setPreferredLanguage(sttKey, language);
+      return;
+    }
+    if (provider !== 'deepgram' || !session) return;
     void this.deepgramService.setPreferredLanguage(sttKey, language, session);
   }
 
@@ -118,8 +160,21 @@ export class AudioDriverService {
     const session = this.sessions.get(sessionId);
     if (!session) return;
 
-    if (this.STT_SERVICE === 'deepgram') {
+    if (session.switchBuffer) {
+      const buffer = session.switchBuffer;
+      const copy = Buffer.from(audio as Buffer);
+      buffer.chunks.push(copy);
+      buffer.bytes += copy.length;
+      while (buffer.bytes > MAX_SWITCH_BUFFER_BYTES && buffer.chunks.length > 1) {
+        buffer.bytes -= buffer.chunks.shift()!.length;
+      }
+      return;
+    }
+
+    if (session.sttProvider === 'deepgram') {
       this.deepgramService.feedAudio(sessionId, audio, session);
+    } else if (session.sttProvider === 'sarvam') {
+      this.sarvamSttService.feedAudio(sessionId, audio);
     } else {
       if (
         session.stream &&
@@ -141,14 +196,90 @@ export class AudioDriverService {
   endSession(sessionId: string): void {
     const session = this.sessions.get(sessionId);
     if (!session) return;
-    if (this.STT_SERVICE === 'deepgram') {
+    if (session.sttProvider === 'deepgram') {
       this.deepgramService.closeConnection(sessionId);
+    } else if (session.sttProvider === 'sarvam') {
+      this.sarvamSttService.closeConnection(sessionId);
     } else {
       this.clearSilenceTimer(session);
       this.destroyStream(session);
     }
     this.sessions.delete(sessionId);
     this.logger.log(`[AudioDriver] Session ended: ${sessionId}`);
+  }
+
+  // ─── Sarvam with Deepgram fallback ────────────────────────────────────────
+
+  /**
+   * Opens Sarvam for this call. If it can't connect — or drops later, e.g.
+   * credits run out mid-call — the rest of the call moves to the existing
+   * Deepgram pipeline instead of going deaf.
+   */
+  private async openSarvam(
+    sessionId: string,
+    session: AudioSession,
+  ): Promise<void> {
+    try {
+      await this.sarvamSttService.openConnection(sessionId, session, (reason) =>
+        void this.fallBackToDeepgram(sessionId, session, reason),
+      );
+    } catch (err) {
+      await this.fallBackToDeepgram(
+        sessionId,
+        session,
+        `connect failed: ${describeError(err)}`,
+      );
+    }
+  }
+
+  private async fallBackToDeepgram(
+    sessionId: string,
+    session: AudioSession,
+    reason: string,
+  ): Promise<void> {
+    if (this.sessions.get(sessionId) !== session) return; // call already ended
+    if (!this.STT_FALLBACK) {
+      this.logger.error(
+        `[AudioDriver] Sarvam STT failed for ${sessionId} (${reason}) — no fallback configured`,
+      );
+      return;
+    }
+    if (session.sttProvider === 'deepgram') return;
+
+    this.logger.warn(
+      `[AudioDriver] Sarvam STT failed for ${sessionId} (${reason}) — falling back to Deepgram`,
+    );
+    // Stop feeding Sarvam right away and hold the caller's audio until
+    // Deepgram is ready, so nothing said during the switch is lost.
+    session.sttProvider = 'deepgram';
+    session.switchBuffer = { chunks: [], bytes: 0 };
+    this.sarvamSttService.closeConnection(sessionId);
+    try {
+      await this.deepgramService.openConnection(sessionId, session);
+    } catch (err) {
+      session.switchBuffer = null;
+      this.logger.error(
+        `[AudioDriver] Deepgram fallback failed for ${sessionId}: ${describeError(err)}`,
+      );
+      return;
+    }
+    const held = session.switchBuffer?.chunks ?? [];
+    session.switchBuffer = null;
+    if (this.sessions.get(sessionId) !== session) {
+      // The call ended while Deepgram was connecting.
+      this.deepgramService.closeConnection(sessionId);
+      return;
+    }
+    for (const chunk of held) {
+      this.deepgramService.feedAudio(sessionId, chunk, session);
+    }
+    if (session.preferredLanguage) {
+      void this.deepgramService.setPreferredLanguage(
+        sessionId,
+        session.preferredLanguage,
+        session,
+      );
+    }
   }
 
   // ─── Private stream lifecycle ─────────────────────────────────────────────

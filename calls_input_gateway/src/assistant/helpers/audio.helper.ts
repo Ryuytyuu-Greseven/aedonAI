@@ -48,3 +48,22 @@ export function audioToWav(
   header.writeUInt32LE(buffer.length, 40);
   return Buffer.concat([header, buffer]);
 }
+
+/** G.711 μ-law (Twilio's 8 kHz telephony audio) → 16-bit little-endian PCM,
+ * same sample rate. For STT APIs that only take linear PCM. */
+export function mulawToLinear16(mulaw: Buffer): Buffer {
+  const pcm = Buffer.alloc(mulaw.length * 2);
+  for (let i = 0; i < mulaw.length; i++) {
+    pcm.writeInt16LE(decodeMulawSample(mulaw[i]), i * 2);
+  }
+  return pcm;
+}
+
+function decodeMulawSample(byte: number): number {
+  const u = ~byte & 0xff;
+  const sign = u & 0x80;
+  const exponent = (u >> 4) & 0x07;
+  const mantissa = u & 0x0f;
+  const magnitude = (((mantissa << 3) + 0x84) << exponent) - 0x84;
+  return sign ? -magnitude : magnitude;
+}

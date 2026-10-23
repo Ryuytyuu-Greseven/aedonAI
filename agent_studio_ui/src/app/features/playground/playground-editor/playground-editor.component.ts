@@ -26,6 +26,7 @@ import {
 } from '../../../core/models/phone-number.model';
 import { COUNTRY_CODES } from '../../../shared/constants/countries.constant';
 import { LANGUAGES } from '../../../shared/constants/languages.constant';
+import { AGENT_VOICES, DEFAULT_AGENT_VOICE } from '../../../shared/constants/agent-voices.constant';
 import { extractErrorMessage } from '../../../core/utils/http-error.util';
 import { AgentService } from '../../../core/services/agent.service';
 import { AgentTemplateService } from '../../../core/services/agent-template.service';
@@ -93,6 +94,7 @@ export class PlaygroundEditorComponent implements OnInit {
     { id: 'preview', label: 'Preview', icon: 'fa-phone-volume' },
   ];
   readonly languages = LANGUAGES;
+  readonly voices = AGENT_VOICES;
   readonly countryNames = [...new Set(COUNTRY_CODES.map((c) => c.name))];
   readonly phoneNumberDisplayLabel = phoneNumberDisplayLabel;
 
@@ -100,6 +102,7 @@ export class PlaygroundEditorComponent implements OnInit {
     agent_name: [''],
     agent_mode: ['both' as AgentMode],
     language: ['en'],
+    voice: [DEFAULT_AGENT_VOICE],
     agent_country: [''],
     phone_number_id: [''],
     greeting: [''],
@@ -186,6 +189,7 @@ export class PlaygroundEditorComponent implements OnInit {
       agent_name: '',
       agent_mode: 'both',
       language: 'en',
+      voice: DEFAULT_AGENT_VOICE,
       agent_country: '',
       phone_number_id: '',
       greeting: '',
@@ -239,6 +243,7 @@ export class PlaygroundEditorComponent implements OnInit {
       agent_name: agent.agent_name,
       agent_mode: agent.agent_mode ?? 'both',
       language: agent.language ?? 'en',
+      voice: agent.voice ?? DEFAULT_AGENT_VOICE,
       agent_country: '',
       phone_number_id: '',
       greeting: agent.greeting ?? '',
@@ -353,6 +358,8 @@ export class PlaygroundEditorComponent implements OnInit {
       agent_name: snapshot.agent_name,
       agent_mode: snapshot.agent_mode ?? 'both',
       language: snapshot.language ?? 'en',
+      // Older version snapshots don't record a voice — keep the current one.
+      ...(snapshot.voice ? { voice: snapshot.voice } : {}),
       greeting: snapshot.greeting ?? '',
       prompt: snapshot.prompt ?? '',
       behavior: snapshot.behavior ?? '',
@@ -376,6 +383,7 @@ export class PlaygroundEditorComponent implements OnInit {
       agent_name: this.fallbackValue('agent_name'),
       agent_mode: agentMode,
       language: this.form.controls.language.value,
+      voice: this.form.controls.voice.value,
       enable_voice: agentMode !== 'chatbot',
       phone_number_id: selectedPhoneId,
       greeting: this.fallbackValue('greeting'),
@@ -425,6 +433,7 @@ export class PlaygroundEditorComponent implements OnInit {
         agent_name: agent.agent_name,
         agent_mode: agent.agent_mode ?? 'both',
         language: agent.language ?? 'en',
+        voice: agent.voice ?? DEFAULT_AGENT_VOICE,
         greeting: agent.greeting ?? '',
         prompt: agent.prompt ?? '',
         behavior: agent.behavior ?? '',

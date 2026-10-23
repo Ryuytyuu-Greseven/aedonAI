@@ -12,6 +12,7 @@ import {
 } from 'class-validator';
 
 import { AgentStatus } from '../../schemas/agent.schema';
+import { AGENT_VOICE_CODES } from '../agent-voices';
 import { McpServerDto, ReferralBonusDto } from './agent-parts.dto';
 
 export class CreateAgentDto {
@@ -34,6 +35,11 @@ export class CreateAgentDto {
   @IsString()
   @IsNotEmpty()
   language: string;
+
+  /** Provider-neutral voice code — see agents/agent-voices.ts. */
+  @IsOptional()
+  @IsIn(AGENT_VOICE_CODES)
+  voice?: string;
 
   @IsOptional()
   @IsIn(['draft'])

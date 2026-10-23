@@ -230,6 +230,12 @@ export class AssistantService {
     if (agentPlain?.agent_id) {
       session.config.agentId = String(agentPlain.agent_id);
     }
+    // The voice saved on the agent wins over whatever the client/Twilio sent
+    // (historically a hard-coded Google voice name). TTS providers map the
+    // code to their own voices.
+    if (agentPlain?.voice) {
+      session.config.voice = String(agentPlain.voice);
+    }
 
     const initialLanguage = agentDetails?.currentLanguage || session.language;
     session.language = initialLanguage;

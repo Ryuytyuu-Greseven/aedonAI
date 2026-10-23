@@ -72,6 +72,8 @@ export interface Agent {
   agent_mode?: AgentMode;
   /** BCP-47-ish language code, e.g. `en`, `hi` — see `shared/constants/languages.constant.ts`. */
   language?: string;
+  /** Provider-neutral voice code, e.g. `female_1` — see `shared/constants/agent-voices.constant.ts`. */
+  voice?: string;
   enable_voice: boolean;
   phone_number_id?: string;
   /** E.164 / dial fields from API (when not using local phone library id). */

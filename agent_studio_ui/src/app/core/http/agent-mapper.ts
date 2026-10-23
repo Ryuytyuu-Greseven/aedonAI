@@ -49,6 +49,7 @@ export function fromApiAgent(raw: ApiAgent): Agent {
     agent_name: raw.agent_name,
     agent_mode: raw.agent_mode ?? base.agent_mode,
     language: raw.language,
+    voice: raw.voice ?? undefined,
     enable_voice: raw.enable_voice ?? true,
     phone_number_id: raw.phone_number_id,
     country_code: raw.country_code,
@@ -160,6 +161,9 @@ export function toCreateAgentRequest(
   if (draft.language !== undefined) {
     body.language = draft.language;
   }
+  if (draft.voice !== undefined) {
+    body.voice = draft.voice;
+  }
   if (draft.greeting !== undefined) {
     body.greeting = draft.greeting;
   }
@@ -196,6 +200,7 @@ export function toUpdateAgentRequest(
   if (data.status !== undefined) body.status = data.status;
   if (data.base_template_id !== undefined) body.base_template_id = data.base_template_id;
   if (data.language !== undefined) body.language = data.language;
+  if (data.voice !== undefined) body.voice = data.voice;
   if (data.greeting !== undefined) body.greeting = data.greeting;
   if (data.prompt !== undefined) body.behavior_prompt = data.prompt;
   if (data.behavior !== undefined) body.behavior_notes = data.behavior;

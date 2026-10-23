@@ -34,6 +34,7 @@ export interface CreateAgentRequest {
   phone_number?: string;
   status?: 'draft';
   language?: string;
+  voice?: string | null;
   greeting?: string;
   behavior_prompt?: string;
   behavior_notes?: string;
@@ -52,6 +53,7 @@ export interface UpdateAgentRequest {
   status?: Agent['status'];
   base_template_id?: string;
   language?: string;
+  voice?: string | null;
   greeting?: string;
   behavior_prompt?: string;
   behavior_notes?: string;
@@ -89,6 +91,7 @@ export interface ApiAgent {
   preview_hash?: string | null;
   agent_mode?: Agent['agent_mode'];
   language?: string;
+  voice?: string | null;
   phone_number_id?: string;
   current_stage_version?: number;
 }

@@ -4,16 +4,30 @@ import { IAiService } from '../interfaces/ai.interface';
 import { UserConfig } from '../types/assistant.types';
 import { GeminiService } from './gemini.service';
 import { OpenAiService } from './openai.service';
+import { SarvamTtsService } from '../tts/sarvam/sarvam-tts.service';
+import {
+  resolveTtsProvider,
+  TtsProviderName,
+} from '../speech/speech.config';
 
 @Injectable()
 export class SharedAiService implements IAiService {
   private readonly logger = new Logger(SharedAiService.name);
+  /** TTS_PROVIDER — google (default) | sarvam | openai; falls back to AI_PROVIDER. */
+  private readonly ttsProvider: TtsProviderName;
 
   constructor(
     private readonly configService: ConfigService,
     private readonly geminiService: GeminiService,
     private readonly openAiService: OpenAiService,
-  ) { }
+    private readonly sarvamTtsService: SarvamTtsService,
+  ) {
+    this.ttsProvider = resolveTtsProvider(
+      configService.get<string>('TTS_PROVIDER'),
+      configService.get<string>('AI_PROVIDER'),
+    );
+    this.logger.log(`TTS provider: ${this.ttsProvider}`);
+  }
 
   private getProviderService(providerName: string): IAiService {
     const provider = (providerName || '').toLowerCase().trim();
@@ -88,14 +102,15 @@ export class SharedAiService implements IAiService {
     session: any,
     client: any
   ): Promise<void> {
-    const defaultProvider =
-      this.configService.get<string>('AI_PROVIDER') || 'gemini';
-    const ttsProvider =
-      this.configService.get<string>('TTS_PROVIDER') || defaultProvider;
-    const service = this.getProviderService(ttsProvider);
     this.logger.log(
-      `Routing textToSpeech stream to TTS provider: ${ttsProvider}`,
+      `Routing textToSpeech stream to TTS provider: ${this.ttsProvider}`,
     );
+    const service =
+      this.ttsProvider === 'sarvam'
+        ? this.sarvamTtsService
+        : this.ttsProvider === 'openai'
+          ? this.openAiService
+          : this.geminiService;
     return service.textToSpeech(llmStream, voice, onAudioChunk, session, client);
   }
 

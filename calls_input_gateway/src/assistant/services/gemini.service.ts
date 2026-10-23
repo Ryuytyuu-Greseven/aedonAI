@@ -6,6 +6,9 @@ import { TextToSpeechClient } from '@google-cloud/text-to-speech';
 import { UserConfig } from '../types/assistant.types';
 import { IAiService } from '../interfaces/ai.interface';
 import { normalizeNumbersForSpeech } from '../helpers/tts-text.helper';
+import { GOOGLE_TTS_LOCALES } from '../speech/language-codes';
+import { resolveVoice } from '../speech/voices/voice-mapper';
+import { splitIntoSentences } from '../tts/sentence-chunker';
 
 @Injectable()
 export class GeminiService implements IAiService {
@@ -308,25 +311,7 @@ CRITICAL RULES:
       `Starting real-time LLM-to-Speech stream using Google Cloud TTS... ${voice}`,
     );
 
-    const MAX_BUFFER_CHARS = 100;
     let ttsStream: any;
-    let sentenceBuffer = '';
-    let languageExtracted = false;
-
-    const findFlushBoundary = (buffer: string): number => {
-      for (let i = 0; i < buffer.length; i++) {
-        const ch = buffer[i];
-        if (ch === '.' || ch === '?' || ch === '!' || ch === '\n') return i;
-        if (buffer.length >= 60 && (ch === ',' || ch === ';' || ch === ':')) {
-          return i;
-        }
-      }
-      if (buffer.length >= MAX_BUFFER_CHARS) {
-        const space = buffer.lastIndexOf(' ', MAX_BUFFER_CHARS);
-        return space > 0 ? space : MAX_BUFFER_CHARS - 1;
-      }
-      return -1;
-    };
 
     const flushToTts = async (sentence: string): Promise<void> => {
       if (!sentence || !session.isGenerating) return;
@@ -368,17 +353,11 @@ CRITICAL RULES:
       // Chirp3-HD voice names (Aoede, Callirrhoe, etc.) are shared across
       // locales — only the locale prefix changes to match the detected
       // spoken language (see LanguageIdService / DeepGram switching).
-      const LOCALE_MAP: Record<string, string> = {
-        en: 'en-US',
-        hi: 'hi-IN',
-        te: 'te-IN',
-        ta: 'ta-IN',
-        kn: 'kn-IN',
-      };
-      let languageCode = LOCALE_MAP[session.language] || 'en-US';
-      let voiceModel = `${languageCode}-Chirp3-HD-${voice}`;
+      const voiceName = resolveVoice('google', voice);
+      let languageCode = GOOGLE_TTS_LOCALES[session.language] || 'en-US';
+      let voiceModel = `${languageCode}-Chirp3-HD-${voiceName}`;
 
-      if (voice === 'Callirrhoe') {
+      if (voiceName === 'Callirrhoe') {
         // Chirp-HD-F (older, non-Chirp3 generation) is only verified for
         // en-US — pin it regardless of detected language rather than guess
         // its coverage in other locales.
@@ -408,40 +387,13 @@ CRITICAL RULES:
     };
 
     try {
-      for await (const chunk of llmStream) {
-        if (!session.isGenerating) break;
-
+      for await (const sentence of splitIntoSentences(
+        llmStream,
+        () => session.isGenerating,
+        ensureTtsStream,
+      )) {
         ensureTtsStream();
-
-        const chunkText = chunk.text || '';
-        sentenceBuffer += chunkText;
-
-        if (!languageExtracted) {
-          if (sentenceBuffer.includes(']:')) {
-            const prefixIndex = sentenceBuffer.indexOf(']:');
-            sentenceBuffer = sentenceBuffer.substring(prefixIndex + 2);
-            languageExtracted = true;
-          } else if (sentenceBuffer.length > 20) {
-            languageExtracted = true;
-          }
-        }
-
-        while (session.isGenerating) {
-          const boundaryIndex = findFlushBoundary(sentenceBuffer);
-          if (boundaryIndex === -1) break;
-
-          const sentence = sentenceBuffer
-            .substring(0, boundaryIndex + 1)
-            .trim();
-          sentenceBuffer = sentenceBuffer.substring(boundaryIndex + 1);
-          if (!sentence) continue;
-          await flushToTts(sentence);
-        }
-      }
-
-      if (session.isGenerating && sentenceBuffer.trim().length > 0) {
-        ensureTtsStream();
-        await flushToTts(sentenceBuffer.trim());
+        await flushToTts(sentence);
       }
     } catch (err) {
       this.logger.error(

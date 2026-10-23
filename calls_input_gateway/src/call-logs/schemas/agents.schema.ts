@@ -87,6 +87,10 @@ export class Agent {
     @Prop({ required: true, default: 'te' })
     language: string;
 
+    /** Provider-neutral voice code (female_1, male_1, …) — see speech/voices. */
+    @Prop({ type: String, default: null })
+    voice: string | null;
+
     @Prop({ required: true, default: true })
     enable_voice: boolean;
 

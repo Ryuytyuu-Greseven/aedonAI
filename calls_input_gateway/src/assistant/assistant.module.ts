@@ -11,6 +11,8 @@ import { LanguageIdService } from './services/language-id.service';
 import { VoiceTranslationAdapterService } from './services/voice-translation-adapter.service';
 import { McpController } from './mcp.controller';
 import { DeepGram } from './stt/deepgram/transcribe';
+import { SarvamSttService } from './stt/sarvam/sarvam-stt.service';
+import { SarvamTtsService } from './tts/sarvam/sarvam-tts.service';
 import { CallLogsModule } from '../call-logs/call-logs.module';
 import { AgentsRepository } from 'src/call-logs/repositories/agents.repository';
 import { MetaLeadsRepository } from '../call-logs/repositories/meta-leads.repository';
@@ -48,6 +50,8 @@ import {
     LanguageIdService,
     VoiceTranslationAdapterService,
     DeepGram,
+    SarvamSttService,
+    SarvamTtsService,
     AgentsRepository,
     MetaLeadsRepository,
     ConnectedPagesRepository,
@@ -64,6 +68,8 @@ import {
     LanguageIdService,
     VoiceTranslationAdapterService,
     DeepGram,
+    SarvamSttService,
+    SarvamTtsService,
   ],
 })
 export class AssistantModule {}

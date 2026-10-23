@@ -145,6 +145,10 @@ export class Agent {
   @Prop({ required: true, default: 'te' })
   language: string;
 
+  /** Provider-neutral voice code (female_1, male_1, …) — see agents/agent-voices.ts. */
+  @Prop({ type: String, default: null })
+  voice: string | null;
+
   @Prop({ type: String, default: null, trim: true })
   phone_number: string | null;
 

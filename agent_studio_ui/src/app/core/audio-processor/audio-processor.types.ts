@@ -63,5 +63,3 @@ export interface ServerMessage {
 export const MIC_SAMPLE_RATE = 16000;
 /** TTS playback format (server → client). */
 export const PLAYBACK_SAMPLE_RATE = 24000;
-/** Default TTS voice per websockets.md. */
-export const DEFAULT_VOICE_NAME = 'Aoede';
