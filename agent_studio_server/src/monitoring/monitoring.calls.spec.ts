@@ -85,6 +85,7 @@ describe('MonitoringService calls', () => {
   const agentsService = { findById: jest.fn() };
   const repo = {
     listByAgentId: jest.fn(),
+    listActiveByAgentId: jest.fn(),
     findOneForAgent: jest.fn(),
     filterByAgentIdSince: jest.fn(),
   };
@@ -104,6 +105,22 @@ describe('MonitoringService calls', () => {
 
     expect(agentsService.findById).toHaveBeenCalledWith('mongo-1', 'co-1');
     expect(repo.listByAgentId).toHaveBeenCalledWith('agent-abc');
+  });
+
+  it('lists active calls by agent_id, ignoring ones started over 10 minutes ago', async () => {
+    repo.listActiveByAgentId.mockResolvedValue([
+      { ...baseLog, status: 'in_progress', ending_time: null, message_count: 2 },
+    ]);
+    const before = Date.now();
+    const active = await service.listActiveCallsForAgent('mongo-1', 'co-1');
+
+    expect(agentsService.findById).toHaveBeenCalledWith('mongo-1', 'co-1');
+    const [agentId, startedAfter] = repo.listActiveByAgentId.mock.calls[0];
+    expect(agentId).toBe('agent-abc');
+    expect(before - startedAfter.getTime()).toBeGreaterThanOrEqual(10 * 60 * 1000);
+    expect(before - startedAfter.getTime()).toBeLessThan(10 * 60 * 1000 + 1000);
+    expect(active).toHaveLength(1);
+    expect(active[0]).toMatchObject({ id: 'CA1', status: 'in_progress', customer_name: 'Ravi' });
   });
 
   it("404s a call that isn't this agent's", async () => {

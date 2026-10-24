@@ -24,6 +24,11 @@ export interface AgentCallStats {
 
 const TRAILING_WINDOW_DAYS = 14;
 
+// A call log stays `in_progress` if the gateway dies before closing it, so
+// anything older than this is treated as stale rather than active. Phone
+// calls are auto-hung-up at 2 minutes; this leaves room for web calls.
+const ACTIVE_CALL_MAX_AGE_MS = 10 * 60 * 1000;
+
 function toDateKey(date: Date): string {
   return date.toISOString().slice(0, 10);
 }
@@ -47,6 +52,18 @@ export class MonitoringService {
   ): Promise<CallSummary[]> {
     const agent = await this.agentsService.findById(agentId, companyId);
     const rows = await this.callRecordsRepository.listByAgentId(agent.agent_id);
+    return rows.map(toCallSummary);
+  }
+
+  async listActiveCallsForAgent(
+    agentId: string,
+    companyId: string | null,
+  ): Promise<CallSummary[]> {
+    const agent = await this.agentsService.findById(agentId, companyId);
+    const rows = await this.callRecordsRepository.listActiveByAgentId(
+      agent.agent_id,
+      new Date(Date.now() - ACTIVE_CALL_MAX_AGE_MS),
+    );
     return rows.map(toCallSummary);
   }
 

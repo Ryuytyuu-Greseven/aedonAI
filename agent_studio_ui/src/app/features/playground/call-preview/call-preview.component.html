@@ -1,7 +1,7 @@
 <div class="cp">
   <div class="cp-intro">
     <span class="cp-intro-icon"><i class="fa-solid fa-phone-volume" aria-hidden="true"></i></span>
-    <p class="text-muted">The agent calls the number you enter. Watch the live transcript here while you talk.</p>
+    <p class="text-muted">The agent calls the number you enter. Answer your phone to talk to it.</p>
   </div>
 
   <div [formGroup]="phoneForm" class="cp-dial">
@@ -16,14 +16,14 @@
     <button
       type="button"
       class="btn btn-primary cp-call"
-      [class.cp-call-live]="callStatus() === 'calling' || callStatus() === 'in-progress'"
-      [disabled]="callStatus() === 'calling' || callStatus() === 'in-progress'"
+      [class.cp-call-live]="callStatus() === 'calling'"
+      [disabled]="callStatus() === 'calling'"
       (click)="startPreviewCall()"
     >
-      @if (callStatus() === 'calling' || callStatus() === 'in-progress') {
-        <span class="cp-ring"></span> {{ callStatus() === 'calling' ? 'Calling…' : 'On call' }}
+      @if (callStatus() === 'calling') {
+        <span class="cp-ring"></span> Calling…
       } @else {
-        <i class="fa-solid fa-phone" aria-hidden="true"></i> Call me
+        <i class="fa-solid fa-phone" aria-hidden="true"></i> {{ callStatus() === 'placed' ? 'Call again' : 'Call me' }}
       }
     </button>
   </div>
@@ -31,27 +31,10 @@
     <p class="field-error">Enter a valid mobile number (6–12 digits).</p>
   }
 
-  @if (previewMessages().length > 0) {
-    <div class="cp-transcript">
-      <div class="cp-transcript-head">
-        <span><i class="fa-solid fa-wave-square" aria-hidden="true"></i> Live transcript</span>
-        @if (callStatus() === 'in-progress') { <span class="cp-live"><span></span> Live</span> }
-      </div>
-      <div class="cp-messages">
-        @for (message of previewMessages(); track $index) {
-          <div class="cp-msg" [class.cp-msg-agent]="message.speaker === 'agent'" [class.cp-msg-customer]="message.speaker === 'customer'">
-            <span class="cp-msg-speaker">{{ message.speaker === 'agent' ? 'Agent' : 'Customer' }}</span>
-            {{ message.text }}
-          </div>
-        }
-      </div>
-    </div>
-  }
-
-  @if (callStatus() === 'ended') {
-    <div class="cp-result" [class.cp-result-ok]="previewPassed()">
-      <i class="fa-solid" [class.fa-circle-check]="previewPassed()" [class.fa-circle-xmark]="!previewPassed()" aria-hidden="true"></i>
-      {{ previewPassed() ? 'Call completed successfully.' : 'Call did not complete successfully.' }}
+  @if (callStatus() === 'placed') {
+    <div class="cp-result cp-result-ok">
+      <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+      Call placed — your phone should ring shortly.
     </div>
   }
 </div>

@@ -24,9 +24,27 @@ export class CallRecordsRepository {
 
   /** Newest first, transcripts left out — they can be long. */
   async listByAgentId(agentId: string): Promise<CallLogListRow[]> {
+    return this.listRows({ agent_id: agentId });
+  }
+
+  /** Calls still marked in progress that started on/after `startedAfter`. */
+  async listActiveByAgentId(
+    agentId: string,
+    startedAfter: Date,
+  ): Promise<CallLogListRow[]> {
+    return this.listRows({
+      agent_id: agentId,
+      status: 'in_progress',
+      starting_time: { $gte: startedAfter },
+    });
+  }
+
+  private async listRows(
+    match: Record<string, unknown>,
+  ): Promise<CallLogListRow[]> {
     return this.callLogModel
       .aggregate<CallLogListRow>([
-        { $match: { agent_id: agentId } },
+        { $match: match },
         { $sort: { starting_time: -1 } },
         {
           $addFields: {

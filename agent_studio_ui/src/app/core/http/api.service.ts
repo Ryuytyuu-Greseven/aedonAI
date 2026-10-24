@@ -398,6 +398,11 @@ export class ApiService {
     return this.http.get<AgentCallStats>(ApiEndpoints.calls.stats(agentId));
   }
 
+  /** Calls currently in progress for this agent (stale ones are filtered server-side). */
+  getActiveCalls(agentId: string): Observable<ApiCallRecord[]> {
+    return this.http.get<ApiCallRecord[]>(ApiEndpoints.calls.active(agentId));
+  }
+
   // ── Reporting ───────────────────────────────────────────
 
   generateReport(agentId: string, body: GenerateReportRequest): Observable<GenerateReportResponse> {

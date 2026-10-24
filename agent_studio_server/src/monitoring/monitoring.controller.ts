@@ -9,10 +9,15 @@ import { MonitoringService } from './monitoring.service';
 export class MonitoringController {
   constructor(private readonly monitoringService: MonitoringService) {}
 
-  // Declared before ':callId' so "stats" isn't matched as a call id.
+  // Declared before ':callId' so "stats" / "active" aren't matched as call ids.
   @Get('stats')
   getStats(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.monitoringService.getStatsForAgent(id, user.companyId);
+  }
+
+  @Get('active')
+  getActive(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.monitoringService.listActiveCallsForAgent(id, user.companyId);
   }
 
   @Get()

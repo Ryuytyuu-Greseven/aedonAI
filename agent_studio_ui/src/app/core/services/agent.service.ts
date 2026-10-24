@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { Observable, switchMap, tap, throwError, map } from 'rxjs';
+import { Observable, switchMap, throwError, map } from 'rxjs';
 import {
   Agent,
   AgentVersion,
@@ -7,15 +7,11 @@ import {
   AgentExportJson,
 } from '../models/agent.model';
 import { ApiService } from '../http/api.service';
-import { RealtimeService } from '../realtime/realtime.service';
 import { toDialCode } from '../models/phone.model';
 
 @Injectable({ providedIn: 'root' })
 export class AgentService {
-  constructor(
-    private readonly api: ApiService,
-    private readonly realtime: RealtimeService,
-  ) {}
+  constructor(private readonly api: ApiService) {}
 
   getAgents(): Observable<Agent[]> {
     return this.api.getAllAgents();
@@ -97,15 +93,9 @@ export class AgentService {
     agentId: string,
     phone: { countryCode: string; number: string },
     business?: string,
-  ): Observable<{ callId: string }> {
-    const callId = `call-${Date.now()}`;
-    // Places the real outbound call via Twilio, then drives the local realtime preview UI.
-    return this.api
-      .startTwilioCall({ agentId, business, countryCode: toDialCode(phone.countryCode), phone: phone.number })
-      .pipe(
-        map(() => ({ callId })),
-        tap(() => this.realtime.send({ type: 'call.start', agentId, callId, phone, business })),
-      );
+  ): Observable<unknown> {
+    // Places the real outbound call via Twilio; the conversation happens on the phone.
+    return this.api.startTwilioCall({ agentId, business, countryCode: toDialCode(phone.countryCode), phone: phone.number });
   }
 
   toExportJson(agent: Agent): AgentExportJson {

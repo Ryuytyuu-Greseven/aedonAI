@@ -4,26 +4,6 @@ import { RealtimeTransport } from './realtime-transport';
 import { ConnectionStatus, RealtimeCommand, RealtimeEvent } from './realtime.types';
 
 const CONNECT_DELAY_MS = 200;
-const FIRST_MESSAGE_DELAY_MS = 400;
-const MESSAGE_DELAY_RANGE_MS: [number, number] = [900, 2200];
-const MESSAGE_COUNT_RANGE: [number, number] = [3, 6];
-const FAILURE_RATE = 0.15;
-
-const AGENT_LINES = [
-  'Hi, thanks for calling — how can I help you today?',
-  'Sure, I can help with that. One moment.',
-  'Got it. Is there anything else you would like to know?',
-  'Thanks for confirming, I have noted that down.',
-  'Perfect, I will take care of that for you now.',
-];
-
-const CUSTOMER_LINES = [
-  'Hi, I had a question about my recent order.',
-  'Yes, that sounds right, please go ahead.',
-  'Okay, that makes sense, thank you.',
-  'Can you also check on the delivery date?',
-  'That is all I needed, thanks.',
-];
 
 const CHAT_GREETING_DELAY_MS = 500;
 const CHAT_REPLY_DELAY_RANGE_MS: [number, number] = [500, 1400];
@@ -90,43 +70,11 @@ export class MockRealtimeTransport implements RealtimeTransport {
   }
 
   send(command: RealtimeCommand): void {
-    if (command.type === 'call.start') {
-      this.simulateCall(command.agentId, command.callId);
-    } else if (command.type === 'chat.start') {
+    if (command.type === 'chat.start') {
       this.startChat(command.agentId, command.sessionId);
     } else if (command.type === 'chat.send') {
       this.replyToChat(command.agentId, command.sessionId);
     }
-  }
-
-  private simulateCall(agentId: string, callId: string): void {
-    let elapsed = FIRST_MESSAGE_DELAY_MS;
-    setTimeout(() => this.eventsSubject.next({ type: 'call.started', agentId, callId }), elapsed);
-
-    const messageCount = randomInt(...MESSAGE_COUNT_RANGE);
-    for (let i = 0; i < messageCount; i++) {
-      elapsed += randomInt(...MESSAGE_DELAY_RANGE_MS);
-      const speaker: 'agent' | 'customer' = i % 2 === 0 ? 'agent' : 'customer';
-      const lines = speaker === 'agent' ? AGENT_LINES : CUSTOMER_LINES;
-      const text = lines[i % lines.length];
-      const at = elapsed;
-      setTimeout(() => {
-        this.eventsSubject.next({
-          type: 'call.message',
-          agentId,
-          callId,
-          speaker,
-          text,
-          at: new Date().toISOString(),
-        });
-      }, at);
-    }
-
-    elapsed += randomInt(...MESSAGE_DELAY_RANGE_MS);
-    const outcome: 'completed' | 'failed' = Math.random() < FAILURE_RATE ? 'failed' : 'completed';
-    setTimeout(() => {
-      this.eventsSubject.next({ type: 'call.ended', agentId, callId, outcome });
-    }, elapsed);
   }
 
   private startChat(agentId: string, sessionId: string): void {

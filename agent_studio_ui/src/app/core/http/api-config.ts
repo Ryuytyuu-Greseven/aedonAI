@@ -69,6 +69,7 @@ export const ApiEndpoints = {
     list: (agentId: string) => `/agents/${agentId}/calls`,
     detail: (agentId: string, callId: string) => `/agents/${agentId}/calls/${encodeURIComponent(callId)}`,
     stats: (agentId: string) => `/agents/${agentId}/calls/stats`,
+    active: (agentId: string) => `/agents/${agentId}/calls/active`,
   },
 
   reports: {
