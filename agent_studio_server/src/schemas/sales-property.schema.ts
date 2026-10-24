@@ -17,7 +17,7 @@ export class SalesProperty {
   @Prop({ type: String, default: null })
   companyId: string | null;
 
-  /** The sales agent this property belongs to (Agent's Mongo `_id`). */
+  /** The sales agent this property belongs to (Agent's `agent_id`, not its Mongo `_id`). */
   @Prop({ required: true, index: true })
   agentId: string;
 

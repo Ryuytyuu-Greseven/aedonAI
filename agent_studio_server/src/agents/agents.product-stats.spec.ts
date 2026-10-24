@@ -22,6 +22,7 @@ describe('AgentsService.productStats', () => {
     jest.resetAllMocks();
     agentsRepository.filterById.mockResolvedValue({
       _id: 'agent-1',
+      agent_id: 'agent-uuid-1',
       companyId: 'co-1',
     });
     productEnquiriesRepository.aggregateStatsForAgent.mockResolvedValue({
@@ -37,7 +38,7 @@ describe('AgentsService.productStats', () => {
       productEnquiriesRepository.aggregateStatsForAgent.mock.calls[0][0];
 
     expect(params).toMatchObject({
-      agentId: 'agent-1',
+      agentId: 'agent-uuid-1',
       sort: 'enquiries',
       order: 'desc',
       page: 1,
@@ -61,7 +62,7 @@ describe('AgentsService.productStats', () => {
     expect(
       productEnquiriesRepository.aggregateStatsForAgent,
     ).toHaveBeenCalledWith({
-      agentId: 'agent-1',
+      agentId: 'agent-uuid-1',
       from: new Date('2026-10-01'),
       to: new Date('2026-10-07'),
       search: 'pro',

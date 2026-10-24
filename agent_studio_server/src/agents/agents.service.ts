@@ -468,7 +468,7 @@ export class AgentsService {
 
     const { items, total } =
       await this.productEnquiriesRepository.aggregateStatsForAgent({
-        agentId: String(agent._id),
+        agentId: agent.agent_id,
         from,
         to,
         search: query.search,
