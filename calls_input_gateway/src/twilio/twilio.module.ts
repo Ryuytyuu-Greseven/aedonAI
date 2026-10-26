@@ -3,7 +3,7 @@ import { AssistantModule } from '../assistant/assistant.module';
 import { TwilioService } from './twilio.service';
 import { TwilioController } from './controllers/twilio.controller';
 import { TwilioGateway } from './gateways/twilio.gateway';
-import { LovebytRecordingService } from './gateways/lovebyt-recording.service';
+import { LobsterRecordingService } from './gateways/lobster-recording.service';
 import { ExotelService } from '../exotel/exotel.service';
 
 @Module({
@@ -14,7 +14,7 @@ import { ExotelService } from '../exotel/exotel.service';
   providers: [
     TwilioService,
     TwilioGateway,
-    LovebytRecordingService,
+    LobsterRecordingService,
     ExotelService,
   ],
   exports: [TwilioService],

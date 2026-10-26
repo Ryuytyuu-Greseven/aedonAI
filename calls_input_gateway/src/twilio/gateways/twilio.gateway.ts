@@ -8,8 +8,11 @@ import { AssistantService } from '../../assistant/services/assistant.service';
 import { AudioDriverService } from '../../assistant/services/audio-driver.service';
 import { TwilioService } from '../twilio.service';
 import { convertTtsForTwilio } from '../utils/audio.util';
-import { LovebytRecordingService } from './lovebyt-recording.service';
-import { DEFAULT_BUSINESS } from '../../common/config/business-agents.registry';
+import { LobsterRecordingService } from './lobster-recording.service';
+import {
+  DEFAULT_BUSINESS,
+  routesToLobster,
+} from '../../common/config/business-agents.registry';
 
 const CALL_TIMEOUT_MS = 2 * 60 * 1000; // 2 minutes
 
@@ -93,7 +96,7 @@ class TwilioClientAdapter {
 export class TwilioGateway implements OnGatewayConnection, OnGatewayDisconnect {
   private readonly logger = new Logger(TwilioGateway.name);
   private readonly adapters = new Map<any, TwilioClientAdapter>();
-  // streamSid → accumulated audio (lovebyt sessions only)
+  // streamSid → accumulated audio (lobster_agent sessions only)
   private readonly recordings = new Map<string, AudioRecord>();
   // streamSid → auto-hangup timer handle
   private readonly callTimers = new Map<string, NodeJS.Timeout>();
@@ -102,7 +105,7 @@ export class TwilioGateway implements OnGatewayConnection, OnGatewayDisconnect {
     private readonly assistantService: AssistantService,
     private readonly audioDriverService: AudioDriverService,
     private readonly twilioService: TwilioService,
-    private readonly lovebytRecordingService: LovebytRecordingService,
+    private readonly lobsterRecordingService: LobsterRecordingService,
   ) { }
 
   handleConnection(socket: any): void {
@@ -199,7 +202,7 @@ export class TwilioGateway implements OnGatewayConnection, OnGatewayDisconnect {
       `[TwilioGateway] Stream start — streamSid=${adapter.streamSid} callSid=${adapter.callSid} business=${business} provider=${provider} direction=${direction}`,
     );
 
-    if (business === 'lovebyt') {
+    if (routesToLobster(business)) {
       this.recordings.set(adapter.streamSid, {
         chunks: [],
         startedAt: Date.now(),
@@ -269,11 +272,11 @@ export class TwilioGateway implements OnGatewayConnection, OnGatewayDisconnect {
     if (!record) return;
     this.recordings.delete(streamSid);
 
-    this.lovebytRecordingService
-      .saveLovebytRecording(streamSid, record.chunks, record.startedAt)
+    this.lobsterRecordingService
+      .saveLobsterRecording(streamSid, record.chunks, record.startedAt)
       .catch((err) =>
         this.logger.error(
-          `[TwilioGateway] Failed to save lovebyt recording ${streamSid}:`,
+          `[TwilioGateway] Failed to save lobster_agent recording ${streamSid}:`,
           err,
         ),
       );

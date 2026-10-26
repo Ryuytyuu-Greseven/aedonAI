@@ -9,6 +9,7 @@ import {
   toShortLanguage,
 } from '../../speech/language-codes';
 import { resolveTtsProvider } from '../../speech/speech.config';
+import { PINNED_LANGUAGE } from '../../../common/config/pinned-language';
 
 type SttSocket = Awaited<
   ReturnType<SarvamAIClient['speechToTextStreaming']['connect']>
@@ -89,8 +90,11 @@ export class SarvamSttService {
     const model =
       this.configService.get<string>('SARVAM_STT_MODEL') || 'saaras:v4';
     const mode = this.configService.get<string>('SARVAM_STT_MODE');
-    const languageCode =
-      this.configService.get<string>('SARVAM_STT_LANGUAGE') || 'unknown';
+    // A pinned language locks Sarvam to it (te-IN) instead of detecting per
+    // utterance — far better transcripts for a single-language caller.
+    const languageCode = PINNED_LANGUAGE
+      ? `${PINNED_LANGUAGE}-IN`
+      : this.configService.get<string>('SARVAM_STT_LANGUAGE') || 'unknown';
 
     const socket = await this.getClient().speechToTextStreaming.connect({
       'language-code': languageCode as never,
@@ -264,7 +268,7 @@ export class SarvamSttService {
       this.configService.get<string>('AI_PROVIDER'),
     );
     return new LanguageTracker({
-      initial: 'en',
+      initial: PINNED_LANGUAGE ?? 'en',
       supported: speakableLanguages(tts),
       minConfidence:
         Number(

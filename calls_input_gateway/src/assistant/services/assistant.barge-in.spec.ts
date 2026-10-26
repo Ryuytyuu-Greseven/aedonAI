@@ -53,7 +53,9 @@ describe('AssistantService barge-in during a filler', () => {
     service.onTranscriptReady(client, 'okay so what about the price', 'en');
     expect(abortTts).toHaveBeenCalled();
     expect(session.turnInterrupted).toBe(true);
-    expect(session.queryQueue).toEqual(['okay so what about the price']);
+    expect(session.queryQueue.map((q) => q.text)).toEqual([
+      'okay so what about the price',
+    ]);
   });
 
   it('interrupts immediately on a real question', () => {

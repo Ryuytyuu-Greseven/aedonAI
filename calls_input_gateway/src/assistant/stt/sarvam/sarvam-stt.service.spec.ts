@@ -25,6 +25,11 @@ jest.mock('sarvamai', () => ({
   SarvamAIClient: jest.fn(() => ({ speechToTextStreaming: { connect } })),
 }));
 
+// PINNED_LANGUAGE defaults to Telugu while calls are forced to lobster_agent;
+// these tests set it explicitly (off unless a test turns it on).
+const mockPinned: { PINNED_LANGUAGE: string | null } = { PINNED_LANGUAGE: null };
+jest.mock('../../../common/config/pinned-language', () => mockPinned);
+
 import { SarvamSttService } from './sarvam-stt.service';
 
 function build(env: Record<string, string> = {}) {
@@ -46,7 +51,10 @@ describe('SarvamSttService', () => {
     connect.mockClear();
     jest.spyOn(Logger.prototype, 'log').mockImplementation(() => undefined);
   });
-  afterEach(() => jest.restoreAllMocks());
+  afterEach(() => {
+    mockPinned.PINNED_LANGUAGE = null;
+    jest.restoreAllMocks();
+  });
 
   it('opens an auto-detecting PCM stream at the call sample rate', async () => {
     await build().openConnection('s1', audioSession('MULAW', 8000));
@@ -154,6 +162,17 @@ describe('SarvamSttService', () => {
       }),
     );
   });
+  it('locks the stream to the pinned language over the env setting', async () => {
+    mockPinned.PINNED_LANGUAGE = 'te';
+    await build({ SARVAM_STT_LANGUAGE: 'unknown' }).openConnection(
+      's1',
+      audioSession('LINEAR16', 16000),
+    );
+    expect(connect).toHaveBeenCalledWith(
+      expect.objectContaining({ 'language-code': 'te-IN' }),
+    );
+  });
+
   it('reports a drop after open once, but not its own close', async () => {
     const service = build();
     const onFailure = jest.fn();

@@ -5,6 +5,7 @@ import { normalizeNumbersForSpeech } from '../../helpers/tts-text.helper';
 import { toSarvamTtsLanguage } from '../../speech/language-codes';
 import { resolveVoice } from '../../speech/voices/voice-mapper';
 import { splitIntoSentences } from '../sentence-chunker';
+import type { TurnLatency } from '../../helpers/turn-latency';
 
 type TtsSocket = Awaited<
   ReturnType<SarvamAIClient['textToSpeechStreaming']['connect']>
@@ -26,6 +27,7 @@ interface TtsTurnSession {
   isGenerating: boolean;
   language: string;
   abortTts?: (() => void) | null;
+  turnLatency?: TurnLatency | null;
 }
 
 const describeError = (err: unknown): string =>
@@ -91,6 +93,9 @@ export class SarvamTtsService {
     const handleMessage = (message: TtsMessage) => {
       if (message?.type === 'audio') {
         if (!session.isGenerating || aborted) return;
+        // Sarvam answers flushes in order, so audio arriving after `finals`
+        // final events belongs to sentence #finals.
+        session.turnLatency?.markOnce(`tts audio #${finals}`);
         let audio = Buffer.from(message.data?.audio ?? '', 'base64');
         // Keep whole 16-bit samples per chunk — downstream reads Int16 pairs.
         if (carry) audio = Buffer.concat([carry, audio]);
@@ -178,6 +183,7 @@ export class SarvamTtsService {
       onAudioChunk('', sentence + ' ', client);
       const s = await open();
       if (!s || aborted || !session.isGenerating) return;
+      session.turnLatency?.mark(`tts send #${flushes}`, sentence);
       s.convert(normalizeNumbersForSpeech(sentence));
       s.flush();
       flushes++;

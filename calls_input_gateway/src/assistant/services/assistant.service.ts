@@ -13,6 +13,8 @@ import { MetaLeadsRepository } from '../../call-logs/repositories/meta-leads.rep
 import { ConnectedPagesRepository } from '../../call-logs/repositories/connected-pages.repository';
 import { CacheService } from '../../common/services/cache.service';
 import { randomUUID } from 'crypto';
+import { PINNED_LANGUAGE } from '../../common/config/pinned-language';
+import { TurnLatency } from '../helpers/turn-latency';
 
 /**
  * Plain-object clone of the resolved Agent document plus a `currentLanguage`
@@ -76,7 +78,8 @@ export class AssistantService {
       isTranscribing: false,
       segmentIndex: 0,
       queryQueue: [],
-      language: 'en',
+      turnCount: 0,
+      language: PINNED_LANGUAGE ?? 'en',
     };
 
     this.sessions.set(client, session);
@@ -222,7 +225,8 @@ export class AssistantService {
     const agentDetails: CachedAgentDetails | null = agentPlain
       ? {
           ...agentPlain,
-          currentLanguage: agentPlain.language || session.language,
+          currentLanguage:
+            PINNED_LANGUAGE || agentPlain.language || session.language,
         }
       : null;
 
@@ -247,7 +251,7 @@ export class AssistantService {
       phoneNumber: session.config.phoneNumber,
     });
 
-    if (agentDetails) {
+    if (agentDetails || PINNED_LANGUAGE) {
       // Correct STT connection B immediately — bypasses live-classification
       // hysteresis since this is a confident, config-sourced language, not a
       // noisy guess. sttKey matches how AudioDriverService/DeepGram are
@@ -306,7 +310,10 @@ export class AssistantService {
     });
 
     // Trigger initial greeting
-    session.queryQueue.push('SYSTEM_START_CONVERSATION');
+    session.queryQueue.push({
+      text: 'SYSTEM_START_CONVERSATION',
+      latency: this.startTurnLatency(session, 'call start (greeting)'),
+    });
     this.processQueryQueue(client, session);
   }
 
@@ -436,8 +443,11 @@ export class AssistantService {
       if (session.isGenerating) this.interruptTurn(client, session);
     }
 
-    session.language = language;
-    this.updateSessionCurrentLanguage(session.sessionId, language);
+    // A pinned language holds the session (and so the agent's reply
+    // language and the TTS voice) whatever STT detected for this utterance.
+    const sessionLanguage = PINNED_LANGUAGE || language;
+    session.language = sessionLanguage;
+    this.updateSessionCurrentLanguage(session.sessionId, sessionLanguage);
     this.logger.log(`[Transcript] (${language}) "${text}"`);
 
     // Echo to frontend so it can display the user's words
@@ -453,7 +463,10 @@ export class AssistantService {
       session.config.business ?? 'unknown',
     );
 
-    session.queryQueue.push(text);
+    session.queryQueue.push({
+      text,
+      latency: this.startTurnLatency(session, 'transcript ready', text),
+    });
     this.processQueryQueue(client, session);
   }
 
@@ -470,7 +483,8 @@ export class AssistantService {
 
     try {
       while (session.queryQueue.length > 0) {
-        const queryText = session.queryQueue.shift()!;
+        const { text: queryText, latency } = session.queryQueue.shift()!;
+        session.turnLatency = latency;
         session.turnInterrupted = false;
         session.fillerOnly = false;
         session.deferredBargeIn = false;
@@ -479,6 +493,7 @@ export class AssistantService {
 
         try {
           this.logger.log(`[LLM] Processing: "${queryText}"`);
+          latency.mark('sent to agent');
 
           const rawStream = this.agentRouter.streamFromAgent(
             queryText,
@@ -486,13 +501,17 @@ export class AssistantService {
             session.sessionId,
             () => session.isGenerating,
             session.language,
+            latency.turnId,
           );
           const { stream: responseStream, getText } = this.captureTextStream(
             rawStream,
             (chunk) => {
               // Filler-only until the first piece of the real reply.
               session.fillerOnly = !!chunk.filler && getText() === '';
+              if (chunk.filler) latency.markOnce('agent first filler', chunk.text);
+              else latency.markOnce('agent first reply', chunk.text);
             },
+            () => latency.mark('agent done', getText()),
           );
 
           await this.sharedAiService.textToSpeech(
@@ -502,6 +521,8 @@ export class AssistantService {
             session,
             client,
           );
+
+          latency.mark('tts done (all audio sent)');
 
           const aiText = getText();
           if (aiText && queryText !== 'SYSTEM_START_CONVERSATION') {
@@ -528,6 +549,7 @@ export class AssistantService {
         } finally {
           session.abortTts = null;
           session.isGenerating = false;
+          session.turnLatency = null;
         }
       }
     } finally {
@@ -545,6 +567,7 @@ export class AssistantService {
   private captureTextStream(
     source: AsyncGenerator<AgentTextChunk>,
     onChunk?: (chunk: AgentTextChunk) => void,
+    onEnd?: () => void,
   ): {
     stream: AsyncGenerator<AgentTextChunk>;
     getText: () => string;
@@ -560,8 +583,23 @@ export class AssistantService {
         if (t && !chunk.filler) accumulated += t;
         yield chunk;
       }
+      onEnd?.();
     })();
     return { stream, getText: () => accumulated };
+  }
+
+  /** Starts a turn's latency trail, logging its first mark. */
+  private startTurnLatency(
+    session: SessionState,
+    event: string,
+    detail?: string,
+  ): TurnLatency {
+    session.turnCount++;
+    const latency = new TurnLatency(
+      `${session.sessionId.slice(0, 8)}#${session.turnCount}`,
+    );
+    latency.mark(event, detail);
+    return latency;
   }
 
   // Streams synthesized audio and text chunks back to the WebSocket client

@@ -8,6 +8,7 @@ import {
   LanguageIdService,
   SpokenLanguage,
 } from '../../services/language-id.service';
+import { PINNED_LANGUAGE } from '../../../common/config/pinned-language';
 
 // nova-3 `language: 'multi'` code-switches natively among en/es/fr/de/hi/ru/pt/
 // ja/it/nl — Hindi is covered, but Telugu/Tamil/Kannada are not, and Deepgram's
@@ -88,6 +89,15 @@ export class DeepGram {
   private sttState = new Map<string, SttSessionState>();
 
   private readonly secondLanguage: string;
+  /**
+   * PINNED_LANGUAGE when it's one of connection B's languages (te/ta/kn):
+   * B then stays on it for the whole call and wins ties against A, instead
+   * of A ('multi', en/hi) being authoritative.
+   */
+  private readonly pinnedBLanguage: string | null =
+    PINNED_LANGUAGE && MANUAL_SWITCH_LANGUAGES.has(PINNED_LANGUAGE)
+      ? PINNED_LANGUAGE
+      : null;
   private readonly endpointingMs: number;
   private readonly utteranceEndMs: number;
   private readonly requiredConfirmations: number;
@@ -98,7 +108,8 @@ export class DeepGram {
     private readonly languageIdService: LanguageIdService,
   ) {
     this.secondLanguage =
-      this.configService.get<string>('SECOND_STT_LANGUAGE') || 'te';
+      this.pinnedBLanguage ??
+      (this.configService.get<string>('SECOND_STT_LANGUAGE') || 'te');
     this.endpointingMs =
       Number(this.configService.get<string>('DEEPGRAM_ENDPOINTING_MS')) || 300;
     this.utteranceEndMs =
@@ -314,9 +325,10 @@ export class DeepGram {
 
     activeSession.speechDetectedByGoogle = false;
 
-    if (connState.label === 'A') {
-      // 'multi' is authoritative for en/hi — deliver immediately, no
-      // added latency for the common case.
+    // Normally 'multi' (A) is authoritative for en/hi and delivers at once;
+    // with a pinned B language the roles swap and A is the one that waits.
+    const immediateLabel = this.pinnedBLanguage ? 'B' : 'A';
+    if (connState.label === immediateLabel) {
       this.deliverTranscript(
         state,
         connState,
@@ -327,11 +339,14 @@ export class DeepGram {
       return;
     }
 
-    // connState.label === 'B': hold briefly so A gets a chance to win first
-    // if it also has a result for this same utterance (see B_RESULT_GRACE_MS).
+    // The other connection: hold briefly so the authoritative one gets a
+    // chance to win first if it also has a result for this same utterance
+    // (see B_RESULT_GRACE_MS).
     setTimeout(() => {
       if (Date.now() - state.lastDeliveryAt < DEDUPE_WINDOW_MS) {
-        this.logger.log(`[B] discarded (A won this utterance): "${trimmed}"`);
+        this.logger.log(
+          `[${connState.label}] discarded (${immediateLabel} won this utterance): "${trimmed}"`,
+        );
         return;
       }
       this.deliverTranscript(
@@ -402,6 +417,8 @@ export class DeepGram {
   private async checkLanguageSwitch(sessionId: string, activeSession: any) {
     const state = this.sttState.get(sessionId);
     if (!state || state.isCheckingLanguage || state.isSwitchingB) return;
+    // B is pinned for the whole call — no classification, no switching.
+    if (this.pinnedBLanguage) return;
 
     const bytesPerSecond =
       activeSession.encoding === 'MULAW'

@@ -3,6 +3,7 @@ import {
   CallDirection,
   CallProvider,
 } from '../../call-logs/interfaces/call-log.interface';
+import type { TurnLatency } from '../helpers/turn-latency';
 
 export interface UserConfig {
   model: string;
@@ -53,6 +54,11 @@ export interface AgentTextChunk {
   filler?: boolean;
 }
 
+export interface QueuedQuery {
+  text: string;
+  latency: TurnLatency;
+}
+
 export interface SessionState {
   config: UserConfig;
   sessionId: string;
@@ -74,7 +80,12 @@ export interface SessionState {
   lastSegmentHadSpeech: boolean;
   isTranscribing: boolean;
   segmentIndex: number;
-  queryQueue: string[];
+  /** Pending user turns, each with its latency trail started at transcript time. */
+  queryQueue: QueuedQuery[];
+  /** Counts turns this session, for latency log ids. */
+  turnCount: number;
+  /** Latency trail of the turn being generated right now (read by TTS). */
+  turnLatency?: TurnLatency | null;
   /** Last language detected from the user's speech: 'en' | 'hi' | 'te' | 'ta' | 'kn'. */
   language: string;
   /**

@@ -56,7 +56,7 @@ Configures the agent and triggers the initial greeting.
 
 | Field | Required | Notes |
 |-------|----------|-------|
-| `business` | Yes | Routes to the correct domain agent (`sales`, `hiring`, `lovebyt`, etc.) |
+| `business` | Yes | Routes to the correct domain agent (`sales`, `hiring`, `lobster_agent`, etc.) |
 | `generationConfig.speechConfig.voiceConfig.prebuiltVoiceConfig.voiceName` | No | TTS voice name (default: `Aoede`) |
 | `systemInstruction.parts[0].text` | No | System prompt for the agent |
 | `model` | No | Model identifier (mostly used for config parsing) |

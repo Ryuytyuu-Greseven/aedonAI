@@ -34,6 +34,8 @@ export class AgentRouterService {
     sessionId: string,
     isActive: () => boolean = () => true,
     language: string = 'en',
+    /** This turn's id (the `[Latency] turn=` id), echoed in the agent's logs. */
+    traceId?: string,
   ): AsyncGenerator<AgentTextChunk> {
     const baseUrl = getAgentUrl(config.business);
     const url = `${baseUrl}/agent`;
@@ -94,6 +96,7 @@ export class AgentRouterService {
         customerId: '',
         customerPhNo: config.phoneNumber ?? '',
         language: effectiveLanguage,
+        traceId,
       }),
     );
 

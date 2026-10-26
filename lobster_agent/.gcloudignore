@@ -1,0 +1,43 @@
+.gcloudignore
+.git
+.gitignore
+
+# node_modules and built assets get rebuilt in the Cloud Build container
+node_modules
+dist
+coverage
+test
+
+# Local environment files
+.env
+.env.*
+!.env.example
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# IDEs and editors
+.idea/
+.vscode/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+# System files
+.DS_Store
+Thumbs.db
+
+# Project-specific
+.claude
+openspec
+*.md
+# src/sales/*.md are runtime prompt files the app reads at startup, not docs
+# — the blanket *.md rule above would otherwise silently strip them from the
+# Cloud Build source upload.
+!src/sales/*.md
+.prettierrc

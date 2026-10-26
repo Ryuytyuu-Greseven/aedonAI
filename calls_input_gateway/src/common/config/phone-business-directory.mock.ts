@@ -14,7 +14,7 @@ export const MOCK_PHONE_BUSINESS_MAP: Record<string, string> = {
   '+14155550102': 'alerting',
   '+14155550103': 'customer support',
   '+14155550104': 'insurance',
-  '+14155550105': 'lovebyt',
+  '+14155550105': 'lobster_agent',
   '+14155550106': 'sales',
   '+14155550107': 'credit cards',
   '+14155550108': 'ecom-customer-service',

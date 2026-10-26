@@ -7,17 +7,17 @@ import { decodeMulawToLinear16 } from '../utils/audio.util';
 const TWILIO_MULAW_SAMPLE_RATE = 8000;
 
 @Injectable()
-export class LovebytRecordingService {
-  private readonly logger = new Logger(LovebytRecordingService.name);
+export class LobsterRecordingService {
+  private readonly logger = new Logger(LobsterRecordingService.name);
 
-  async saveLovebytRecording(
+  async saveLobsterRecording(
     streamSid: string,
     chunks: Buffer[],
     startedAt: number,
   ): Promise<void> {
     if (chunks.length === 0) {
       this.logger.warn(
-        `[LovebytRecording] No audio captured for stream ${streamSid} — skipping save.`,
+        `[LobsterRecording] No audio captured for stream ${streamSid} — skipping save.`,
       );
       return;
     }
@@ -27,17 +27,17 @@ export class LovebytRecordingService {
     const linear16 = decodeMulawToLinear16(mulawAudio);
     const wavBuffer = pcmToWav(linear16, TWILIO_MULAW_SAMPLE_RATE);
 
-    const recordingsDir = path.join(process.cwd(), 'recordings', 'lovebyt');
+    const recordingsDir = path.join(process.cwd(), 'recordings', 'lobster_agent');
     fs.mkdirSync(recordingsDir, { recursive: true });
 
-    const filename = `lovebyt_${streamSid}_${startedAt}.wav`;
+    const filename = `lobster_agent_${streamSid}_${startedAt}.wav`;
     const filePath = path.join(recordingsDir, filename);
 
     await fs.promises.writeFile(filePath, wavBuffer);
 
     const durationSec = (mulawAudio.length / TWILIO_MULAW_SAMPLE_RATE).toFixed(1);
     this.logger.log(
-      `[LovebytRecording] Saved ${filename} (${durationSec}s, ${chunks.length} chunks)`,
+      `[LobsterRecording] Saved ${filename} (${durationSec}s, ${chunks.length} chunks)`,
     );
   }
 }

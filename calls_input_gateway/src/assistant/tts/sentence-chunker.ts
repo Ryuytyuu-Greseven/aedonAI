@@ -1,5 +1,17 @@
 const MAX_BUFFER_CHARS = 100;
 
+const SENTENCE_END = new Set(['.', '?', '!', '…']);
+
+/**
+ * True if TTS has anything to say in `text` — at least one letter or digit.
+ * Sarvam rejects punctuation-only input outright (422 "Text must contain at
+ * least one character from the allowed languages"), and other providers
+ * would just spend a round trip on silence.
+ */
+export function isSpeakable(text: string): boolean {
+  return /[\p{L}\p{N}]/u.test(text);
+}
+
 /**
  * Where to cut the buffered LLM text into something speakable: the first
  * sentence end, a clause break once the buffer is long enough, or a word
@@ -8,7 +20,18 @@ const MAX_BUFFER_CHARS = 100;
 export function findFlushBoundary(buffer: string): number {
   for (let i = 0; i < buffer.length; i++) {
     const ch = buffer[i];
-    if (ch === '.' || ch === '?' || ch === '!' || ch === '\n') return i;
+    if (ch === '\n') return i;
+    if (SENTENCE_END.has(ch)) {
+      // A run like "..." or "?!" ends the sentence once, at its last mark —
+      // cutting at the first would leave the rest as bare-dot "sentences".
+      let end = i;
+      while (end + 1 < buffer.length && SENTENCE_END.has(buffer[end + 1])) {
+        end++;
+      }
+      // The run may continue in the next streamed chunk ("హ్మ్." + "..").
+      if (end === buffer.length - 1) return -1;
+      return end;
+    }
     if (buffer.length >= 60 && (ch === ',' || ch === ';' || ch === ':')) {
       return i;
     }
@@ -45,9 +68,9 @@ export async function* splitIntoSentences(
     // A filler is a complete line meant to be heard right now: speak it as
     // its own sentence instead of waiting for punctuation or more text.
     if (chunk.filler) {
-      if (buffer.trim()) yield buffer.trim();
+      if (isSpeakable(buffer)) yield buffer.trim();
       buffer = '';
-      if (chunk.text?.trim()) yield chunk.text.trim();
+      if (chunk.text && isSpeakable(chunk.text)) yield chunk.text.trim();
       continue;
     }
 
@@ -67,9 +90,9 @@ export async function* splitIntoSentences(
       if (boundaryIndex === -1) break;
       const sentence = buffer.substring(0, boundaryIndex + 1).trim();
       buffer = buffer.substring(boundaryIndex + 1);
-      if (sentence) yield sentence;
+      if (isSpeakable(sentence)) yield sentence;
     }
   }
 
-  if (isActive() && buffer.trim().length > 0) yield buffer.trim();
+  if (isActive() && isSpeakable(buffer)) yield buffer.trim();
 }

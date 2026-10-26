@@ -81,4 +81,23 @@ describe('splitIntoSentences', () => {
       'rest.',
     ]);
   });
+
+  it('keeps an ellipsis or ?! run with its sentence instead of yielding bare dots', async () => {
+    expect(
+      await collect(chunks('అయ్యో, పాపం... ఏమైంది?', '! చెప్పు…', ' వింటున్నా.')),
+    ).toEqual(['అయ్యో, పాపం...', 'ఏమైంది?!', 'చెప్పు…', 'వింటున్నా.']);
+  });
+
+  it('holds a trailing dot until the next chunk shows whether it is an ellipsis', async () => {
+    expect(await collect(chunks('హ్మ్.', '.. సరే.'))).toEqual(['హ్మ్...', 'సరే.']);
+  });
+
+  it('never yields a fragment with nothing speakable in it', async () => {
+    async function* source() {
+      yield { text: '...', filler: true };
+      yield { text: 'సరే. . ! ' };
+      yield { text: '😂' };
+    }
+    expect(await collect(source())).toEqual(['సరే.']);
+  });
 });

@@ -312,6 +312,7 @@ CRITICAL RULES:
     );
 
     let ttsStream: any;
+    let sentencesSent = 0;
 
     const flushToTts = async (sentence: string): Promise<void> => {
       if (!sentence || !session.isGenerating) return;
@@ -323,6 +324,7 @@ CRITICAL RULES:
       this.logger.log(`Sending buffered sentence to Chirp 3: "${speechText}"`);
       onAudioChunk('', sentence + ' ', client);
       if (ttsStream && !ttsStream.destroyed) {
+        session.turnLatency?.mark(`tts send #${sentencesSent++}`, sentence);
         ttsStream.write({ input: { text: speechText } });
       }
     };
@@ -335,6 +337,8 @@ CRITICAL RULES:
 
       ttsStream.on('data', (response: any) => {
         if (response.audioContent && session.isGenerating) {
+          // Google's stream doesn't tag audio by sentence — first one only.
+          session.turnLatency?.markOnce('tts first audio');
           const base64Audio = Buffer.from(
             response.audioContent as Uint8Array,
           ).toString('base64');
