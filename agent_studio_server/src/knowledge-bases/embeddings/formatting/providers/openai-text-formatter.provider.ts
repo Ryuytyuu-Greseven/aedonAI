@@ -4,23 +4,31 @@ import { EmbeddingProviderName } from '../../../../common/interfaces/knowledge-b
 import {
   REAL_ESTATE_SALES_SECTIONS,
   REAL_ESTATE_SALES_PROMPT,
-  RealEstateSalesSections,
+  RealEstateSalesFormatterOutput,
+  SUBJECT_NAME_DESCRIPTION,
 } from '../../../sales/real-estate-sales.profile';
 import { TextFormatterProvider } from '../text-formatter.interface';
 
 const DEFAULT_MODEL = 'gpt-4o-mini';
 
-/** JSON Schema for OpenAI's strict structured-output mode: every section is
- * a nullable string, and every property must be listed as `required`. */
+/** JSON Schema for OpenAI's strict structured-output mode: the subject and
+ * every section are nullable strings, and every property must be listed as
+ * `required`. */
 const RESPONSE_SCHEMA = {
   type: 'object',
-  properties: Object.fromEntries(
-    REAL_ESTATE_SALES_SECTIONS.map(({ key, description }) => [
-      key,
-      { type: ['string', 'null'], description },
-    ]),
-  ),
-  required: REAL_ESTATE_SALES_SECTIONS.map(({ key }) => key),
+  properties: {
+    subjectName: {
+      type: ['string', 'null'],
+      description: SUBJECT_NAME_DESCRIPTION,
+    },
+    ...Object.fromEntries(
+      REAL_ESTATE_SALES_SECTIONS.map(({ key, description }) => [
+        key,
+        { type: ['string', 'null'], description },
+      ]),
+    ),
+  },
+  required: ['subjectName', ...REAL_ESTATE_SALES_SECTIONS.map(({ key }) => key)],
   additionalProperties: false,
 };
 
@@ -36,7 +44,9 @@ export class OpenAiTextFormatterProvider implements TextFormatterProvider {
     });
   }
 
-  async formatSections(rawText: string): Promise<RealEstateSalesSections> {
+  async formatSections(
+    rawText: string,
+  ): Promise<RealEstateSalesFormatterOutput> {
     const response = await this.client.chat.completions.create({
       model: this.model,
       messages: [
@@ -59,6 +69,6 @@ export class OpenAiTextFormatterProvider implements TextFormatterProvider {
     if (!content) {
       throw new Error('OpenAI returned no content for sales formatting');
     }
-    return JSON.parse(content) as RealEstateSalesSections;
+    return JSON.parse(content) as RealEstateSalesFormatterOutput;
   }
 }

@@ -11,6 +11,9 @@ export type KnowledgeItemEmbeddingStatus =
 
 export type EmbeddingProviderName = 'openai' | 'vertex-ai';
 
+/** Dimension of the shared Pinecone knowledge base index. */
+export const KNOWLEDGE_BASE_EMBEDDING_DIMENSIONS = 768;
+
 /** Generates vector embeddings for a batch of text chunks via a specific model/provider. */
 export interface EmbeddingProvider {
   readonly name: EmbeddingProviderName;
@@ -28,7 +31,11 @@ export type KnowledgeBaseVectorMetadata = {
   knowledge_base_id: string;
   source_type: EmbeddingSourceType;
   source_id: string;
+  /** The url's label or the file's filename. */
+  source_label: string;
   chunk_index: number;
+  /** Formatter section key (e.g. `amenities`), or `raw` when unformatted. */
+  section: string;
   text: string;
   provider: string;
   model: string;

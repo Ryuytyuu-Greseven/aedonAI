@@ -84,6 +84,11 @@ export class KnowledgeBasesController {
     return this.knowledgeBasesService.addUrls(id, dto.newUrls, user.companyId);
   }
 
+  @Post(':id/reindex')
+  reindex(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.knowledgeBasesService.reindex(id, user.companyId);
+  }
+
   @Post(':id/files/:fileId/disable')
   disableFile(
     @Param('id') id: string,

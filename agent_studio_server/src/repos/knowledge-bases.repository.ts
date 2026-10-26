@@ -38,11 +38,17 @@ export class KnowledgeBasesRepository {
       .exec();
   }
 
+  /** Every knowledge base of every company — for maintenance scripts only. */
+  async filterAllCompanies(): Promise<KnowledgeBaseDocument[]> {
+    return this.knowledgeBaseModel.find().sort({ created_at: 1 }).exec();
+  }
+
   async filterById(id: string): Promise<KnowledgeBaseDocument | null> {
     return this.knowledgeBaseModel.findById(id).exec();
   }
 
-  async countByIds(ids: string[]): Promise<number> {
+  /** Counts how many of `ids` are knowledge bases belonging to `companyId`. */
+  async countByIds(ids: string[], companyId: string | null): Promise<number> {
     if (ids.length === 0) {
       return 0;
     }
@@ -53,7 +59,7 @@ export class KnowledgeBasesRepository {
       return 0;
     }
     return this.knowledgeBaseModel
-      .countDocuments({ _id: { $in: objectIds } })
+      .countDocuments({ _id: { $in: objectIds }, companyId })
       .exec();
   }
 

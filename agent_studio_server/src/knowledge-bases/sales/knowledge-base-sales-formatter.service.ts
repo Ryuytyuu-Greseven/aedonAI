@@ -1,7 +1,10 @@
 import { Inject, Injectable, Logger } from '@nestjs/common';
 import { TEXT_FORMATTER_PROVIDER_TOKEN } from '../embeddings/formatting/text-formatter-provider.factory';
 import { TextFormatterProvider } from '../embeddings/formatting/text-formatter.interface';
-import { renderRealEstateSections } from './real-estate-sales.profile';
+import {
+  FormattedSalesDocument,
+  toFormattedSalesDocument,
+} from './real-estate-sales.profile';
 
 /**
  * Reformats a knowledge base source's raw extracted text into the
@@ -20,23 +23,23 @@ export class KnowledgeBaseSalesFormatterService {
   ) {}
 
   /**
-   * Falls back to the raw text if formatting fails outright, or if the
-   * model found no content matching any section (e.g. an unrelated
-   * upload) — so a document never ends up completely unsearchable because
-   * of this step.
+   * Returns null if formatting fails outright, or if the model found no
+   * content matching any section (e.g. an unrelated upload) — the caller
+   * then indexes the raw text instead, so a document never ends up
+   * completely unsearchable because of this step.
    */
-  async format(rawText: string): Promise<string> {
+  async format(rawText: string): Promise<FormattedSalesDocument | null> {
     try {
-      const sections = await this.formatter.formatSections(rawText);
-      const rendered = renderRealEstateSections(sections);
-      return rendered.trim().length > 0 ? rendered : rawText;
+      const output = await this.formatter.formatSections(rawText);
+      const document = toFormattedSalesDocument(output);
+      return document.sections.length > 0 ? document : null;
     } catch (error) {
       this.logger.warn(
         `Sales formatting failed, falling back to raw text: ${
           error instanceof Error ? error.message : String(error)
         }`,
       );
-      return rawText;
+      return null;
     }
   }
 }

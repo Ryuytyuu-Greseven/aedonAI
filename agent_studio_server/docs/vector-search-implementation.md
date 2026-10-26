@@ -32,7 +32,14 @@ same embedding model, or retrieval will silently return garbage (or nothing).
 | Provider | Model (default) | Dimensions | Env override |
 |---|---|---|---|
 | `openai` | `text-embedding-3-small` | 1536 | `OPENAI_EMBEDDING_MODEL` |
-| `vertex-ai` | `text-embedding-004` | 768 | `VERTEX_AI_EMBEDDING_MODEL` |
+| `vertex-ai` | `gemini-embedding-001` (`taskType: RETRIEVAL_DOCUMENT`, `outputDimensionality: 768`) | 768 | `VERTEX_AI_EMBEDDING_MODEL` |
+
+The index `lyreai` is 768-dim cosine, so only `vertex-ai` vectors fit it.
+The sales agents must embed queries with the same model, using
+`taskType: RETRIEVAL_QUERY` and `outputDimensionality: 768`.
+`gemini-embedding-001` is multilingual: Hindi and Telugu questions match
+English brochure text (`text-embedding-004`, the previous default, is
+English-only and scored them at ~0.31).
 
 > **Critical constraint:** a vector's position in embedding space is only
 > meaningful relative to vectors produced by the *same model*. The sales
@@ -43,13 +50,13 @@ same embedding model, or retrieval will silently return garbage (or nothing).
 >
 > Read `EMBEDDING_PROVIDER` (and the matching model env var) from the same
 > config source as this server — don't hardcode a different default. If
-> this server's config ever changes `EMBEDDING_PROVIDER`, every vector
-> embedded *before* the change stays in the old model's space; there is
-> currently no re-embedding/migration step, so a provider switch requires
-> re-indexing all existing knowledge bases (out of scope here, but flag it
-> to whoever owns that migration if `EMBEDDING_PROVIDER` ever changes).
+> the embedding model ever changes, every vector embedded *before* the
+> change stays in the old model's space until re-indexed: run
+> `scripts/reindex-knowledge-bases.ts` (all knowledge bases) or
+> `POST /knowledge-bases/:id/reindex` (one), and have retrieval filter on
+> `model` so it never mixes the two spaces.
 
-Before wiring anything, confirm the index's **distance metric** (cosine,
+The index's distance metric is **cosine** (confirmed via `describeIndex`). If a new index is created, confirm its **distance metric** (cosine,
 dotproduct, or euclidean) via the Pinecone console or `pc.describeIndex()`
 — it isn't set anywhere in this repo's code (the index was created outside
 of it), so it isn't documented here. The metric determines whether a
@@ -72,10 +79,12 @@ Every vector in the index is a `PineconeRecord` shaped like this
     knowledge_base_id: string;
     source_type: 'file' | 'url';
     source_id: string;        // the file_id or url_id within that knowledge base
+    source_label: string;     // the url's label or the file's filename
     chunk_index: number;      // 0-based position of this chunk within its source
-    text: string;             // the actual chunk text — this is what you retrieve for RAG context
+    section: string;          // formatter section key (e.g. 'amenities', 'nearbyFacilities'), or 'raw' when unformatted
+    text: string;             // header line + chunk text — this is what you retrieve for RAG context
     provider: string;         // 'openai' | 'vertex-ai' — which embedding model produced `values`
-    model: string;            // e.g. 'text-embedding-3-small' — cross-check against what you embedded the query with
+    model: string;            // e.g. 'gemini-embedding-001' — filter on it so you only compare against your query model
     status: 'active' | 'disabled';
   }
 }
@@ -85,9 +94,14 @@ Notes for retrieval:
 - **`text` is the payload you want.** There's no separate document store —
   the chunk text lives only in Pinecone metadata. Don't try to re-fetch it
   from Mongo.
-- **Chunks are ~1000 words with 200-word overlap**
-  (`src/knowledge-bases/embeddings/text-chunking.util.ts`). Expect `text` to
-  be roughly paragraph-to-page length, not a single sentence.
+- **Chunks are section-sized** (`src/knowledge-bases/embeddings/text-chunking.util.ts`).
+  A chunk never spans two formatter sections. A section of ≤350 words is
+  one chunk; a longer one is split on paragraph/sentence boundaries into
+  ~300-word chunks with ~50 words of overlap. Every chunk's `text` starts
+  with a header line such as
+  `Subject: The Sky View Grand | Source: brochure.pdf | Section: Amenities`
+  (unknown parts omitted), so the vector knows which project and section
+  it's about even when the body never names them.
 - **`status: 'disabled'` vectors must be excluded from retrieval.** Disabling
   a file/url in the knowledge base UI doesn't delete its vectors — it flips
   this metadata field (soft toggle, see
@@ -97,12 +111,10 @@ Notes for retrieval:
 - **No namespaces are used.** Everything lives in the default namespace,
   isolated only via metadata filters (below) — don't assume per-company
   namespaces exist.
-- **`provider`/`model` are stored per-chunk, not globally**, so if this
-  server's `EMBEDDING_PROVIDER` is ever changed without re-indexing, a
-  single knowledge base could contain chunks from two different models
-  side by side. If that's a live concern, consider also filtering/grouping
-  by `model` so you don't `topK` across two incompatible vector spaces at
-  once — see the caveat in §1.
+- **`provider`/`model` are stored per-chunk, not globally**, so until a
+  re-index completes, a single knowledge base can contain chunks from two
+  different models side by side. Always filter by `model` (§4.3) so you
+  never `topK` across two incompatible vector spaces.
 
 ## 3. Which knowledge bases an agent can search
 
@@ -156,6 +168,7 @@ const results = await index.query({
     // data, but also pin companyId in case a knowledge_base_id is ever
     // reused/misrouted across tenants.
     companyId: { $eq: agent.companyId ?? '' },
+    model: { $eq: QUERY_EMBEDDING_MODEL },
   },
 });
 ```
@@ -181,20 +194,21 @@ this doc prescribes.
 
 ## 5. Tuning knobs
 
-- **`topK`**: 3–8 is a reasonable starting range for chunk-sized (~1000
-  word) content; too high dilutes the prompt with marginal matches, too low
-  risks missing the right chunk when relevant content is split across
-  chunk boundaries (recall the 200-word overlap exists specifically to
-  mitigate that).
+- **`topK`**: 3–8 is a reasonable starting range for section-sized
+  (~300-word) chunks; too high dilutes the prompt with marginal matches, too
+  low risks missing the right chunk when relevant content is split across
+  chunk boundaries.
 - **Relevance threshold**: Pinecone always returns `topK` matches regardless
   of quality — a `topK` of 5 against an index with only 2 truly relevant
   chunks still returns 5 results. Apply a score cutoff so irrelevant filler
-  doesn't get treated as ground truth. Determine the right cutoff
-  empirically per the index's actual metric (§1) — don't guess a number
-  without checking real query/score distributions first.
-- **Chunk boundary awareness**: since `text` is a ~1000-word window, a
-  single retrieved chunk may contain more than the answer — that's fine for
-  LLM context, but don't assume a chunk is a single atomic fact.
+  doesn't get treated as ground truth. The index metric is cosine (higher
+  is better). Measured with `gemini-embedding-001` @768 and headed
+  section chunks: relevant matches score ~0.71–0.79 in English, Hindi and
+  Telugu, unrelated questions ~0.42–0.57. The agents default to 0.6
+  (`RAG_MIN_SCORE`); re-check against real brochures before tightening.
+- **Chunk boundary awareness**: a chunk is one section (or part of one),
+  so it may contain more than the answer — that's fine for LLM context, but
+  don't assume a chunk is a single atomic fact.
 
 ## 6. Error handling
 

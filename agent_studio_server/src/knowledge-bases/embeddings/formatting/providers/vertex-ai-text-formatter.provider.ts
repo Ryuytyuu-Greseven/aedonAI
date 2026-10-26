@@ -4,23 +4,33 @@ import { EmbeddingProviderName } from '../../../../common/interfaces/knowledge-b
 import {
   REAL_ESTATE_SALES_SECTIONS,
   REAL_ESTATE_SALES_PROMPT,
-  RealEstateSalesSections,
+  RealEstateSalesFormatterOutput,
+  SUBJECT_NAME_DESCRIPTION,
 } from '../../../sales/real-estate-sales.profile';
 import { TextFormatterProvider } from '../text-formatter.interface';
 
-const DEFAULT_MODEL = 'gemini-2.0-flash';
+// gemini-2.0-flash is no longer served on this project (404), which silently
+// sent every upload down the raw-text fallback. Same model as the agents use.
+const DEFAULT_MODEL = 'gemini-3.1-flash-lite';
 const DEFAULT_LOCATION = 'us-central1';
 
-/** Gemini's structured-output schema: every section is a nullable string. */
+/** Gemini's structured-output schema: the subject and every section are nullable strings. */
 const RESPONSE_SCHEMA = {
   type: Type.OBJECT,
-  properties: Object.fromEntries(
-    REAL_ESTATE_SALES_SECTIONS.map(({ key, description }) => [
-      key,
-      { type: Type.STRING, nullable: true, description },
-    ]),
-  ),
-  required: REAL_ESTATE_SALES_SECTIONS.map(({ key }) => key),
+  properties: {
+    subjectName: {
+      type: Type.STRING,
+      nullable: true,
+      description: SUBJECT_NAME_DESCRIPTION,
+    },
+    ...Object.fromEntries(
+      REAL_ESTATE_SALES_SECTIONS.map(({ key, description }) => [
+        key,
+        { type: Type.STRING, nullable: true, description },
+      ]),
+    ),
+  },
+  required: ['subjectName', ...REAL_ESTATE_SALES_SECTIONS.map(({ key }) => key)],
 };
 
 export class VertexAiTextFormatterProvider implements TextFormatterProvider {
@@ -37,7 +47,9 @@ export class VertexAiTextFormatterProvider implements TextFormatterProvider {
     });
   }
 
-  async formatSections(rawText: string): Promise<RealEstateSalesSections> {
+  async formatSections(
+    rawText: string,
+  ): Promise<RealEstateSalesFormatterOutput> {
     const response = await this.client.models.generateContent({
       model: this.model,
       contents: REAL_ESTATE_SALES_PROMPT.replace('{{RAW_TEXT}}', rawText),
@@ -51,6 +63,6 @@ export class VertexAiTextFormatterProvider implements TextFormatterProvider {
     if (!text) {
       throw new Error('Vertex AI returned no content for sales formatting');
     }
-    return JSON.parse(text) as RealEstateSalesSections;
+    return JSON.parse(text) as RealEstateSalesFormatterOutput;
   }
 }

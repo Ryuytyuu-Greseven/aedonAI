@@ -109,6 +109,7 @@ export class KnowledgeBasesService {
         const fileId = `${sanitized}_${randomUUID()}`;
         const { objectPath } =
           await this.knowledgeBaseStorageService.uploadFile(
+            knowledgeBase.companyId,
             sanitized,
             fileId,
             uploaded.originalname,
@@ -180,11 +181,76 @@ export class KnowledgeBasesService {
         id,
         url.url_id,
         url.url,
+        url.label,
         companyId,
       );
     });
 
     return updated;
+  }
+
+  /**
+   * Re-embeds every file and url of a knowledge base from its stored
+   * original (e.g. after an embedding model change). Responds once every
+   * source is marked pending; the re-indexing itself runs in the background.
+   */
+  async reindex(id: string, companyId: string | null): Promise<KnowledgeBase> {
+    const knowledgeBase = await this.findById(id, companyId);
+    const updated = await this.prepareReindex(id, knowledgeBase);
+    void this.reindexSources(id, knowledgeBase);
+    return updated;
+  }
+
+  /**
+   * Marks every indexable source `pending`, and legacy images (stored before
+   * embedding_status existed) `not_applicable`. Returns the updated KB.
+   */
+  async prepareReindex(
+    id: string,
+    knowledgeBase: KnowledgeBase,
+  ): Promise<KnowledgeBase> {
+    let updated: KnowledgeBase | null = knowledgeBase;
+    for (const file of knowledgeBase.files ?? []) {
+      updated = await this.knowledgeBasesRepository.setFileEmbeddingStatus(
+        id,
+        file.file_id,
+        isImageFile(file) ? 'not_applicable' : 'pending',
+      );
+    }
+    for (const url of knowledgeBase.urls ?? []) {
+      updated = await this.knowledgeBasesRepository.setUrlEmbeddingStatus(
+        id,
+        url.url_id,
+        'pending',
+      );
+    }
+    if (!updated) {
+      throw new NotFoundException(`Knowledge base ${id} not found`);
+    }
+    return updated;
+  }
+
+  /**
+   * Re-indexes each non-image source in turn (never throws — failures land
+   * on each source's embedding_status). Awaited by the bulk re-index script.
+   */
+  async reindexSources(id: string, knowledgeBase: KnowledgeBase): Promise<void> {
+    for (const file of knowledgeBase.files ?? []) {
+      if (!isImageFile(file)) {
+        await this.knowledgeBaseEmbeddingsService.reindexFile(
+          id,
+          file,
+          knowledgeBase.companyId,
+        );
+      }
+    }
+    for (const url of knowledgeBase.urls ?? []) {
+      await this.knowledgeBaseEmbeddingsService.reindexUrl(
+        id,
+        url,
+        knowledgeBase.companyId,
+      );
+    }
   }
 
   async disableFile(
@@ -286,4 +352,18 @@ export class KnowledgeBasesService {
     }
     return updated;
   }
+}
+
+const IMAGE_EXTENSIONS = new Set(['png', 'jpg', 'jpeg', 'gif', 'webp', 'bmp', 'svg', 'heic']);
+
+/**
+ * Images are stored but never embedded. Files don't keep their mimetype, so
+ * legacy ones (no embedding_status) are recognised by extension.
+ */
+function isImageFile(file: KnowledgeBaseFile): boolean {
+  if (file.embedding_status === 'not_applicable') {
+    return true;
+  }
+  const extension = file.filename.split('.').pop()?.toLowerCase();
+  return !!extension && IMAGE_EXTENSIONS.has(extension);
 }

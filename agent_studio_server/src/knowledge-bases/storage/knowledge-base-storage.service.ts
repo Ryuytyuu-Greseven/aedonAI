@@ -3,38 +3,48 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { UploadedKnowledgeBaseFile } from '../../common/interfaces/knowledge-base-storage.interface';
 
-// TODO: replace with the real organization/client id once it's derived from
-// the JWT, instead of a fixed value shared by every knowledge base.
-const TEMP_CLIENT_ID = 'temp_buck';
+// Folder for knowledge bases that aren't owned by any company (companyId null).
+const UNASSIGNED_CLIENT_FOLDER = 'unassigned';
 
 /**
  * Persists knowledge base files to GCS under
  * `{clientId}/{knowledgeBaseFolder}/{fileId}/{filename}` in a single shared
  * bucket, so every customer's knowledge bases live in their own folder.
+ * `clientId` is the owning company's `companyId` (`{companyname}_{uuid}`).
  */
 @Injectable()
 export class KnowledgeBaseStorageService {
   private readonly storage = new Storage();
   private readonly bucketName: string;
-  private readonly clientId = TEMP_CLIENT_ID;
 
   constructor(config: ConfigService) {
     this.bucketName = config.getOrThrow<string>('GCS_BUCKET_NAME');
   }
 
   async uploadFile(
+    companyId: string | null,
     knowledgeBaseFolder: string,
     fileId: string,
     filename: string,
     buffer: Buffer,
     contentType: string,
   ): Promise<UploadedKnowledgeBaseFile> {
-    const objectPath = `${this.clientId}/${knowledgeBaseFolder}/${fileId}/${filename}`;
+    const clientId = companyId || UNASSIGNED_CLIENT_FOLDER;
+    const objectPath = `${clientId}/${knowledgeBaseFolder}/${fileId}/${filename}`;
     await this.storage
       .bucket(this.bucketName)
       .file(objectPath)
       .save(buffer, { contentType, resumable: false });
 
     return { objectPath, gcsUri: `gs://${this.bucketName}/${objectPath}` };
+  }
+
+  /** Reads back a previously uploaded file (e.g. to re-index it). */
+  async downloadFile(objectPath: string): Promise<Buffer> {
+    const [contents] = await this.storage
+      .bucket(this.bucketName)
+      .file(objectPath)
+      .download();
+    return contents;
   }
 }

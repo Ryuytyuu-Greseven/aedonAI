@@ -1,5 +1,5 @@
 import { getKnowledgeBaseIndex, isPineconeConfigured } from '../../../llms/pinecone.provider.js';
-import { embedRagQuery } from '../../../llms/rag-embeddings.provider.js';
+import { embedRagQuery, RAG_EMBEDDING_MODEL } from '../../../llms/rag-embeddings.provider.js';
 
 export interface RagMatch {
   text: string;
@@ -13,16 +13,21 @@ export interface RagQueryOptions {
   companyId?: string | null;
   topK?: number;
   /**
-   * Score cutoff below which a match is discarded. Direction depends on the
-   * index's distance metric (§1, §5) — confirm the metric via the Pinecone
-   * console or `pc.describeIndex()` before trusting this default; the
-   * DEFAULT below assumes cosine/dotproduct (higher = more similar).
+   * Cosine score cutoff (the index metric; higher = more similar) below
+   * which a match is discarded. Defaults to RAG_MIN_SCORE, else 0.6.
    */
   minScore?: number;
 }
 
 const DEFAULT_TOP_K = 5;
-const DEFAULT_MIN_SCORE = 0.75;
+// Measured with gemini-embedding-001 @768 on headed section chunks: relevant
+// matches ~0.71–0.79 (English, Hindi, Telugu), unrelated ~0.42–0.57.
+const DEFAULT_MIN_SCORE = parseMinScore(process.env.RAG_MIN_SCORE) ?? 0.6;
+
+function parseMinScore(value: string | undefined): number | null {
+  const parsed = value ? Number(value) : NaN;
+  return Number.isFinite(parsed) ? parsed : null;
+}
 
 /**
  * Raw Pinecone retrieval — embeds `queryText`, queries the shared
@@ -51,6 +56,8 @@ export async function queryKnowledgeBase(queryText: string, opts: RagQueryOption
         knowledge_base_id: { $in: knowledgeBaseIds },
         status: { $eq: 'active' },
         companyId: { $eq: companyId ?? '' },
+        // Only vectors from our own query model are comparable.
+        model: { $eq: RAG_EMBEDDING_MODEL },
       },
     });
 

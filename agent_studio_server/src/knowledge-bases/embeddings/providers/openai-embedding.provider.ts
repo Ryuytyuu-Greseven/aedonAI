@@ -4,6 +4,7 @@ import {
   EmbeddingProvider,
   EmbeddingProviderName,
 } from '../../../common/interfaces/knowledge-base-embedding.interface';
+import { withRetry } from '../../../common/utils/retry.util';
 
 const DEFAULT_MODEL = 'text-embedding-3-small';
 
@@ -20,10 +21,12 @@ export class OpenAiEmbeddingProvider implements EmbeddingProvider {
   }
 
   async embed(texts: string[]): Promise<number[][]> {
-    const response = await this.client.embeddings.create({
-      model: this.model,
-      input: texts,
-    });
+    const response = await withRetry(() =>
+      this.client.embeddings.create({
+        model: this.model,
+        input: texts,
+      }),
+    );
     return response.data
       .sort((a, b) => a.index - b.index)
       .map((item) => item.embedding);

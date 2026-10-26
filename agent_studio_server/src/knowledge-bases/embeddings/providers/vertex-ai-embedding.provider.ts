@@ -3,9 +3,14 @@ import { ConfigService } from '@nestjs/config';
 import {
   EmbeddingProvider,
   EmbeddingProviderName,
+  KNOWLEDGE_BASE_EMBEDDING_DIMENSIONS,
 } from '../../../common/interfaces/knowledge-base-embedding.interface';
+import { withRetry } from '../../../common/utils/retry.util';
 
-const DEFAULT_MODEL = 'text-embedding-004';
+// Multilingual, so Hindi/Telugu customer questions match English brochure
+// text (text-embedding-004 is English-only). The sales agents embed their
+// queries with this same model — keep VERTEX_AI_EMBEDDING_MODEL in sync.
+const DEFAULT_MODEL = 'gemini-embedding-001';
 const DEFAULT_LOCATION = 'us-central1';
 
 export class VertexAiEmbeddingProvider implements EmbeddingProvider {
@@ -24,10 +29,17 @@ export class VertexAiEmbeddingProvider implements EmbeddingProvider {
   }
 
   async embed(texts: string[]): Promise<number[][]> {
-    const response = await this.client.models.embedContent({
-      model: this.model,
-      contents: texts,
-    });
+    const response = await withRetry(() =>
+      this.client.models.embedContent({
+        model: this.model,
+        contents: texts,
+        config: {
+          taskType: 'RETRIEVAL_DOCUMENT',
+          // Truncated to fit the existing Pinecone index.
+          outputDimensionality: KNOWLEDGE_BASE_EMBEDDING_DIMENSIONS,
+        },
+      }),
+    );
     return (response.embeddings ?? []).map(
       (embedding) => embedding.values ?? [],
     );

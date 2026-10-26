@@ -116,6 +116,7 @@ export class AgentsService {
     const prepared = await this.applyTemplateDefaultsAndBonusRule(dto);
     const knowledgeBaseIds = await this.resolveKnowledgeBaseIds(
       prepared.knowledge_base_ids,
+      companyId,
     );
     return this.agentsRepository.create({
       ...prepared,
@@ -166,6 +167,7 @@ export class AgentsService {
     if (prepared.knowledge_base_ids !== undefined) {
       patch.knowledge_base_ids = await this.resolveKnowledgeBaseIds(
         prepared.knowledge_base_ids,
+        companyId,
       );
     }
     if (prepared.mcp_servers !== undefined) {
@@ -622,15 +624,24 @@ export class AgentsService {
     return result;
   }
 
+  /**
+   * Dedupes the ids and checks every one is a knowledge base of the caller's
+   * own company. Another company's id is reported exactly like a missing
+   * one, so the response doesn't reveal that it exists.
+   */
   private async resolveKnowledgeBaseIds(
-    knowledgeBaseIds?: string[],
+    knowledgeBaseIds: string[] | undefined,
+    companyId: string | null,
   ): Promise<string[]> {
     const ids = knowledgeBaseIds ?? [];
     if (ids.length === 0) {
       return [];
     }
     const uniqueIds = [...new Set(ids)];
-    const found = await this.knowledgeBasesRepository.countByIds(uniqueIds);
+    const found = await this.knowledgeBasesRepository.countByIds(
+      uniqueIds,
+      companyId,
+    );
     if (found !== uniqueIds.length) {
       throw new BadRequestException(
         'One or more knowledge_base_ids do not exist',

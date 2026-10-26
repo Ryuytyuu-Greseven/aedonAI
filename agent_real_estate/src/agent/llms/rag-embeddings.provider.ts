@@ -1,4 +1,4 @@
-import { VertexAIEmbeddings } from '@langchain/google-vertexai';
+import { GoogleGenAI } from '@google/genai';
 import { config } from 'dotenv';
 
 config();
@@ -13,25 +13,42 @@ config();
  * consistent with itself).
  *
  * The Pinecone knowledge base, by contrast, is written by a DIFFERENT
- * service (`aedonai_agent_builder_server`), always via Vertex AI. The model
- * name here MUST match that service's embedding model exactly (dimensions
- * coinciding is not enough — see vectorsearch.md §1) — override via
- * VERTEX_AI_EMBEDDING_MODEL if that service isn't on the `text-embedding-004`
- * default.
+ * service (agent_studio_server) via Vertex AI. The model here MUST match
+ * that service's VERTEX_AI_EMBEDDING_MODEL exactly (dimensions coinciding is
+ * not enough — see vectorsearch.md §1), and the dimension must match the
+ * index. knowledge-base.store.ts also filters matches by RAG_EMBEDDING_MODEL,
+ * so vectors from any other model are never compared against this query.
  */
 
-let vertexRagEmbeddings: VertexAIEmbeddings | null = null;
-function getVertexRagEmbeddings(): VertexAIEmbeddings {
-  if (!vertexRagEmbeddings) {
-    vertexRagEmbeddings = new VertexAIEmbeddings({
-      apiKey: process.env.GEMINI_API_KEY,
-      model: process.env.VERTEX_AI_EMBEDDING_MODEL ?? 'text-embedding-004',
+export const RAG_EMBEDDING_MODEL = process.env.VERTEX_AI_EMBEDDING_MODEL ?? 'gemini-embedding-001';
+const RAG_EMBEDDING_DIMENSIONS = 768;
+
+let vertexClient: GoogleGenAI | null = null;
+function getVertexClient(): GoogleGenAI {
+  if (!vertexClient) {
+    vertexClient = new GoogleGenAI({
+      vertexai: true,
+      project: process.env.GOOGLE_CLOUD_PROJECT,
+      location: process.env.GOOGLE_CLOUD_LOCATION ?? 'us-central1',
     });
   }
-  return vertexRagEmbeddings;
+  return vertexClient;
 }
 
 /** Embeds one customer utterance/query for a Pinecone knowledge-base lookup. */
 export async function embedRagQuery(text: string): Promise<number[]> {
-  return getVertexRagEmbeddings().embedQuery(text);
+  const response = await getVertexClient().models.embedContent({
+    model: RAG_EMBEDDING_MODEL,
+    contents: [text],
+    config: {
+      // Pairs with the RETRIEVAL_DOCUMENT vectors the studio server indexes.
+      taskType: 'RETRIEVAL_QUERY',
+      outputDimensionality: RAG_EMBEDDING_DIMENSIONS,
+    },
+  });
+  const values = response.embeddings?.[0]?.values;
+  if (!values?.length) {
+    throw new Error(`Embedding model ${RAG_EMBEDDING_MODEL} returned no vector`);
+  }
+  return values;
 }
