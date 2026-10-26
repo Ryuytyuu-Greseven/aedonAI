@@ -6,18 +6,13 @@ import {
 } from '@nestjs/websockets';
 import { Logger } from '@nestjs/common';
 import { AgentService } from './agent.service.js';
-import { ConversationAnalysisQueueService, ConversationTurn } from '../conversation-analysis/index.js';
-
-interface LiveSession {
-  conversationId: string | null;
-  agentId: string | null;
-  companyId: string | null;
-  customerId: string | null;
-  customerPhone: string | null;
-  callId: string | null;
-  channel: 'live' | 'preview' | null;
-  transcript: ConversationTurn[];
-}
+import { ConversationAnalysisQueueService } from '../conversation-analysis/index.js';
+import {
+  CONVERSATION_START,
+  FillerController,
+  resolveFillerLanguage,
+} from './graphs/sales/filler/filler-controller.js';
+import { LiveSession, recordCustomerTurn, syncSessionDetails } from './gateway.helpers.js';
 
 @WebSocketGateway({ path: '/agent', cors: true })
 export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -42,6 +37,7 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
       callId: null,
       channel: null,
       transcript: [],
+      fillerMemory: { lastPhrase: null },
     });
 
     client.on('message', async (data) => {
@@ -51,28 +47,51 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
         const session = this.sessions.get(client);
         if (session) {
-          session.conversationId = msg.threadId ?? session.conversationId;
-          session.agentId = msg.agentDetails?.id ?? msg.agentDetails?.agent_id ?? session.agentId;
-          session.companyId = msg.agentDetails?.companyId ?? session.companyId;
-          session.customerId = msg.customerId ?? session.customerId;
-          session.customerPhone = msg.customerPhNo || session.customerPhone;
-          session.callId = msg.callId ?? session.callId;
-          session.channel = msg.channel ?? session.channel;
-          // The sentinel that kicks off the greeting isn't something the
-          // customer actually said — keep it out of the transcript.
-          if (typeof msg.text === 'string' && msg.text !== 'SYSTEM_START_CONVERSATION') {
-            session.transcript.push({ speaker: 'customer', text: msg.text, timestamp: new Date() });
-          }
+          syncSessionDetails(session, msg);
+          recordCustomerTurn(session, msg.text);
         }
 
-        for await (const chunk of this.agentService.runAgent(msg)) {
-          const text = typeof chunk.text === 'string' ? chunk.text : (chunk as any).content ?? '';
-          if (text) {
-            session?.transcript.push({ speaker: 'agent', text, timestamp: new Date() });
+        // Fillers ("Let me check that for you.") cover the silence while a
+        // slow turn is prepared. They go out as their own message type and
+        // never enter the transcript or the graph's history.
+        const turnStartedAt = Date.now();
+        const fillers = new FillerController({
+          send: (text) => {
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify({ type: 'filler', text }));
+            }
+          },
+          language: resolveFillerLanguage(msg.agentDetails?.currentLanguage, msg.agentDetails?.language),
+          memory: session?.fillerMemory ?? { lastPhrase: null },
+          isConversationStart: msg.text === CONVERSATION_START,
+        });
+        let routedNode: string | null = null;
+        let routedAtMs: number | null = null;
+        let firstReplyAtMs: number | null = null;
+        fillers.start();
+
+        try {
+          for await (const event of this.agentService.runAgent(msg)) {
+            if (event.kind === 'route') {
+              routedNode ??= event.node;
+              routedAtMs ??= Date.now() - turnStartedAt;
+              fillers.onRoute(event.node);
+              continue;
+            }
+            fillers.onReply();
+            firstReplyAtMs ??= Date.now() - turnStartedAt;
+            session?.transcript.push({ speaker: 'agent', text: event.text, timestamp: new Date() });
+            if (client.readyState === WebSocket.OPEN) {
+              client.send(JSON.stringify({ type: 'token', text: event.text }));
+            }
           }
-          if (text && client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({ type: 'token', text }));
-          }
+        } finally {
+          fillers.dispose();
+          const sentFillers = fillers.sent.map((f) => `${f.kind}@${f.atMs}ms`).join(',') || 'none';
+          this.logger.log(
+            `[turn] session=${msg.sessionId} node=${routedNode ?? '-'} router=${routedAtMs ?? '-'}ms ` +
+              `filler=${sentFillers} first_reply=${firstReplyAtMs ?? '-'}ms total=${Date.now() - turnStartedAt}ms`,
+          );
         }
 
         if (client.readyState === WebSocket.OPEN) {

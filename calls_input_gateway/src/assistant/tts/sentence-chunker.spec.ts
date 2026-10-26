@@ -57,4 +57,28 @@ describe('splitIntoSentences', () => {
     expect(first.value).toBe('Hello.');
     expect(onChunk).toHaveBeenCalledTimes(2);
   });
+
+  it('speaks a short filler immediately, before the reply arrives', async () => {
+    async function* source() {
+      yield { text: 'Just a moment.', filler: true };
+      yield { text: 'The pool is 25 m long. It has a deck.' };
+    }
+    const gen = splitIntoSentences(source(), () => true);
+    expect((await gen.next()).value).toBe('Just a moment.');
+    expect((await gen.next()).value).toBe('The pool is 25 m long.');
+    expect((await gen.next()).value).toBe('It has a deck.');
+  });
+
+  it('yields a filler whole even without punctuation, flushing buffered text first', async () => {
+    async function* source() {
+      yield { text: 'Partial reply' };
+      yield { text: 'ఒక్క క్షణం', filler: true };
+      yield { text: ' rest.' };
+    }
+    expect(await collect(source())).toEqual([
+      'Partial reply',
+      'ఒక్క క్షణం',
+      'rest.',
+    ]);
+  });
 });

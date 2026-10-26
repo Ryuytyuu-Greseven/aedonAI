@@ -39,6 +39,8 @@ const OUTPUT_SAMPLE_RATE = 24000;
 // is exhausted — a dropped `final` event must not hang the turn.
 const FINAL_EVENT_TIMEOUT_MS = 8000;
 
+const CONNECT_ATTEMPTS = 2;
+
 /**
  * Streaming TTS via Sarvam (bulbul). One WebSocket per agent turn, opened as
  * soon as the reply starts streaming so the handshake overlaps generation.
@@ -109,49 +111,64 @@ export class SarvamTtsService {
       }
     };
 
+    const connectOnce = async (): Promise<TtsSocket | null> => {
+      const s = await this.getClient().textToSpeechStreaming.connect({
+        model: model as never,
+        send_completion_event: 'true',
+        reconnectAttempts: 0,
+      });
+      s.on('message', (message: unknown) =>
+        handleMessage(message as TtsMessage),
+      );
+      s.on('error', (err: unknown) =>
+        this.logger.error(`[SarvamTTS] socket error: ${describeError(err)}`),
+      );
+      try {
+        await s.waitForOpen();
+      } catch (err) {
+        s.close();
+        throw err;
+      }
+      // Only a socket that actually opened may end the turn's wait on close.
+      s.on('close', () => {
+        finals = flushes;
+        settle();
+      });
+      if (aborted) {
+        s.close();
+        return null;
+      }
+      s.configureConnection({
+        type: 'config',
+        data: {
+          language_code: languageCode,
+          speaker,
+          pace,
+          speech_sample_rate: OUTPUT_SAMPLE_RATE,
+          output_audio_codec: 'linear16',
+        } as never,
+      });
+      socket = s;
+      return s;
+    };
+
+    // A failed handshake would leave the whole reply silent, so a transient
+    // blip (the SDK gives the socket 4 s to open) gets one more try.
     const open = (): Promise<TtsSocket | null> => {
       opening ??= (async () => {
-        try {
-          const s = await this.getClient().textToSpeechStreaming.connect({
-            model: model as never,
-            send_completion_event: 'true',
-            reconnectAttempts: 0,
-          });
-          s.on('message', (message: unknown) =>
-            handleMessage(message as TtsMessage),
-          );
-          s.on('error', (err: unknown) =>
+        for (let attempt = 1; attempt <= CONNECT_ATTEMPTS; attempt++) {
+          try {
+            return await connectOnce();
+          } catch (err) {
+            const retrying =
+              attempt < CONNECT_ATTEMPTS && !aborted && session.isGenerating;
             this.logger.error(
-              `[SarvamTTS] socket error: ${describeError(err)}`,
-            ),
-          );
-          s.on('close', () => {
-            finals = flushes;
-            settle();
-          });
-          await s.waitForOpen();
-          if (aborted) {
-            s.close();
-            return null;
+              `[SarvamTTS] connect failed (attempt ${attempt}/${CONNECT_ATTEMPTS}${retrying ? ', retrying' : ''}): ${describeError(err)}`,
+            );
+            if (!retrying) return null;
           }
-          s.configureConnection({
-            type: 'config',
-            data: {
-              language_code: languageCode,
-              speaker,
-              pace,
-              speech_sample_rate: OUTPUT_SAMPLE_RATE,
-              output_audio_codec: 'linear16',
-            } as never,
-          });
-          socket = s;
-          return s;
-        } catch (err) {
-          this.logger.error(
-            `[SarvamTTS] connect failed: ${describeError(err)}`,
-          );
-          return null;
         }
+        return null;
       })();
       return opening;
     };

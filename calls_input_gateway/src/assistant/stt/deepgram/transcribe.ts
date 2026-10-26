@@ -257,7 +257,7 @@ export class DeepGram {
         // whichever fires first wins and the guard still holds.
         if (!activeSession.speechDetectedByGoogle) {
           activeSession.speechDetectedByGoogle = true;
-          activeSession.callbacks.onBargeIn();
+          activeSession.callbacks.onBargeIn(transcript);
         }
         return;
       }

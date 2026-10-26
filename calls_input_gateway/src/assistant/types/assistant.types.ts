@@ -42,6 +42,17 @@ export interface UserConfig {
   agentId: string;
 }
 
+/**
+ * One piece of the domain agent's reply on its way to TTS. `filler` marks a
+ * holding line ("Let me check that for you.") the agent sends while a slow
+ * turn is being prepared — spoken immediately, but never logged as part of
+ * the reply.
+ */
+export interface AgentTextChunk {
+  text: string;
+  filler?: boolean;
+}
+
 export interface SessionState {
   config: UserConfig;
   sessionId: string;
@@ -51,6 +62,13 @@ export interface SessionState {
   isGenerating: boolean;
   isProcessingQueue: boolean;
   turnInterrupted: boolean;
+  /** True while this turn has spoken only filler — the reply hasn't started. */
+  fillerOnly: boolean;
+  /**
+   * Set when the caller started speaking during filler-only time and we
+   * held off interrupting until their words are known (see handleBargeIn).
+   */
+  deferredBargeIn: boolean;
   abortTts?: (() => void) | null;
   accumulatedTranscript: string;
   lastSegmentHadSpeech: boolean;

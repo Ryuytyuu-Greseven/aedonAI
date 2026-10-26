@@ -1,8 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { HumanMessage } from '@langchain/core/messages';
 import { LlmUsageService } from '../common/llm-usage/index.js';
 import { salesGraph } from './graphs/sales/graph/sales.graph.js';
 import { IAgent } from '../common/interface/agent.interface.js';
+import { warmUpKnowledgeBaseRetrieval } from './graphs/sales/tool/knowledge-base.store.js';
 
 interface AgentMessage {
   text: string;
@@ -21,13 +22,24 @@ interface AgentMessage {
   channel?: 'live' | 'preview';
 }
 
+/**
+ * What a turn produces, in order: which node the router picked (so the
+ * gateway can play a filler while a slow node runs), then the reply text.
+ */
+export type AgentTurnEvent = { kind: 'route'; node: string } | { kind: 'text'; text: string };
+
 @Injectable()
-export class AgentService {
+export class AgentService implements OnModuleInit {
   private readonly logger = new Logger(AgentService.name);
 
   constructor(private readonly llmUsage: LlmUsageService) { }
 
-  public async *runAgent(msg: AgentMessage): AsyncGenerator<{ text: string }> {
+  onModuleInit(): void {
+    // Fire-and-forget: never delays startup, never throws.
+    void warmUpKnowledgeBaseRetrieval();
+  }
+
+  public async *runAgent(msg: AgentMessage): AsyncGenerator<AgentTurnEvent> {
     this.logger.log(`[sales] session="${msg.sessionId}" text="${msg.text.slice(0, 60)}"`);
 
     const tracker = this.llmUsage.createTracker({
@@ -64,14 +76,18 @@ export class AgentService {
 
       for await (const chunk of result) {
         const nodeState = Object.values(chunk)[0] as any;
+        if (typeof nodeState?.routeDestination === 'string') {
+          yield { kind: 'route', node: nodeState.routeDestination };
+        }
         if (nodeState?.messages?.length > 0) {
           const token = nodeState.messages[nodeState.messages.length - 1];
-          if (token) yield token;
+          const text = typeof token?.text === 'string' ? token.text : (token?.content ?? '');
+          if (text) yield { kind: 'text', text };
         }
       }
     } catch (err: any) {
       this.logger.error('sales agent error:', err);
-      yield { text: `I encountered an error: ${err.message ?? err}` };
+      yield { kind: 'text', text: `I encountered an error: ${err.message ?? err}` };
     }
   }
 }

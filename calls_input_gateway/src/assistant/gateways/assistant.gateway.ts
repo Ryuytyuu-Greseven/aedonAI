@@ -84,7 +84,8 @@ export class AssistantGateway
       await this.audioDriverService.startSession(sessionId, {
         onTranscript: (text, language) =>
           this.assistantService.onTranscriptReady(client, text, language),
-        onBargeIn: () => this.assistantService.handleBargeIn(client),
+        onBargeIn: (transcript) =>
+          this.assistantService.handleBargeIn(client, transcript),
       });
     }
   }

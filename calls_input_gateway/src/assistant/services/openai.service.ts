@@ -69,6 +69,16 @@ export class OpenAiService implements IAiService {
     for await (const chunk of text) {
       if (!session.isGenerating) break;
       const chunkText = chunk.text || '';
+      if (chunk.filler) {
+        // Spoken immediately as its own line (see AgentTextChunk.filler).
+        if (chunkText.trim()) {
+          onAudioChunk('', chunkText.trim() + ' ', client);
+          const dummyBase64 =
+            'UklGRigAAABXQVZFZm10IBIAAAABAAEARKwAAIhYAQACABAAAABkYXRhAgAAAAAA';
+          onAudioChunk(dummyBase64, '', client);
+        }
+        continue;
+      }
       sentenceBuffer += chunkText;
 
       let boundaryIndex = -1;

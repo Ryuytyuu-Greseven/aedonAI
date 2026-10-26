@@ -1,7 +1,8 @@
 import WebSocket from 'ws';
 import { Injectable, Logger } from '@nestjs/common';
 import { SharedAiService } from './shared-ai.service';
-import { SessionState } from '../types/assistant.types';
+import { AgentTextChunk, SessionState } from '../types/assistant.types';
+import { isBackchannel } from '../speech/backchannel';
 import { AgentRouterService } from './agent-router.service';
 import { AudioDriverService } from './audio-driver.service';
 import { FirebaseService } from '../../firebase/firebase.service';
@@ -67,6 +68,8 @@ export class AssistantService {
       isGenerating: false,
       isProcessingQueue: false,
       turnInterrupted: false,
+      fillerOnly: false,
+      deferredBargeIn: false,
       abortTts: null,
       accumulatedTranscript: '',
       lastSegmentHadSpeech: false,
@@ -365,13 +368,32 @@ export class AssistantService {
   // ─── AudioDriver callbacks ────────────────────────────────────────────────
 
   /**
-   * Called by AudioDriverService when the first audio chunk of a new
-   * utterance arrives. Interrupts any in-progress TTS immediately.
+   * Called by AudioDriverService when the caller starts a new utterance,
+   * with the first interim transcript when the STT provider has one (Sarvam
+   * only signals start of speech). Interrupts any in-progress turn — except
+   * while only a filler has played: then an acknowledgement ("okay") or
+   * not-yet-known words don't cancel the pending reply; the decision waits
+   * for the final transcript (see onTranscriptReady).
    */
-  public handleBargeIn(client: any): void {
+  public handleBargeIn(client: any, transcript?: string): void {
     const session = this.sessions.get(client);
     if (!session || !session.isGenerating) return;
 
+    if (
+      session.fillerOnly &&
+      (transcript === undefined || isBackchannel(transcript))
+    ) {
+      this.logger.log(
+        `[Barge-in] Deferred during filler ("${transcript ?? '…'}") — waiting for the final transcript.`,
+      );
+      session.deferredBargeIn = true;
+      return;
+    }
+
+    this.interruptTurn(client, session);
+  }
+
+  private interruptTurn(client: any, session: SessionState): void {
     this.logger.log('[Barge-in] User started speaking — interrupting AI.');
     session.turnInterrupted = true;
     session.isGenerating = false;
@@ -402,6 +424,17 @@ export class AssistantService {
   ): void {
     const session = this.sessions.get(client);
     if (!session || !text.trim()) return;
+
+    if (session.deferredBargeIn) {
+      session.deferredBargeIn = false;
+      if (isBackchannel(text)) {
+        // "okay" over a filler: let the pending reply play, and don't send
+        // the acknowledgement to the agent as a new question.
+        this.logger.log(`[Barge-in] Ignored acknowledgement "${text}".`);
+        return;
+      }
+      if (session.isGenerating) this.interruptTurn(client, session);
+    }
 
     session.language = language;
     this.updateSessionCurrentLanguage(session.sessionId, language);
@@ -439,6 +472,8 @@ export class AssistantService {
       while (session.queryQueue.length > 0) {
         const queryText = session.queryQueue.shift()!;
         session.turnInterrupted = false;
+        session.fillerOnly = false;
+        session.deferredBargeIn = false;
         session.isGenerating = true;
         this.sendServerContent(client, { turnStart: true });
 
@@ -452,8 +487,13 @@ export class AssistantService {
             () => session.isGenerating,
             session.language,
           );
-          const { stream: responseStream, getText } =
-            this.captureTextStream(rawStream);
+          const { stream: responseStream, getText } = this.captureTextStream(
+            rawStream,
+            (chunk) => {
+              // Filler-only until the first piece of the real reply.
+              session.fillerOnly = !!chunk.filler && getText() === '';
+            },
+          );
 
           await this.sharedAiService.textToSpeech(
             responseStream,
@@ -497,21 +537,27 @@ export class AssistantService {
 
   /**
    * Wraps an async generator so callers can still iterate it normally while
-   * we silently accumulate the text yielded by each chunk.
-   * getText() returns the concatenated result after the stream is exhausted.
+   * we silently accumulate the reply text yielded by each chunk (fillers are
+   * spoken but not part of the reply). `onChunk` sees every chunk before it
+   * goes to TTS. getText() returns the concatenated result after the stream
+   * is exhausted.
    */
-  private captureTextStream(source: AsyncGenerator<{ text: string }>): {
-    stream: AsyncGenerator<{ text: string }>;
+  private captureTextStream(
+    source: AsyncGenerator<AgentTextChunk>,
+    onChunk?: (chunk: AgentTextChunk) => void,
+  ): {
+    stream: AsyncGenerator<AgentTextChunk>;
     getText: () => string;
   } {
     let accumulated = '';
     const stream = (async function* () {
       for await (const chunk of source) {
+        onChunk?.(chunk);
         const t =
           typeof chunk?.text === 'string'
             ? chunk.text
             : ((chunk as any)?.content ?? '');
-        if (t) accumulated += t;
+        if (t && !chunk.filler) accumulated += t;
         yield chunk;
       }
     })();

@@ -20,6 +20,9 @@ export interface RagQueryOptions {
 }
 
 const DEFAULT_TOP_K = 5;
+// Extra candidates fetched so duplicates can be dropped and still fill topK.
+const CANDIDATE_MULTIPLIER = 3;
+const MAX_CANDIDATES = 20;
 // Measured with gemini-embedding-001 @768 on headed section chunks: relevant
 // matches ~0.71–0.79 (English, Hindi, Telugu), unrelated ~0.42–0.57.
 const DEFAULT_MIN_SCORE = parseMinScore(process.env.RAG_MIN_SCORE) ?? 0.6;
@@ -50,7 +53,7 @@ export async function queryKnowledgeBase(queryText: string, opts: RagQueryOption
 
     const results = await index.query({
       vector: queryVector,
-      topK,
+      topK: Math.min(topK * CANDIDATE_MULTIPLIER, MAX_CANDIDATES),
       includeMetadata: true,
       filter: {
         knowledge_base_id: { $in: knowledgeBaseIds },
@@ -61,13 +64,49 @@ export async function queryKnowledgeBase(queryText: string, opts: RagQueryOption
       },
     });
 
-    return (results.matches ?? [])
+    const matches = (results.matches ?? [])
       .filter((m) => (m.score ?? 0) >= minScore)
       .map((m) => ({ text: m.metadata?.text ?? '', score: m.score ?? 0 }))
       .filter((m) => m.text.length > 0);
+    return dedupeMatches(matches).slice(0, topK);
   } catch (error) {
     console.error('[RAG] Pinecone knowledge-base query failed — falling back to no context:', error);
     return [];
+  }
+}
+
+// The studio server starts every chunk with one context line
+// ("Subject: … | Source: … | Section: …", or "Source: …" for raw text).
+const CHUNK_HEADER = /^(Subject|Source): [^\n]*\n/;
+
+/**
+ * Drops matches whose chunk body (ignoring the header line, which differs
+ * per source file) repeats a higher-scoring match — e.g. the same brochure
+ * uploaded three times would otherwise fill the context with one chunk.
+ * Expects matches sorted by score, best first (Pinecone's order).
+ */
+export function dedupeMatches(matches: RagMatch[]): RagMatch[] {
+  const seen = new Set<string>();
+  return matches.filter((match) => {
+    const body = match.text.replace(CHUNK_HEADER, '').trim();
+    if (seen.has(body)) return false;
+    seen.add(body);
+    return true;
+  });
+}
+
+/**
+ * Pays the one-off client start-up cost (auth, connections — measured at
+ * 12–17 s) at boot instead of on the first caller's question. Never throws.
+ */
+export async function warmUpKnowledgeBaseRetrieval(): Promise<void> {
+  if (!isPineconeConfigured()) return;
+  const startedAt = Date.now();
+  try {
+    await Promise.all([embedRagQuery('warm up'), getKnowledgeBaseIndex().describeIndexStats()]);
+    console.log(`[RAG] Retrieval warm-up done in ${Date.now() - startedAt} ms`);
+  } catch (error) {
+    console.error('[RAG] Retrieval warm-up failed (first lookup will be slower):', error);
   }
 }
 

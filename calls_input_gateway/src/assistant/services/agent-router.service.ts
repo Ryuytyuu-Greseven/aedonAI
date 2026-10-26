@@ -1,6 +1,6 @@
 import WebSocket from 'ws';
 import { Injectable, Logger } from '@nestjs/common';
-import { UserConfig } from '../types/assistant.types';
+import { AgentTextChunk, UserConfig } from '../types/assistant.types';
 import { CallChannel } from '../../call-logs/interfaces/call-log.interface';
 import { getAgentUrl } from '../../common/config/business-agents.registry';
 import { CallLogService } from '../../call-logs/services/call-log.service';
@@ -34,7 +34,7 @@ export class AgentRouterService {
     sessionId: string,
     isActive: () => boolean = () => true,
     language: string = 'en',
-  ): AsyncGenerator<{ text: string }> {
+  ): AsyncGenerator<AgentTextChunk> {
     const baseUrl = getAgentUrl(config.business);
     const url = `${baseUrl}/agent`;
     this.logger.log(`[Router] ${config.business} → ${url}`);
@@ -141,7 +141,11 @@ export class AgentRouterService {
         }
 
         const item = queue.shift()!;
-        if (item.type === 'token' && item.text) {
+        if (item.type === 'filler' && item.text) {
+          // A holding line while the agent works — spoken, not logged.
+          if (!isActive()) break;
+          yield { text: item.text, filler: true };
+        } else if (item.type === 'token' && item.text) {
           if (!isActive()) break;
           agentResponse += item.text;
           yield { text: item.text };

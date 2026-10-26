@@ -22,7 +22,8 @@ export function findFlushBoundary(buffer: string): number {
 
 /**
  * Re-chunks a streamed LLM reply into sentences for TTS. Strips a leading
- * `[lang]:` tag if the agent emits one. Stops (and closes the source) as soon
+ * `[lang]:` tag if the agent emits one. Filler chunks are yielded whole and
+ * immediately. Stops (and closes the source) as soon
  * as `isActive()` turns false — i.e. on barge-in.
  *
  * `onChunk` fires for every source chunk, before any sentence is complete, so
@@ -30,7 +31,7 @@ export function findFlushBoundary(buffer: string): number {
  * being generated.
  */
 export async function* splitIntoSentences(
-  textStream: AsyncIterable<{ text?: string }>,
+  textStream: AsyncIterable<{ text?: string; filler?: boolean }>,
   isActive: () => boolean,
   onChunk?: () => void,
 ): AsyncGenerator<string> {
@@ -40,6 +41,16 @@ export async function* splitIntoSentences(
   for await (const chunk of textStream) {
     if (!isActive()) return;
     onChunk?.();
+
+    // A filler is a complete line meant to be heard right now: speak it as
+    // its own sentence instead of waiting for punctuation or more text.
+    if (chunk.filler) {
+      if (buffer.trim()) yield buffer.trim();
+      buffer = '';
+      if (chunk.text?.trim()) yield chunk.text.trim();
+      continue;
+    }
+
     buffer += chunk.text || '';
 
     if (!prefixHandled) {

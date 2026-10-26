@@ -216,7 +216,8 @@ export class TwilioGateway implements OnGatewayConnection, OnGatewayDisconnect {
       {
         onTranscript: (text, language) =>
           this.assistantService.onTranscriptReady(adapter, text, language),
-        onBargeIn: () => this.assistantService.handleBargeIn(adapter),
+        onBargeIn: (transcript) =>
+          this.assistantService.handleBargeIn(adapter, transcript),
       },
       { encoding: 'MULAW', sampleRateHertz: 8000 },
     );

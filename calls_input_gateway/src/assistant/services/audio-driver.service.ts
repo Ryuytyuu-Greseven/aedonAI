@@ -13,7 +13,8 @@ import {
 export interface AudioDriverCallbacks {
   /** language is the STT-detected short code ('en', 'hi', 'te', …). */
   onTranscript: (text: string, language: string) => void;
-  onBargeIn: () => void;
+  /** The caller started speaking; `transcript` is the first interim text when the STT provider has one. */
+  onBargeIn: (transcript?: string) => void;
 }
 
 export interface AudioSessionConfig {
@@ -388,7 +389,7 @@ export class AudioDriverService {
         // Fire barge-in ONCE per utterance (not on background noise, not on audio chunks).
         if (!session.speechDetectedByGoogle) {
           session.speechDetectedByGoogle = true;
-          session.callbacks.onBargeIn();
+          session.callbacks.onBargeIn(transcript);
         }
         // Reset the post-speech silence timer so we give Google time to finalize
         this.resetSilenceTimer(sessionId, session);

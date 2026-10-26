@@ -157,4 +157,35 @@ describe('SarvamTtsService', () => {
     expect(out.filter((o) => o.audio)).toHaveLength(0);
     expect(Logger.prototype.error).toHaveBeenCalled();
   });
+  it('retries a handshake that times out, and still speaks the reply', async () => {
+    const failed = new FakeTtsSocket();
+    failed.waitForOpen = jest.fn().mockRejectedValue(new Error('TIMEOUT'));
+    const good = nextSocket;
+    connect
+      .mockImplementationOnce(() => Promise.resolve(failed))
+      .mockImplementationOnce(() => Promise.resolve(good));
+
+    const { done, out } = run(['Hello.']);
+    await done;
+
+    expect(connect).toHaveBeenCalledTimes(2);
+    expect(failed.close).toHaveBeenCalled();
+    expect(good.convert).toHaveBeenCalledWith('Hello.');
+    expect(out.filter((o) => o.audio).length).toBeGreaterThan(0);
+  });
+
+  it('gives up after the second failed handshake without hanging', async () => {
+    const failing = () => {
+      const s = new FakeTtsSocket();
+      s.waitForOpen = jest.fn().mockRejectedValue(new Error('TIMEOUT'));
+      return Promise.resolve(s);
+    };
+    connect.mockImplementationOnce(failing).mockImplementationOnce(failing);
+
+    const { done, out } = run(['Hello.']);
+    await done;
+
+    expect(connect).toHaveBeenCalledTimes(2);
+    expect(out.filter((o) => o.audio)).toHaveLength(0);
+  });
 });
