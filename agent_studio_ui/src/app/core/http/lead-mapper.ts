@@ -1,9 +1,11 @@
-import { AgentLead, LeadsPage, PageLead } from '../models/lead.model';
+import { AgentLead, LeadsPage, PageLead, PageLeadCallStatus } from '../models/lead.model';
 
 /** One entry in a Meta lead's `callAttempts` — one row per time the agent was triggered to call this lead. */
 export interface ApiCallAttempt {
   callId: string;
   attemptedAt: string;
+  /** Agent (agents._id) that placed this call; absent on older attempts. */
+  agentId?: string;
 }
 
 /** Wire shape of one entry in `GET /api/integrations/meta/leads`'s `leads` array. */
@@ -23,6 +25,10 @@ export interface ApiMetaLead {
   createdAt: string;
   updatedAt: string;
   callAttempts?: ApiCallAttempt[];
+  callStatus?: PageLeadCallStatus;
+  lastCallError?: string;
+  /** Agent (agents._id) that last handled this lead. */
+  agentId?: string;
 }
 
 export interface ApiLeadsResponse<T> {
@@ -35,6 +41,7 @@ export interface ApiLeadsResponse<T> {
 export function fromApiMetaLead(raw: ApiMetaLead): PageLead {
   return {
     id: raw.id,
+    leadgen_id: raw.leadgenId,
     page_id: raw.pageId,
     full_name: raw.fullName,
     phone_number: raw.phoneNumber,
@@ -42,6 +49,8 @@ export function fromApiMetaLead(raw: ApiMetaLead): PageLead {
     custom_fields: raw.customFields ?? {},
     submitted_at: raw.metaCreatedAt,
     call_attempts_count: raw.callAttempts?.length ?? 0,
+    call_status: raw.callStatus ?? null,
+    last_call_error: raw.lastCallError ?? null,
   };
 }
 

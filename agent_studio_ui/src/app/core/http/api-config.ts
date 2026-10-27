@@ -108,6 +108,7 @@ export const ApiEndpoints = {
     unassignAgent: (pageId: string) => `/integrations/meta/pages/${pageId}/unassign-agent`,
     /** Company-wide Meta `leadgen` leads across all connected Pages — see backend-openspec/specs/leads.md. */
     leads: '/integrations/meta/leads',
+    callLead: (leadgenId: string) => `/integrations/meta/leads/${encodeURIComponent(leadgenId)}/call`,
   },
 
   knowledgeBases: {

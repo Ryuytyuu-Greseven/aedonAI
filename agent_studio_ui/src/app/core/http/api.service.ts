@@ -9,7 +9,7 @@ import { KnowledgeBase, NewKnowledgeBaseFileInput } from '../models/knowledge-ba
 import { PhoneNumber } from '../models/phone-number.model';
 import { ApiUser, UserProfileResponse } from '../models/profile.model';
 import { MetaPage } from '../models/meta-integration.model';
-import { AgentLead, LeadsPage, LeadsQuery, PageLead } from '../models/lead.model';
+import { AgentLead, LeadsPage, LeadsQuery, PageLead, PageLeadCallResult } from '../models/lead.model';
 import { CreatePropertyInput, Property, UpdatePropertyInput } from '../models/property.model';
 import { ProductStatsPage, ProductStatsQuery } from '../models/product-stats.model';
 import { ApiEndpoints } from './api-config';
@@ -219,6 +219,11 @@ export class ApiService {
     return this.http
       .get<ApiLeadsResponse<ApiMetaLead>>(ApiEndpoints.metaIntegration.leads, { params })
       .pipe(map(fromApiMetaLeadsResponse));
+  }
+
+  /** Places a real outbound call to one Meta lead with its Page's linked agent (any age, any prior attempts). */
+  callMetaLead(leadgenId: string): Observable<PageLeadCallResult> {
+    return this.http.post<PageLeadCallResult>(ApiEndpoints.metaIntegration.callLead(leadgenId), null);
   }
 
   getAgentLeads(agentId: string, query: LeadsQuery = {}): Observable<LeadsPage<AgentLead>> {

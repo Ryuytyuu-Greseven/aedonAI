@@ -1,9 +1,10 @@
-import { BadRequestException, Controller, Get, Post, Body, Query, Req, Res, Headers, HttpStatus, UseGuards } from '@nestjs/common';
+import { BadRequestException, Controller, Get, Post, Body, Param, Query, Req, Res, Headers, HttpStatus, UseGuards } from '@nestjs/common';
 import type { RawBodyRequest } from '@nestjs/common';
 import type { Request, Response } from 'express';
 
 import { MetaService } from './meta.service';
 import { MetaLeadSyncService } from './meta-lead-sync.service';
+import { MetaLeadCallService } from './meta-lead-call.service';
 import { OAuthExchangeDto } from './dto/oauth-exchange.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { InternalApiKeyGuard } from '../auth/guards/internal-api-key.guard';
@@ -15,6 +16,7 @@ export class MetaController {
   constructor(
     private readonly metaService: MetaService,
     private readonly metaLeadSyncService: MetaLeadSyncService,
+    private readonly metaLeadCallService: MetaLeadCallService,
   ) { }
 
   /**
@@ -41,6 +43,20 @@ export class MetaController {
   @UseGuards(InternalApiKeyGuard)
   async syncLeads(@Query('customerId') customerId?: string) {
     return await this.metaLeadSyncService.syncLeads(customerId);
+  }
+
+  /**
+   * Manually calls one lead from the leads page — the way to reach leads
+   * past the auto-call window or whose auto-call failed. Uses the lead's
+   * Page's current agent; scoped to the caller's company (JWT companyId).
+   */
+  @Post('leads/:leadgenId/call')
+  @UseGuards(JwtAuthGuard)
+  async callLead(@Param('leadgenId') leadgenId: string, @CurrentUser() user: AuthenticatedUser) {
+    if (!user.companyId) {
+      throw new BadRequestException('User is not associated with a company');
+    }
+    return await this.metaLeadCallService.callLeadManually(leadgenId, user.companyId);
   }
 
   /**

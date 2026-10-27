@@ -48,7 +48,12 @@ export class PreviewService {
 
     try {
       const { data } = await axios.post<unknown>(url, payload, {
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          // The gateway rejects outbound-call requests without its internal key
+          'x-internal-api-key':
+            this.config.get<string>('CALLS_GATEWAY_API_KEY') ?? '',
+        },
       });
       return data;
     } catch (error) {

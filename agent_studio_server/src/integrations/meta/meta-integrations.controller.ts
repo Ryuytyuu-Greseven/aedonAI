@@ -46,6 +46,17 @@ export class MetaIntegrationsController {
     return this.metaIntegrationsService.listLeads(user.companyId, query);
   }
 
+  @Post('leads/:leadgenId/call')
+  callLead(@Param('leadgenId') leadgenId: string, @Req() req: Request) {
+    // Forwarded like `connect`: meta-adapter re-validates the JWT and only
+    // lets the caller dial leads belonging to their own company.
+    const authorizationHeader = req.headers.authorization ?? '';
+    return this.metaIntegrationsService.callLead(
+      leadgenId,
+      authorizationHeader,
+    );
+  }
+
   @Post('pages/:pageId/disable')
   disablePage(
     @Param('pageId') pageId: string,

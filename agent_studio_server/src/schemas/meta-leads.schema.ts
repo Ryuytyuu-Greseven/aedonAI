@@ -8,6 +8,10 @@ export class CallAttempt {
 
   @Prop({ required: true, default: () => new Date() })
   attemptedAt: Date;
+
+  /** Agent (agents._id) that placed this call; absent on older attempts. */
+  @Prop()
+  agentId?: string;
 }
 
 export const CallAttemptSchema = SchemaFactory.createForClass(CallAttempt);
@@ -49,6 +53,20 @@ export class MetaLead extends Document {
 
   @Prop({ type: [CallAttemptSchema], default: [] })
   callAttempts: CallAttempt[];
+
+  // The fields below are written by meta-adapter's call cron / manual call
+  // endpoint and mirrored here so the leads page can show call state.
+
+  /** Unset = never picked up; 'dialing' | 'initiated' | 'failed' | 'skipped'. */
+  @Prop({ type: String })
+  callStatus?: 'dialing' | 'initiated' | 'failed' | 'skipped';
+
+  @Prop()
+  lastCallError?: string;
+
+  /** Agent (agents._id) that last handled this lead. */
+  @Prop()
+  agentId?: string;
 }
 
 export const MetaLeadSchema = SchemaFactory.createForClass(MetaLead);

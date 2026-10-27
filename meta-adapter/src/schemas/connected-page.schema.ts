@@ -22,6 +22,11 @@ export class ConnectedPage extends Document {
   // asks Meta for leads created after this (minus a small overlap).
   @Prop()
   lastLeadSyncAt?: Date;
+
+  // Agent (agents._id) that calls this Page's leads. Written only by
+  // agent_studio_server — meta-adapter just reads it.
+  @Prop({ type: String, default: null })
+  agentId?: string | null;
 }
 
 export const ConnectedPageSchema = SchemaFactory.createForClass(ConnectedPage);

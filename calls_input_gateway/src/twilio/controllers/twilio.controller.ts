@@ -1,9 +1,18 @@
-import { Controller, Post, Body, Query, Res, Logger } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  Query,
+  Res,
+  Logger,
+  UseGuards,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TwilioService } from '../twilio.service';
 import { ExotelService } from '../../exotel/exotel.service';
 import { BusinessDirectoryService } from '../../common/services/business-directory.service';
 import { DEFAULT_BUSINESS } from '../../common/config/business-agents.registry';
+import { InternalApiKeyGuard } from '../../common/guards/internal-api-key.guard';
 
 @Controller('twilio')
 export class TwilioController {
@@ -97,8 +106,11 @@ export class TwilioController {
   /**
    * REST endpoint to trigger an outbound call from your backend.
    * POST /twilio/call  { "to": "+919876543210", "business": "sales", "voice": "Aoede" }
+   * Internal only (agent_studio_server previews, meta-adapter lead calls):
+   * requires the `x-internal-api-key` header.
    */
   @Post('call')
+  @UseGuards(InternalApiKeyGuard)
   async initiateCall(
     @Body()
     body: {

@@ -41,49 +41,31 @@ export class MetaIntegrationsService {
     dto: ConnectMetaDto,
     authorizationHeader: string,
   ): Promise<unknown> {
-    const baseUrl = this.config
-      .getOrThrow<string>('META_ADAPTER_URL')
-      .replace(/\/+$/, '');
-    const url = `${baseUrl}/meta/oauth/exchange`;
+    return this.postToMetaAdapter(
+      '/meta/oauth/exchange',
+      { code: dto.code },
+      authorizationHeader,
+      'Meta adapter failed to process the connect request',
+    );
+  }
 
-    try {
-      const { data } = await axios.post<unknown>(
-        url,
-        { code: dto.code },
-        {
-          headers: {
-            'Content-Type': 'application/json',
-            Authorization: authorizationHeader,
-          },
-        },
-      );
-      return data;
-    } catch (error) {
-      if (error instanceof AxiosError && error.response) {
-        const status = error.response.status;
-        const body: unknown = error.response.data;
-        if (status < 500) {
-          // Client-facing error from meta-adapter (bad/expired code, no
-          // company, revoked token) — relay it as-is so the caller sees the
-          // real reason instead of a generic gateway failure.
-          throw new HttpException(body as Record<string, unknown>, status);
-        }
-        this.logger.error(
-          `Meta adapter responded with ${status} for ${url}: ${JSON.stringify(body)}`,
-        );
-        throw new BadGatewayException({
-          message: 'Meta adapter failed to process the connect request',
-          status,
-          details: body,
-        });
-      }
-
-      this.logger.error(
-        `Failed to reach meta adapter at ${url}`,
-        error instanceof Error ? error.stack : String(error),
-      );
-      throw new BadGatewayException('Failed to reach the meta adapter server');
-    }
+  /**
+   * Places a call to one of the caller's leads (the leads page "Call"
+   * action) by delegating to meta-adapter's `/meta/leads/:leadgenId/call`,
+   * which owns the dialing logic (Page's linked agent → calls gateway). As
+   * with `connect`, the caller's JWT is forwarded and meta-adapter
+   * re-validates it and scopes the lead to the caller's company itself.
+   */
+  async callLead(
+    leadgenId: string,
+    authorizationHeader: string,
+  ): Promise<unknown> {
+    return this.postToMetaAdapter(
+      `/meta/leads/${encodeURIComponent(leadgenId)}/call`,
+      {},
+      authorizationHeader,
+      'The call could not be placed',
+    );
   }
 
   /**
@@ -263,6 +245,59 @@ export class MetaIntegrationsService {
         isActive,
       );
     return { success: true, updatedCount };
+  }
+
+  /**
+   * POSTs to meta-adapter with the caller's Authorization header. 4xx
+   * responses (bad/expired code, lead not found, call already in progress,
+   * revoked token) are relayed as-is so the caller sees the real reason;
+   * 5xx and network failures become a 502 with `failureMessage`.
+   */
+  private async postToMetaAdapter(
+    path: string,
+    body: Record<string, unknown>,
+    authorizationHeader: string,
+    failureMessage: string,
+  ): Promise<unknown> {
+    const baseUrl = this.config
+      .getOrThrow<string>('META_ADAPTER_URL')
+      .replace(/\/+$/, '');
+    const url = `${baseUrl}${path}`;
+
+    try {
+      const { data } = await axios.post<unknown>(url, body, {
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: authorizationHeader,
+        },
+      });
+      return data;
+    } catch (error) {
+      if (error instanceof AxiosError && error.response) {
+        const status = error.response.status;
+        const responseBody: unknown = error.response.data;
+        if (status < 500) {
+          throw new HttpException(
+            responseBody as Record<string, unknown>,
+            status,
+          );
+        }
+        this.logger.error(
+          `Meta adapter responded with ${status} for ${url}: ${JSON.stringify(responseBody)}`,
+        );
+        throw new BadGatewayException({
+          message: failureMessage,
+          status,
+          details: responseBody,
+        });
+      }
+
+      this.logger.error(
+        `Failed to reach meta adapter at ${url}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      throw new BadGatewayException('Failed to reach the meta adapter server');
+    }
   }
 
   private requireCompanyId(companyId: string | null): string {

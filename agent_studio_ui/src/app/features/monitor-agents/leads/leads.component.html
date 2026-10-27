@@ -125,15 +125,36 @@
 
             <div class="lead-footer">
               <span class="text-muted text-sm">Submitted {{ formatDateTime(lead.submitted_at) }}</span>
-              <span
-                class="badge lead-call-attempts"
-                [class.badge-active]="lead.call_attempts_count > 0"
-                [class.badge-inactive]="lead.call_attempts_count === 0"
-                [title]="lead.call_attempts_count + ' agent call attempt' + (lead.call_attempts_count === 1 ? '' : 's') + ' for this lead'"
-              >
-                <i class="fa-solid fa-phone" aria-hidden="true"></i>
-                {{ callAttemptsLabel(lead) }}
-              </span>
+              <div class="lead-call-actions">
+                <span
+                  class="badge lead-call-attempts"
+                  [class.badge-active]="lead.call_attempts_count > 0 && lead.call_status !== 'failed'"
+                  [class.badge-inactive]="lead.call_attempts_count === 0 && lead.call_status !== 'failed'"
+                  [class.lead-badge-drop]="lead.call_status === 'failed'"
+                  [title]="
+                    lead.call_status === 'failed' && lead.last_call_error
+                      ? lead.last_call_error
+                      : lead.call_attempts_count + ' agent call attempt' + (lead.call_attempts_count === 1 ? '' : 's') + ' for this lead'
+                  "
+                >
+                  <i class="fa-solid fa-phone" aria-hidden="true"></i>
+                  {{ callAttemptsLabel(lead) }}
+                </span>
+                <button
+                  type="button"
+                  class="btn btn-primary btn-sm"
+                  [disabled]="!canCallLead(lead)"
+                  [title]="callButtonTitle(lead)"
+                  (click)="callLead(lead)"
+                >
+                  @if (callingLeadIds().has(lead.leadgen_id)) {
+                    <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Calling…
+                  } @else {
+                    <i class="fa-solid fa-phone" aria-hidden="true"></i>
+                    {{ lead.call_attempts_count > 0 || lead.call_status === 'failed' ? 'Call again' : 'Call' }}
+                  }
+                </button>
+              </div>
             </div>
           </div>
         }

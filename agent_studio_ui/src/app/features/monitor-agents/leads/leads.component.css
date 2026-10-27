@@ -130,3 +130,10 @@
 .lead-custom-field {
   white-space: nowrap;
 }
+
+.lead-call-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}

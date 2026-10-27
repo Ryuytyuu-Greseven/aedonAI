@@ -1,6 +1,6 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { AgentLead, LeadsPage, LeadsQuery, PageLead } from '../models/lead.model';
+import { AgentLead, LeadsPage, LeadsQuery, PageLead, PageLeadCallResult } from '../models/lead.model';
 import { ApiService } from '../http/api.service';
 
 @Injectable({ providedIn: 'root' })
@@ -21,5 +21,13 @@ export class LeadService {
    */
   getPageLeads(agentId: string, query: LeadsQuery = {}): Observable<LeadsPage<PageLead>> {
     return this.api.getMetaLeads(agentId, query);
+  }
+
+  /**
+   * Manually calls one Meta lead (`POST /api/integrations/meta/leads/:leadgenId/call`) — the way to
+   * reach leads past the 48h auto-call window, or whose auto-call failed.
+   */
+  callPageLead(leadgenId: string): Observable<PageLeadCallResult> {
+    return this.api.callMetaLead(leadgenId);
   }
 }

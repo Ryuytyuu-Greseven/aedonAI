@@ -32,6 +32,10 @@ export class ConnectedPagesRepository {
     return this.connectedPageModel.find({ isActive: true, ...(customerId && { customerId }) }).exec();
   }
 
+  async findAllActiveWithAgent(): Promise<ConnectedPage[]> {
+    return this.connectedPageModel.find({ isActive: true, agentId: { $nin: [null, ''] } }).exec();
+  }
+
   async setLastLeadSyncAt(pageId: string, syncedAt: Date): Promise<void> {
     await this.connectedPageModel.updateOne({ pageId }, { $set: { lastLeadSyncAt: syncedAt } }).exec();
   }
