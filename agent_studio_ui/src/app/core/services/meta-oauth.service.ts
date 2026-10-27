@@ -3,7 +3,7 @@ import { environment } from '../../../environments/environment';
 
 const OAUTH_DIALOG_URL = 'https://www.facebook.com/v21.0/dialog/oauth';
 const STATE_STORAGE_KEY = 'meta_oauth_state';
-const SCOPES = ['pages_show_list', 'pages_manage_metadata', 'business_management', 'pages_read_engagement', 'leads_retrieval'];
+const SCOPES = ['pages_show_list', 'pages_manage_metadata', 'business_management', 'pages_read_engagement', 'leads_retrieval', 'pages_manage_ads'];
 
 /**
  * Builds the Meta OAuth authorize redirect and validates the `state` round-trip
