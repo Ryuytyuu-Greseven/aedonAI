@@ -46,16 +46,17 @@ export async function Semantic_Router_Node(state: SalesState) {
     : '';
 
   const preferencesContext = [
+    state.buyerType && `Buyer intent: ${state.buyerType === 'end_user' ? 'Family living' : 'Investment'}`,
     state.preferredLocation && `Location preference: ${state.preferredLocation}`,
     state.preferredType && `Property type preference: ${state.preferredType}`,
     state.moveInTimeline && `Move-in timeline: ${state.moveInTimeline}`,
+    state.siteVisitPreferredDate && `Site visit requested: ${state.siteVisitPreferredDate}`,
   ].filter(Boolean).join(', ');
 
   const qualifyingGapsContext = [
-    !state.customerName && 'name',
-    !state.customerAddress && 'address',
-    !state.moveInTimeline && 'purchase timeline',
-    state.siteVisitInterested === null && 'site-visit interest',
+    !state.buyerType && 'purpose (family living vs investment)',
+    !state.preferredType && 'configuration (2BHK, 3BHK, Villa)',
+    !state.preferredLocation && 'preferred location',
   ].filter(Boolean).join(', ');
 
   const messages = [

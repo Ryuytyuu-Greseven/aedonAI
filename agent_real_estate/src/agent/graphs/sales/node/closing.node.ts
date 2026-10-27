@@ -6,28 +6,42 @@ import * as Prompts from '../prompt/sales.prompts';
 import { raiseServiceRequestTicket, saveLeadToCrm } from '../tool/sales.tools';
 import { recordProductEnquiry } from '../tool/product-enquiry.store';
 
-// Closing — final confirmation on the disclosed price, then (if not already
-// captured during Discovery_Node) ask when the customer can visit the site,
-// then raise a service request ticket once both are settled. Also persists
-// the lead here (moved from Human_Handoff_Node, which is temporarily
-// disabled — see sales.graph.ts) so a confirmed conversion is still saved.
+// Closing — schedules on-site visit (sample flat inspection, amenities walkthrough),
+// settles preferred day, time slot, and cab logistics, then generates a service
+// ticket and saves the enriched lead to CRM for relationship manager handoff.
 export async function Closing_Node(state: SalesState) {
   const focusProp = state.properties[state.currentPropertyIndex ?? 0];
-  const alreadyAgreed = state.purchaseIntentPropertyId !== null;
-  const needsVisitDate = alreadyAgreed && !state.siteVisitPreferredDate;
+  const visitDateKnown = Boolean(state.siteVisitPreferredDate);
+  const timeSlotKnown = Boolean(state.siteVisitTimeSlot);
 
   const closingLlm = llmInstance.withStructuredOutput(
     z.object({
-      agreedToProceed: z
+      agreedToVisitOrProceed: z
         .boolean()
-        .describe('True if the customer explicitly reconfirmed they want to proceed in this message (a clear "yes" to the confirming question).'),
+        .describe('True if the customer expressed interest in visiting the site, or agreed to proceed with scheduling a visit.'),
       siteVisitPreferredDate: z
         .string()
         .nullable()
-        .describe('The day/time the customer proposed for a site visit, if this message is answering that question. Null otherwise.'),
+        .describe('Day or date proposed for the site visit (e.g. "Saturday", "Sunday", "tomorrow"). Null if not stated.'),
+      siteVisitTimeSlot: z
+        .string()
+        .nullable()
+        .describe('Time window for visit (e.g. "morning", "afternoon", "11 AM"). Null if not stated.'),
+      cabRequired: z
+        .boolean()
+        .nullable()
+        .describe('True/false if customer requested or agreed to complimentary doorstep cab pickup. Null if not mentioned.'),
+      customerName: z
+        .string()
+        .nullable()
+        .describe("Customer's name if mentioned or volunteered for the visitor pass. Null otherwise."),
+      customerAddress: z
+        .string()
+        .nullable()
+        .describe("Customer's pickup address/locality if mentioned for cab arrangement. Null otherwise."),
       responseToUser: z
         .string()
-        .describe('Closing response — follow the phase instructions in the system prompt.'),
+        .describe('Closing response — follow the site visit scheduling phases in the prompt.'),
     }),
     { name: 'closing_extract' }
   );
@@ -36,11 +50,13 @@ export async function Closing_Node(state: SalesState) {
   const propContext = focusProp
     ? `\nProperty: ${focusProp.name}. ${focusProp.description ?? ''}`
     : '';
-  const phaseContext = needsVisitDate
-    ? `\n\nCurrent phase: the customer already agreed to proceed. If this message states a day/time to visit the site, acknowledge it and let them know their service request is being raised for that visit. If it does not yet answer that, ask when they'd like to visit the site in the coming days — do NOT mention the service request until a visit day/time has been given.`
-    : alreadyAgreed
-      ? `\n\nCurrent phase: the customer already agreed to proceed and a site visit time has been settled (${state.siteVisitPreferredDate}). Let them know their service request is being raised for that visit.`
-      : `\n\nCurrent phase: ask the confirming question about proceeding with this property and price.`;
+
+  const phaseContext =
+    visitDateKnown && timeSlotKnown
+      ? `\n\nCurrent phase: The customer has selected both visit day (${state.siteVisitPreferredDate}) and time slot (${state.siteVisitTimeSlot}). Confirm their reservation warmly and let them know the relationship manager is assigning their digital visitor pass and location pin on WhatsApp.`
+      : visitDateKnown
+        ? `\n\nCurrent phase: The customer chose ${state.siteVisitPreferredDate}. Ask whether morning or afternoon works best, and mention complimentary cab pickup if needed.`
+        : `\n\nCurrent phase: Propose the two convenient weekend viewing slots (Saturday morning or Sunday afternoon) to view the sample flat and project amenities.`;
 
   const messages = [
     new SystemMessage(promptText + propContext + phaseContext + Prompts.identityContext(state)),
@@ -54,32 +70,48 @@ export async function Closing_Node(state: SalesState) {
     currentNode: 'Closing_Node',
   };
 
-  if (!alreadyAgreed && result.agreedToProceed && focusProp) {
-    updates.purchaseIntentPropertyId = focusProp.id;
+  if (focusProp && (result.agreedToVisitOrProceed || result.siteVisitPreferredDate)) {
+    updates.siteVisitInterested = true;
     void recordProductEnquiry(state, focusProp, 'purchase_intent');
   }
 
-  // Capture the visit date whenever the LLM extracts one — including a
-  // customer who volunteers it in the same breath as their initial "yes"
-  // (agreedToProceed) — not only once we've explicitly asked for it.
   if (result.siteVisitPreferredDate && !state.siteVisitPreferredDate) {
     updates.siteVisitPreferredDate = result.siteVisitPreferredDate;
   }
 
-  // Raise the ticket once purchase intent is set AND a site-visit date is
-  // known (either just captured above, or already known from Discovery_Node).
-  const readyToRaiseTicket =
-    (updates.purchaseIntentPropertyId ?? state.purchaseIntentPropertyId) &&
-    (updates.siteVisitPreferredDate ?? state.siteVisitPreferredDate) &&
-    !state.serviceRequestRaised;
+  if (result.siteVisitTimeSlot && !state.siteVisitTimeSlot) {
+    updates.siteVisitTimeSlot = result.siteVisitTimeSlot;
+  }
 
-  if (readyToRaiseTicket && focusProp) {
+  if (result.cabRequired !== null) {
+    updates.cabRequired = result.cabRequired;
+  }
+
+  if (result.customerName && !state.customerName) {
+    updates.customerName = result.customerName;
+  }
+
+  if (result.customerAddress && !state.customerAddress) {
+    updates.customerAddress = result.customerAddress;
+  }
+
+  const visitDate = updates.siteVisitPreferredDate ?? state.siteVisitPreferredDate;
+  const visitSlot = updates.siteVisitTimeSlot ?? state.siteVisitTimeSlot;
+  const cabReq = updates.cabRequired ?? state.cabRequired;
+
+  // Raise the ticket once a visit date or slot is settled and hasn't been raised yet
+  const readyToRaiseTicket = visitDate && !state.serviceRequestRaised && focusProp;
+
+  if (readyToRaiseTicket) {
     const ticket = await raiseServiceRequestTicket({
-      customerName: state.customerName,
+      customerName: updates.customerName ?? state.customerName,
       customerPhone: state.customerPhNo ?? '',
       propertyId: focusProp.id,
-      siteVisitPreferredDate: updates.siteVisitPreferredDate ?? state.siteVisitPreferredDate,
+      siteVisitPreferredDate: visitDate,
+      siteVisitTimeSlot: visitSlot,
+      cabRequired: cabReq,
     });
+
     if (ticket.confirmed) {
       updates.serviceRequestRaised = true;
       void recordProductEnquiry(state, focusProp, 'site_visit');
@@ -87,19 +119,22 @@ export async function Closing_Node(state: SalesState) {
 
     if (!state.leadSaved) {
       await saveLeadToCrm({
-        customerName: state.customerName,
+        customerName: updates.customerName ?? state.customerName,
         customerPhone: state.customerPhNo ?? '',
         customerId: state.customerId ?? '',
         agentId: state.agentDetails?.id ?? state.agentDetails?.agent_id ?? '',
-        customerAddress: state.customerAddress,
+        customerAddress: updates.customerAddress ?? state.customerAddress,
         budgetMin: state.budgetMin,
         budgetMax: state.budgetMax,
         preferredLocation: state.preferredLocation,
         preferredType: state.preferredType,
         moveInTimeline: state.moveInTimeline,
-        siteVisitInterested: state.siteVisitInterested,
-        siteVisitPreferredDate: updates.siteVisitPreferredDate ?? state.siteVisitPreferredDate,
-        interestedPropertyId: updates.purchaseIntentPropertyId ?? state.purchaseIntentPropertyId,
+        buyerType: state.buyerType,
+        siteVisitInterested: true,
+        siteVisitPreferredDate: visitDate,
+        siteVisitTimeSlot: visitSlot,
+        cabRequired: cabReq,
+        interestedPropertyId: focusProp.id,
         referralName: state.referralName,
         referralPhone: state.referralPhone,
         sessionId: state.sessionId ?? '',

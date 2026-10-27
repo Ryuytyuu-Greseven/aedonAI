@@ -26,8 +26,11 @@ export interface AgentLeadUpsertInput {
   preferredLocation: string | null;
   preferredType: string | null;
   purchaseTimeline: string | null;
+  buyerType?: string | null;
   siteVisitInterested: boolean | null;
   siteVisitPreferredDate: string | null;
+  siteVisitTimeSlot?: string | null;
+  cabRequired?: boolean | null;
   interestedPropertyId: string | null;
   referralName: string | null;
   referralPhone: string | null;

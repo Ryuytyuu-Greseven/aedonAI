@@ -135,8 +135,11 @@ export interface LeadPayload {
   preferredLocation: string | null;
   preferredType: string | null;
   moveInTimeline: string | null;
+  buyerType?: string | null;
   siteVisitInterested: boolean | null;
   siteVisitPreferredDate: string | null;
+  siteVisitTimeSlot?: string | null;
+  cabRequired?: boolean | null;
   interestedPropertyId: string | null;
   referralName: string | null;
   referralPhone: string | null;
@@ -162,8 +165,11 @@ export async function saveLeadToCrm(lead: LeadPayload): Promise<boolean> {
       preferredLocation: lead.preferredLocation,
       preferredType: lead.preferredType,
       purchaseTimeline: lead.moveInTimeline,
+      buyerType: lead.buyerType,
       siteVisitInterested: lead.siteVisitInterested,
       siteVisitPreferredDate: lead.siteVisitPreferredDate,
+      siteVisitTimeSlot: lead.siteVisitTimeSlot,
+      cabRequired: lead.cabRequired,
       interestedPropertyId: lead.interestedPropertyId,
       referralName: lead.referralName,
       referralPhone: lead.referralPhone,
@@ -193,15 +199,19 @@ export async function raiseServiceRequestTicket(params: {
   customerPhone: string;
   propertyId: string;
   siteVisitPreferredDate?: string | null;
+  siteVisitTimeSlot?: string | null;
+  cabRequired?: boolean | null;
 }): Promise<ServiceRequestResult> {
-  // TODO: Replace with real CRM/ticketing API
+  // Replace with real CRM/ticketing API
   const ticketId = `SR-${Date.now().toString(36).toUpperCase()}`;
   console.log('[ServiceRequest] Ticket raised:', JSON.stringify(params));
+  const slotText = params.siteVisitTimeSlot ? ` (${params.siteVisitTimeSlot})` : '';
+  const cabText = params.cabRequired ? ' with complimentary cab pickup' : '';
   return {
     confirmed: true,
     ticketId,
     message:
-      `Your service request has been raised. Your reference number is ${ticketId}. ` +
-      `One of our human agents will call you shortly to help you with the next steps.`,
+      `Your site visit request has been scheduled for ${params.siteVisitPreferredDate ?? 'the requested date'}${slotText}${cabText}. ` +
+      `Your reference number is ${ticketId}. Our relationship manager will reach out with your visit pass and details.`,
   };
 }
