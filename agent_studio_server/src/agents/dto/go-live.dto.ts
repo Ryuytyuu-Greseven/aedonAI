@@ -1,8 +1,11 @@
-import { IsNotEmpty, IsString } from 'class-validator';
+import { IsMongoId } from 'class-validator';
 
 export class GoLiveDto {
-  /** Production phone number selected at go-live (not the staging number). */
-  @IsString()
-  @IsNotEmpty()
-  phone_number: string;
+  /**
+   * `phone_numbers` id of the production number customers will call (not the
+   * staging number). Must be Available, production, in the agent's company,
+   * and unassigned or already on this agent.
+   */
+  @IsMongoId()
+  phone_number_id: string;
 }

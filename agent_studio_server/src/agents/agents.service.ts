@@ -14,6 +14,7 @@ import { AgentLeadsRepository } from '../repos/agent-leads.repository';
 import { AgentsRepository } from '../repos/agents.repository';
 import { KnowledgeBasesRepository } from '../repos/knowledge-bases.repository';
 import { LiveAgentsRepository } from '../repos/live-agents.repository';
+import { PhoneNumbersRepository } from '../repos/phone-numbers.repository';
 import {
   ProductEnquiriesRepository,
   ProductStatsRow,
@@ -25,6 +26,7 @@ import { UpdateAgentDto } from './dto/update-agent.dto';
 import { Agent, AgentDocument } from '../schemas/agent.schema';
 import { AgentLead } from '../schemas/agent-leads.schema';
 import { LiveAgent, LiveAgentDocument } from '../schemas/live-agent.schema';
+import { PhoneNumber } from '../schemas/phone-number.schema';
 
 const MAX_CLONE_RETRIES = 5;
 const DEFAULT_PRODUCT_STATS_RANGE_DAYS = 14;
@@ -62,6 +64,7 @@ export class AgentsService {
     private readonly agentLeadsRepository: AgentLeadsRepository,
     private readonly productEnquiriesRepository: ProductEnquiriesRepository,
     private readonly templatesService: TemplatesService,
+    private readonly phoneNumbersRepository: PhoneNumbersRepository,
   ) { }
 
   async findAll(companyId: string | null): Promise<Agent[]> {
@@ -320,49 +323,130 @@ export class AgentsService {
       );
     }
 
-    const productionPhoneNumber = dto.phone_number.trim();
-    const publishedAt = new Date();
+    const agentDocumentId = String(agent._id);
     const existingLive = await this.liveAgentsRepository.filterByAgentId(
       agent.agent_id,
     );
-    const previousHistoryId = existingLive
-      ? await this.resolvePreviousLiveHistoryId(existingLive)
-      : undefined;
-
-    await this.archiveCurrentStageVersion(agent, 'live', publishedAt);
-    await this.liveAgentsRepository.publishByAgentId(
-      agent.agent_id,
-      {
-        companyId: agent.companyId,
-        agent_id: agent.agent_id,
-        source_agent_document_id: String(agent._id),
-        agent_name: agent.agent_name,
-        country_code: agent.country_code,
-        phone_number: productionPhoneNumber,
-        enable_voice: agent.enable_voice,
-        status: 'live',
-        nodes: agent.nodes ?? [],
-        base_template_id: agent.base_template_id,
-        greeting: agent.greeting,
-        behavior_prompt: agent.behavior_prompt,
-        behavior_notes: agent.behavior_notes,
-        referral_bonus: agent.referral_bonus,
-        knowledge_base_ids: agent.knowledge_base_ids ?? [],
-        mcp_servers: agent.mcp_servers ?? [],
-        stage_version: agent.current_stage_version,
-        published_at: publishedAt,
-      },
-      previousHistoryId,
+    const phoneNumber = await this.claimProductionNumber(
+      dto.phone_number_id,
+      agentDocumentId,
+      agent.companyId,
     );
+    const newlyClaimed = phoneNumber.previouslyAssigned !== agentDocumentId;
 
-    const updated = await this.agentsRepository.update(id, {
-      status: 'live',
-      live_at: publishedAt,
-    });
+    let updated: Agent | null;
+    try {
+      const publishedAt = new Date();
+      const previousHistoryId = existingLive
+        ? await this.resolvePreviousLiveHistoryId(existingLive)
+        : undefined;
+
+      await this.archiveCurrentStageVersion(agent, 'live', publishedAt);
+      await this.liveAgentsRepository.publishByAgentId(
+        agent.agent_id,
+        {
+          companyId: agent.companyId,
+          agent_id: agent.agent_id,
+          source_agent_document_id: agentDocumentId,
+          agent_name: agent.agent_name,
+          country_code: agent.country_code,
+          phone_number: phoneNumber.e164,
+          phone_number_id: dto.phone_number_id,
+          enable_voice: agent.enable_voice,
+          status: 'live',
+          nodes: agent.nodes ?? [],
+          base_template_id: agent.base_template_id,
+          greeting: agent.greeting,
+          behavior_prompt: agent.behavior_prompt,
+          behavior_notes: agent.behavior_notes,
+          referral_bonus: agent.referral_bonus,
+          knowledge_base_ids: agent.knowledge_base_ids ?? [],
+          mcp_servers: agent.mcp_servers ?? [],
+          stage_version: agent.current_stage_version,
+          published_at: publishedAt,
+        },
+        previousHistoryId,
+      );
+
+      updated = await this.agentsRepository.update(id, {
+        status: 'live',
+        live_at: publishedAt,
+      });
+    } catch (error) {
+      // Don't leave the number held by an agent that never went live.
+      if (newlyClaimed) {
+        await this.phoneNumbersRepository.unassignFromAgent(
+          dto.phone_number_id,
+          agentDocumentId,
+        );
+      }
+      throw error;
+    }
     if (!updated) {
       throw new NotFoundException(`Agent ${id} not found`);
     }
+
+    // Re-publishing on a different production number frees the old one.
+    const previousNumberId = existingLive?.phone_number_id;
+    if (previousNumberId && previousNumberId !== dto.phone_number_id) {
+      await this.phoneNumbersRepository.unassignFromAgent(
+        previousNumberId,
+        agentDocumentId,
+      );
+    }
     return updated;
+  }
+
+  /**
+   * Validates the go-live number (clear errors for the UI) and then assigns it
+   * atomically, so two agents can't go live on the same number at once.
+   */
+  private async claimProductionNumber(
+    phoneNumberId: string,
+    agentDocumentId: string,
+    companyId: string | null,
+  ): Promise<{ e164: string; previouslyAssigned: string | null }> {
+    const notFound = `Phone number ${phoneNumberId} not found`;
+    const phoneNumber: PhoneNumber | null =
+      await this.phoneNumbersRepository.filterById(phoneNumberId);
+    if (!phoneNumber) {
+      throw new NotFoundException(notFound);
+    }
+    assertSameCompany(companyId, phoneNumber.companyId, notFound);
+
+    if (phoneNumber.status !== 'Available') {
+      throw new ConflictException(
+        `This phone number is ${phoneNumber.status.toLowerCase()} and can't be used to go live`,
+      );
+    }
+    if (phoneNumber.envType !== 'production') {
+      throw new ConflictException(
+        'Only production phone numbers can be used to go live',
+      );
+    }
+    if (
+      phoneNumber.assigned_agent &&
+      phoneNumber.assigned_agent !== agentDocumentId
+    ) {
+      throw new ConflictException(
+        'This phone number is already assigned to another agent',
+      );
+    }
+
+    const claimed = await this.phoneNumbersRepository.claimForAgent(
+      phoneNumberId,
+      agentDocumentId,
+    );
+    if (!claimed) {
+      throw new ConflictException(
+        'This phone number was just taken or changed — pick another number',
+      );
+    }
+    return {
+      e164:
+        claimed.e164 ?? `${claimed.country_code}${claimed.phone_number}`,
+      previouslyAssigned: phoneNumber.assigned_agent,
+    };
   }
 
   async disable(id: string, companyId: string | null): Promise<Agent> {

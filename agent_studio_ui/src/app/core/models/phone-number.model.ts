@@ -1,6 +1,17 @@
 import { COUNTRY_CODES } from '../../shared/constants/countries.constant';
 
-export type PhoneNumberStatus = 'Available' | 'Disabled';
+/** Provisioning = purchase in flight; Released = returned to the provider (kept for history). */
+export type PhoneNumberStatus = 'Provisioning' | 'Available' | 'Disabled' | 'Released';
+
+export type PhoneNumberProvider = 'twilio' | 'exotel';
+
+export type PhoneNumberType = 'local' | 'mobile' | 'landline' | 'toll_free';
+
+export interface PhoneNumberCapabilities {
+  voice: boolean;
+  sms: boolean;
+  mms: boolean;
+}
 
 export type PhoneNumberEnvironmentType = 'staging' | 'production';
 
@@ -19,16 +30,121 @@ export interface PhoneNumber {
   status: PhoneNumberStatus;
   environmentType: PhoneNumberEnvironmentType;
   organizationId: string | null;
+  /** Null only for legacy, manually-entered numbers. */
+  provider: PhoneNumberProvider | null;
+  provider_sid: string | null;
+  friendly_name: string | null;
+  iso_country: string | null;
+  number_type: PhoneNumberType | null;
+  region: string | null;
+  capabilities: PhoneNumberCapabilities | null;
+  monthly_price: number | null;
+  currency: string | null;
+  inbound_configured: boolean;
+  purchased_at: string | null;
+  released_at: string | null;
   created_at: string;
   updated_at: string;
 }
 
-export interface RequestPhoneNumberInput {
-  country_code: string;
-  phone_number: string;
+/** A number a provider currently offers for sale — search result only, never stored. */
+export interface AvailablePhoneNumber {
+  provider: PhoneNumberProvider;
+  e164: string;
+  friendly_name: string;
+  iso_country: string;
+  number_type: PhoneNumberType;
+  locality: string | null;
+  region: string | null;
+  capabilities: PhoneNumberCapabilities;
+  monthly_price: number | null;
+  currency: string | null;
+}
+
+export interface AvailablePhoneNumbersResult {
+  country: string;
+  provider: PhoneNumberProvider;
+  numbers: AvailablePhoneNumber[];
+}
+
+export interface SearchAvailableNumbersQuery {
+  country: string;
+  type?: PhoneNumberType;
+  /** US only. */
+  areaCode?: string;
+  /** IN only: telecom circle (KA, DL, MH, …). */
+  region?: string;
+  contains?: string;
+  limit?: number;
+}
+
+export interface PurchasePhoneNumberInput {
+  country: string;
+  number: AvailablePhoneNumber;
   label: string;
   notes?: string;
   environmentType: PhoneNumberEnvironmentType;
+}
+
+export interface BuyCountry {
+  isoCountry: string;
+  name: string;
+  flag: string;
+  dialCode: string;
+  provider: PhoneNumberProvider;
+  numberTypes: readonly PhoneNumberType[];
+  /** Which location filter the provider's search supports. */
+  locationFilter: 'areaCode' | 'region';
+}
+
+/** Countries numbers can be bought in — mirrors the server's TELEPHONY_COUNTRIES. */
+export const BUY_COUNTRIES: readonly BuyCountry[] = [
+  {
+    isoCountry: 'US',
+    name: 'United States',
+    flag: '🇺🇸',
+    dialCode: '+1',
+    provider: 'twilio',
+    numberTypes: ['local', 'toll_free'],
+    locationFilter: 'areaCode',
+  },
+  {
+    isoCountry: 'IN',
+    name: 'India',
+    flag: '🇮🇳',
+    dialCode: '+91',
+    provider: 'exotel',
+    numberTypes: ['landline', 'mobile', 'toll_free'],
+    locationFilter: 'region',
+  },
+] as const;
+
+const PROVIDER_LABELS: Record<PhoneNumberProvider, string> = { twilio: 'Twilio', exotel: 'Exotel' };
+
+const NUMBER_TYPE_LABELS: Record<PhoneNumberType, string> = {
+  local: 'Local',
+  mobile: 'Mobile',
+  landline: 'Landline',
+  toll_free: 'Toll-free',
+};
+
+export function phoneNumberProviderLabel(provider: PhoneNumberProvider | null): string {
+  return provider ? PROVIDER_LABELS[provider] : 'Manual';
+}
+
+export function phoneNumberTypeLabel(type: PhoneNumberType | null): string {
+  return type ? NUMBER_TYPE_LABELS[type] : '—';
+}
+
+/** `₹1,000/mo`, or null when the provider didn't quote a price. */
+export function formatMonthlyPrice(price: number | null, currency: string | null): string | null {
+  if (price == null || !currency) return null;
+  const formatted = new Intl.NumberFormat(undefined, {
+    style: 'currency',
+    currency,
+    maximumFractionDigits: 2,
+  }).format(price);
+  return `${formatted}/mo`;
 }
 
 export function phoneNumberEnvironmentLabel(environmentType: PhoneNumberEnvironmentType): string {

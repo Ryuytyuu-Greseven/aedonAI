@@ -6,7 +6,7 @@ import { AgentCallStats, CallDetail, CallRecord } from '../models/call-record.mo
 import { AuthSession, ForgotPasswordRequest, LoginCredentials, MessageResponse, ResetPasswordRequest } from '../models/auth.model';
 import { CreateSalesAgentAccountInput, SalesAgentAccount } from '../models/sales-agent-account.model';
 import { KnowledgeBase, NewKnowledgeBaseFileInput } from '../models/knowledge-base.model';
-import { PhoneNumber } from '../models/phone-number.model';
+import { AvailablePhoneNumbersResult, PhoneNumber, SearchAvailableNumbersQuery } from '../models/phone-number.model';
 import { ApiUser, UserProfileResponse } from '../models/profile.model';
 import { MetaPage } from '../models/meta-integration.model';
 import { AgentLead, LeadsPage, LeadsQuery, PageLead, PageLeadCallResult } from '../models/lead.model';
@@ -45,9 +45,11 @@ import {
   toAddKnowledgeBaseFilesFormData,
 } from './knowledge-base-mapper';
 import {
+  ApiAvailablePhoneNumbersResponse,
   ApiPhoneNumber,
   AssignAgentRequest,
-  CreatePhoneNumberRequest,
+  PurchasePhoneNumberRequest,
+  fromApiAvailablePhoneNumbers,
   fromApiPhoneNumber,
 } from './phone-number-mapper';
 import { ApiFrontlineAgent, fromApiFrontlineAgent } from './frontline-agent-mapper';
@@ -360,11 +362,11 @@ export class ApiService {
   }
 
   /**
-   * `staged` → `live` (requires a fresh preview hash server-side). `phoneNumber` is the
-   * production number for the live-agents clone — distinct from the staging `phone_number`.
+   * `staged` → `live` (requires a fresh preview hash server-side). `phoneNumberId` is the
+   * production number for the live-agents clone — distinct from the staging number.
    */
-  liveAgent(id: string, phoneNumber: string): Observable<Agent> {
-    const body: GoLiveRequest = { phone_number: phoneNumber };
+  liveAgent(id: string, phoneNumberId: string): Observable<Agent> {
+    const body: GoLiveRequest = { phone_number_id: phoneNumberId };
     return this.http.post<ApiAgent>(ApiEndpoints.agents.live(id), body).pipe(map(fromApiAgent));
   }
 
@@ -450,9 +452,28 @@ export class ApiService {
       .pipe(map(fromApiPhoneNumber));
   }
 
-  createPhoneNumber(body: CreatePhoneNumberRequest): Observable<PhoneNumber> {
+  /** Live Twilio (US) / Exotel (IN) inventory search — admin only. */
+  searchAvailablePhoneNumbers(query: SearchAvailableNumbersQuery): Observable<AvailablePhoneNumbersResult> {
+    const params: Record<string, string | number> = {};
+    for (const [key, value] of Object.entries(query)) {
+      if (value !== undefined && value !== null && value !== '') params[key] = value;
+    }
     return this.http
-      .post<ApiPhoneNumber>(ApiEndpoints.phoneNumbers.list, body)
+      .get<ApiAvailablePhoneNumbersResponse>(ApiEndpoints.phoneNumbers.available, { params })
+      .pipe(map(fromApiAvailablePhoneNumbers));
+  }
+
+  /** Buys the number from its provider (billed) — admin only. */
+  purchasePhoneNumber(body: PurchasePhoneNumberRequest): Observable<PhoneNumber> {
+    return this.http
+      .post<ApiPhoneNumber>(ApiEndpoints.phoneNumbers.purchase, body)
+      .pipe(map(fromApiPhoneNumber));
+  }
+
+  /** Releases the number back to its provider (stops billing) — admin only. */
+  releasePhoneNumber(id: string): Observable<PhoneNumber> {
+    return this.http
+      .delete<ApiPhoneNumber>(ApiEndpoints.phoneNumbers.byId(id))
       .pipe(map(fromApiPhoneNumber));
   }
 
