@@ -3,8 +3,6 @@ import { COUNTRY_CODES } from '../../shared/constants/countries.constant';
 /** Provisioning = purchase in flight; Released = returned to the provider (kept for history). */
 export type PhoneNumberStatus = 'Provisioning' | 'Available' | 'Disabled' | 'Released';
 
-export type PhoneNumberProvider = 'twilio' | 'exotel';
-
 export type PhoneNumberType = 'local' | 'mobile' | 'landline' | 'toll_free';
 
 export interface PhoneNumberCapabilities {
@@ -30,9 +28,6 @@ export interface PhoneNumber {
   status: PhoneNumberStatus;
   environmentType: PhoneNumberEnvironmentType;
   organizationId: string | null;
-  /** Null only for legacy, manually-entered numbers. */
-  provider: PhoneNumberProvider | null;
-  provider_sid: string | null;
   friendly_name: string | null;
   iso_country: string | null;
   number_type: PhoneNumberType | null;
@@ -49,7 +44,6 @@ export interface PhoneNumber {
 
 /** A number a provider currently offers for sale — search result only, never stored. */
 export interface AvailablePhoneNumber {
-  provider: PhoneNumberProvider;
   e164: string;
   friendly_name: string;
   iso_country: string;
@@ -63,7 +57,6 @@ export interface AvailablePhoneNumber {
 
 export interface AvailablePhoneNumbersResult {
   country: string;
-  provider: PhoneNumberProvider;
   numbers: AvailablePhoneNumber[];
 }
 
@@ -91,9 +84,8 @@ export interface BuyCountry {
   name: string;
   flag: string;
   dialCode: string;
-  provider: PhoneNumberProvider;
   numberTypes: readonly PhoneNumberType[];
-  /** Which location filter the provider's search supports. */
+  /** Which location filter the country's number search supports. */
   locationFilter: 'areaCode' | 'region';
 }
 
@@ -104,7 +96,6 @@ export const BUY_COUNTRIES: readonly BuyCountry[] = [
     name: 'United States',
     flag: '🇺🇸',
     dialCode: '+1',
-    provider: 'twilio',
     numberTypes: ['local', 'toll_free'],
     locationFilter: 'areaCode',
   },
@@ -113,13 +104,10 @@ export const BUY_COUNTRIES: readonly BuyCountry[] = [
     name: 'India',
     flag: '🇮🇳',
     dialCode: '+91',
-    provider: 'exotel',
-    numberTypes: ['landline', 'mobile', 'toll_free'],
+    numberTypes: ['mobile'],
     locationFilter: 'region',
   },
 ] as const;
-
-const PROVIDER_LABELS: Record<PhoneNumberProvider, string> = { twilio: 'Twilio', exotel: 'Exotel' };
 
 const NUMBER_TYPE_LABELS: Record<PhoneNumberType, string> = {
   local: 'Local',
@@ -127,10 +115,6 @@ const NUMBER_TYPE_LABELS: Record<PhoneNumberType, string> = {
   landline: 'Landline',
   toll_free: 'Toll-free',
 };
-
-export function phoneNumberProviderLabel(provider: PhoneNumberProvider | null): string {
-  return provider ? PROVIDER_LABELS[provider] : 'Manual';
-}
 
 export function phoneNumberTypeLabel(type: PhoneNumberType | null): string {
   return type ? NUMBER_TYPE_LABELS[type] : '—';

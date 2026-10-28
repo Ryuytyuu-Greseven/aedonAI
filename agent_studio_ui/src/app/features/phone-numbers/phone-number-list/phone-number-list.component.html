@@ -4,7 +4,7 @@
     <div>
       <span class="page-eyebrow"><i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i> Telephony · Numbers</span>
       <h1>Phone numbers</h1>
-      <p class="text-muted">Dedicated numbers from Twilio (US) and Exotel (India) to assign to your agents.</p>
+      <p class="text-muted">Dedicated US and India numbers to assign to your agents.</p>
     </div>
     @if (isAdmin()) {
       <button type="button" class="btn btn-primary page-cta" (click)="openBuyForm()">
@@ -146,9 +146,9 @@
 
             <div class="pn-country hide-sm" role="cell">
               <span>{{ phoneNumberCountryName(number) }}</span>
-              <span class="pn-provider" [attr.data-provider]="number.provider ?? 'manual'">
-                {{ phoneNumberProviderLabel(number.provider) }}@if (number.number_type) { · {{ phoneNumberTypeLabel(number.number_type) }} }
-              </span>
+              @if (number.number_type) {
+                <span class="pn-number-type">{{ phoneNumberTypeLabel(number.number_type) }}</span>
+              }
             </div>
 
             <div class="hide-sm" role="cell">
@@ -238,8 +238,8 @@
   <app-modal
     [title]="buyStep() === 'search' ? 'Buy a phone number' : 'Confirm purchase'"
     [subtitle]="buyStep() === 'search'
-      ? 'Search ' + phoneNumberProviderLabel(buyCountry().provider) + ' inventory for ' + buyCountry().name + '.'
-      : 'This number is billed monthly to the ' + phoneNumberProviderLabel(buyCountry().provider) + ' account.'"
+      ? 'Search available numbers in ' + buyCountry().name + '.'
+      : 'This number is billed monthly until it is released.'"
     icon="fa-cart-shopping"
     [width]="buyStep() === 'search' ? 640 : 540"
     (closed)="closeBuyForm()"
@@ -256,12 +256,13 @@
               [class.segmented-on]="buyCountry().isoCountry === country.isoCountry"
               (click)="setBuyCountry(country.isoCountry)"
             >
-              {{ country.flag }} {{ country.name }} <span>{{ phoneNumberProviderLabel(country.provider) }}</span>
+              {{ country.flag }} {{ country.name }}
             </button>
           }
         </div>
       </div>
 
+      @if (buyCountry().numberTypes.length > 1) {
       <div class="form-group">
         <span class="label">Number type</span>
         <div class="segmented pn-buy-segmented" role="tablist" aria-label="Number type">
@@ -272,6 +273,7 @@
           }
         </div>
       </div>
+      }
 
       <div class="pn-buy-filters">
         @if (buyCountry().locationFilter === 'areaCode') {
@@ -341,7 +343,7 @@
         <div>
           <strong class="pn-number">{{ number.e164 }}</strong>
           <span>
-            {{ buyLabel.trim() || number.friendly_name }} · {{ phoneNumberProviderLabel(number.provider) }} {{ phoneNumberTypeLabel(number.number_type) }}{{ buyEnvironmentType ? ' · ' + phoneNumberEnvironmentLabel(buyEnvironmentType) : '' }}
+            {{ buyLabel.trim() || number.friendly_name }} · {{ phoneNumberTypeLabel(number.number_type) }}{{ buyEnvironmentType ? ' · ' + phoneNumberEnvironmentLabel(buyEnvironmentType) : '' }}
           </span>
         </div>
       </div>
@@ -379,7 +381,7 @@
         <i class="fa-solid fa-receipt" aria-hidden="true"></i>
         <span>
           Buying charges
-          <b>{{ formatMonthlyPrice(number.monthly_price, number.currency) ?? 'the standard ' + phoneNumberProviderLabel(number.provider) + ' rate' }}</b>
+          <b>{{ formatMonthlyPrice(number.monthly_price, number.currency) ?? 'the standard monthly rate' }}</b>
           until the number is released.
         </span>
       </div>

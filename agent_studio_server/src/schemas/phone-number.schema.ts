@@ -166,6 +166,9 @@ PhoneNumberSchema.set('toJSON', {
     ret.id = String(ret._id);
     delete ret._id;
     delete ret.__v;
+    // Which telephony provider backs a number is internal — never sent to clients.
+    delete ret.provider;
+    delete ret.provider_sid;
     return ret;
   },
 });

@@ -20,7 +20,7 @@ export const TELEPHONY_COUNTRIES: Record<string, TelephonyCountry> = {
     isoCountry: 'IN',
     dialCode: '+91',
     provider: 'exotel',
-    numberTypes: ['landline', 'mobile', 'toll_free'],
+    numberTypes: ['mobile'],
   },
 };
 

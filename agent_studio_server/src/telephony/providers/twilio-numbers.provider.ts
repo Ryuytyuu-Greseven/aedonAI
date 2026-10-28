@@ -54,7 +54,6 @@ export class TwilioNumbersProvider implements TelephonyNumbersProvider {
           : await country.local.list(options);
 
       return results.map((n) => ({
-        provider: this.name,
         e164: n.phoneNumber,
         friendly_name: n.friendlyName,
         iso_country: n.isoCountry,
@@ -67,6 +66,13 @@ export class TwilioNumbersProvider implements TelephonyNumbersProvider {
         currency: null,
       }));
     } catch (error) {
+      // Treat "nothing found" the same as an empty result.
+      if ((error as TwilioRestError).status === 404) {
+        this.logger.warn(
+          `Twilio search returned 404 for ${query.isoCountry}/${query.type} areaCode=${query.areaCode ?? '-'} contains=${query.contains ?? '-'} — treating as no matches`,
+        );
+        return [];
+      }
       throw this.toHttpError('search numbers', error);
     }
   }
@@ -122,30 +128,34 @@ export class TwilioNumbersProvider implements TelephonyNumbersProvider {
     const authToken = this.config.get<string>('TWILIO_AUTH_TOKEN');
     if (!accountSid || !authToken) {
       throw new ServiceUnavailableException(
-        'Twilio is not configured (TWILIO_ACCOUNT_SID / TWILIO_AUTH_TOKEN)',
+        'Not Configured',
       );
     }
     this.client = new Twilio.Twilio(accountSid, authToken);
     return this.client;
   }
 
-  /** TWILIO_VOICE_WEBHOOK_URL, else the calls gateway's `/twilio/voice`. */
+  /**
+   * The calls gateway's `/twilio/voice` webhook. TWILIO_WEBHOOK_URL is the
+   * gateway's public base URL (same value and meaning as in calls_input_gateway);
+   * falls back to AUDIO_PROCESSOR_URL.
+   */
   private voiceWebhookUrl(): string {
-    const explicit = this.config.get<string>('TWILIO_VOICE_WEBHOOK_URL');
-    if (explicit) return explicit;
-    const gateway = this.config
-      .getOrThrow<string>('AUDIO_PROCESSOR_URL')
-      .replace(/\/+$/, '');
-    return `${gateway}/twilio/voice`;
+    const base = (
+      this.config.get<string>('TWILIO_WEBHOOK_URL') ??
+      this.config.getOrThrow<string>('AUDIO_PROCESSOR_URL')
+    ).replace(/\/+$/, '');
+    return base.endsWith('/twilio/voice') ? base : `${base}/twilio/voice`;
   }
 
+  /** Full provider detail goes to the logs only; the client gets a generic message. */
   private toHttpError(action: string, error: unknown): Error {
     const { status, code, message } = error as TwilioRestError;
     this.logger.error(
       `Twilio failed to ${action}: status=${status} code=${code} ${message}`,
     );
     return new BadGatewayException(
-      `Twilio failed to ${action}: ${message ?? 'unknown error'}`,
+      `Failed to ${action}. Please try again later.`,
     );
   }
 }

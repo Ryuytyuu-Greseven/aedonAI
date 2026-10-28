@@ -4,7 +4,6 @@ import {
   PhoneNumber,
   PhoneNumberCapabilities,
   PhoneNumberEnvironmentType,
-  PhoneNumberProvider,
   PhoneNumberStatus,
   PhoneNumberType,
 } from '../models/phone-number.model';
@@ -19,8 +18,6 @@ export interface ApiPhoneNumber {
   status: PhoneNumberStatus | string;
   envType?: PhoneNumberEnvironmentType | string;
   organizationId?: string | null;
-  provider?: PhoneNumberProvider | null;
-  provider_sid?: string | null;
   friendly_name?: string | null;
   iso_country?: string | null;
   number_type?: PhoneNumberType | null;
@@ -36,7 +33,6 @@ export interface ApiPhoneNumber {
 }
 
 export interface ApiAvailablePhoneNumber {
-  provider: PhoneNumberProvider;
   e164: string;
   friendly_name: string;
   iso_country: string;
@@ -50,7 +46,6 @@ export interface ApiAvailablePhoneNumber {
 
 export interface ApiAvailablePhoneNumbersResponse {
   country: string;
-  provider: PhoneNumberProvider;
   numbers: ApiAvailablePhoneNumber[];
 }
 
@@ -94,8 +89,6 @@ export function fromApiPhoneNumber(raw: ApiPhoneNumber): PhoneNumber {
     status: toStatus(raw.status),
     environmentType: toEnvironmentType(raw.envType),
     organizationId: raw.organizationId ?? null,
-    provider: raw.provider ?? null,
-    provider_sid: raw.provider_sid ?? null,
     friendly_name: raw.friendly_name ?? null,
     iso_country: raw.iso_country ?? null,
     number_type: raw.number_type ?? null,
@@ -114,7 +107,6 @@ export function fromApiPhoneNumber(raw: ApiPhoneNumber): PhoneNumber {
 export function fromApiAvailablePhoneNumbers(raw: ApiAvailablePhoneNumbersResponse): AvailablePhoneNumbersResult {
   return {
     country: raw.country,
-    provider: raw.provider,
     numbers: raw.numbers.map(
       (n): AvailablePhoneNumber => ({
         ...n,

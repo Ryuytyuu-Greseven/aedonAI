@@ -18,14 +18,15 @@ import {
 } from '../telephony.types';
 import { toE164 } from '../utils/e164.util';
 
+const PURCHASE_FAILED = 'Failed to purchase number. Please try again later.';
+
 // Singapore cluster; Mumbai accounts set EXOTEL_API_HOST=api.in.exotel.com
 // (same convention as calls_input_gateway).
 const DEFAULT_API_HOST = 'api.exotel.com';
 
+// Only mobile ExoPhones are offered (see TELEPHONY_COUNTRIES.IN).
 const EXOTEL_NUMBER_TYPES: Partial<Record<PhoneNumberType, string>> = {
-  landline: 'Landline',
   mobile: 'Mobile',
-  toll_free: 'TollFree',
 };
 
 /** Shape of an ExoPhone in v2_beta AvailablePhoneNumbers / IncomingPhoneNumbers responses. */
@@ -75,7 +76,6 @@ export class ExotelNumbersProvider implements TelephonyNumbersProvider {
       return unwrapList(data)
         .slice(0, query.limit)
         .map((n) => ({
-          provider: this.name,
           e164: toE164(n.phone_number, '+91'),
           friendly_name: n.friendly_name ?? n.phone_number,
           iso_country: n.country ?? query.isoCountry,
@@ -87,6 +87,13 @@ export class ExotelNumbersProvider implements TelephonyNumbersProvider {
           currency: n.currency ?? 'INR',
         }));
     } catch (error) {
+      // Exotel answers 404 when nothing matches the filters.
+      if ((error as AxiosError).response?.status === 404) {
+        this.logger.warn(
+          `Exotel search returned 404 for ${query.isoCountry}/${exotelType} region=${query.region ?? '-'} contains=${query.contains ?? '-'} — treating as no matches`,
+        );
+        return [];
+      }
       throw this.toHttpError('search numbers', error);
     }
   }
@@ -110,9 +117,10 @@ export class ExotelNumbersProvider implements TelephonyNumbersProvider {
       );
       const purchased = unwrapOne(data);
       if (!purchased?.sid) {
-        throw new BadGatewayException(
-          'Exotel purchase response did not include an ExoPhone sid',
+        this.logger.error(
+          `Exotel purchase of ${e164} returned no ExoPhone sid: ${JSON.stringify(data)}`,
         );
+        throw new BadGatewayException(PURCHASE_FAILED);
       }
       if (!voiceUrl) {
         this.logger.warn(
@@ -132,8 +140,11 @@ export class ExotelNumbersProvider implements TelephonyNumbersProvider {
       if (error instanceof BadGatewayException) throw error;
       const status = (error as AxiosError).response?.status;
       if (status && status >= 400 && status < 500) {
+        this.logger.warn(
+          `Exotel rejected the purchase of ${e164}: status=${status} ${providerMessage(error)}`,
+        );
         throw new ConflictException(
-          `Exotel rejected the purchase of ${e164}: ${providerMessage(error)}`,
+          `${e164} could not be purchased — it may no longer be available. Search again.`,
         );
       }
       throw this.toHttpError('purchase number', error);
@@ -159,7 +170,7 @@ export class ExotelNumbersProvider implements TelephonyNumbersProvider {
     const accountSid = this.config.get<string>('EXOTEL_ACCOUNT_SID');
     if (!apiKey || !apiToken || !accountSid) {
       throw new ServiceUnavailableException(
-        'Exotel is not configured (EXOTEL_API_KEY / EXOTEL_API_TOKEN / EXOTEL_ACCOUNT_SID)',
+        'Not Configured',
       );
     }
     const host = this.config.get<string>('EXOTEL_API_HOST') ?? DEFAULT_API_HOST;
@@ -171,11 +182,15 @@ export class ExotelNumbersProvider implements TelephonyNumbersProvider {
     return this.http;
   }
 
+  /** Full provider detail goes to the logs only; the client gets a generic message. */
   private toHttpError(action: string, error: unknown): Error {
     const status = (error as AxiosError).response?.status;
-    const message = providerMessage(error);
-    this.logger.error(`Exotel failed to ${action}: status=${status} ${message}`);
-    return new BadGatewayException(`Exotel failed to ${action}: ${message}`);
+    this.logger.error(
+      `Exotel failed to ${action}: status=${status} ${providerMessage(error)}`,
+    );
+    return new BadGatewayException(
+      `Failed to ${action}. Please try again later.`,
+    );
   }
 }
 

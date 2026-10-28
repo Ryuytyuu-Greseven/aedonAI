@@ -121,10 +121,10 @@ class EnvironmentVariables {
   @IsString()
   TWILIO_AUTH_TOKEN?: string;
 
-  /** Inbound voice webhook set on purchased Twilio numbers; defaults to AUDIO_PROCESSOR_URL/twilio/voice. */
+  /** Public base URL of calls_input_gateway (same as its TWILIO_WEBHOOK_URL); purchased numbers get `<base>/twilio/voice`. Defaults to AUDIO_PROCESSOR_URL. */
   @IsOptional()
   @IsString()
-  TWILIO_VOICE_WEBHOOK_URL?: string;
+  TWILIO_WEBHOOK_URL?: string;
 
   @IsOptional()
   @IsString()

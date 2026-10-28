@@ -4,7 +4,9 @@ import {
   ConflictException,
   InternalServerErrorException,
 } from '@nestjs/common';
+import { model } from 'mongoose';
 import { AuthenticatedUser } from '../common/interfaces/user.interface';
+import { PhoneNumberSchema } from '../schemas/phone-number.schema';
 import { TelephonyNumbersRegistry } from '../telephony/telephony-numbers.registry';
 import { toE164 } from '../telephony/utils/e164.util';
 import { PhoneNumbersService } from './phone-numbers.service';
@@ -66,7 +68,7 @@ describe('PhoneNumbersService.searchAvailable', () => {
       country: 'US',
       areaCode: '415',
     });
-    expect(result.provider).toBe('twilio');
+    expect(result).toEqual({ country: 'US', numbers: [] });
     expect(twilio.search).toHaveBeenCalledWith(
       expect.objectContaining({ isoCountry: 'US', type: 'local', limit: 20 }),
     );
@@ -76,13 +78,9 @@ describe('PhoneNumbersService.searchAvailable', () => {
   it('routes IN to Exotel', async () => {
     const { service, exotel } = setup();
     exotel.search.mockResolvedValue([]);
-    const result = await service.searchAvailable({
-      country: 'IN',
-      region: 'KA',
-    });
-    expect(result.provider).toBe('exotel');
+    await service.searchAvailable({ country: 'IN', region: 'KA' });
     expect(exotel.search).toHaveBeenCalledWith(
-      expect.objectContaining({ isoCountry: 'IN', type: 'landline' }),
+      expect.objectContaining({ isoCountry: 'IN', type: 'mobile' }),
     );
   });
 
@@ -279,5 +277,21 @@ describe('toE164', () => {
     expect(toE164('08047112233', '+91')).toBe('+918047112233');
     expect(toE164('918047112233', '+91')).toBe('+918047112233');
     expect(toE164('4155550199', '+1')).toBe('+14155550199');
+  });
+});
+
+describe('PhoneNumber JSON', () => {
+  it('never serializes provider fields', () => {
+    const PhoneNumberModel = model('PhoneNumberJsonSpec', PhoneNumberSchema);
+    const json = new PhoneNumberModel({
+      country_code: '+1',
+      phone_number: '4155550199',
+      label: 'Sales',
+      provider: 'twilio',
+      provider_sid: 'PN123',
+    }).toJSON() as Record<string, unknown>;
+    expect(json).not.toHaveProperty('provider');
+    expect(json).not.toHaveProperty('provider_sid');
+    expect(json.phone_number).toBe('4155550199');
   });
 });

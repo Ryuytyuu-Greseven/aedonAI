@@ -31,7 +31,6 @@ export interface SearchNumbersQuery {
 
 /** A number the provider currently offers for purchase (never persisted). */
 export interface AvailableNumber {
-  provider: TelephonyProviderName;
   e164: string;
   friendly_name: string;
   iso_country: string;

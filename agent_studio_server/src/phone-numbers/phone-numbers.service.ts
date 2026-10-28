@@ -15,10 +15,7 @@ import {
   PhoneNumberEnvType,
 } from '../schemas/phone-number.schema';
 import { TelephonyNumbersRegistry } from '../telephony/telephony-numbers.registry';
-import {
-  AvailableNumber,
-  TelephonyProviderName,
-} from '../telephony/telephony.types';
+import { AvailableNumber } from '../telephony/telephony.types';
 import { nationalNumber } from '../telephony/utils/e164.util';
 import { PurchasePhoneNumberDto } from './dto/purchase-phone-number.dto';
 import { SearchAvailableNumbersDto } from './dto/search-available-numbers.dto';
@@ -27,7 +24,6 @@ const DEFAULT_SEARCH_LIMIT = 20;
 
 export interface AvailableNumbersResult {
   country: string;
-  provider: TelephonyProviderName;
   numbers: AvailableNumber[];
 }
 
@@ -66,7 +62,7 @@ export class PhoneNumbersService {
       contains: dto.contains,
       limit: dto.limit ?? DEFAULT_SEARCH_LIMIT,
     });
-    return { country: country.isoCountry, provider: country.provider, numbers };
+    return { country: country.isoCountry, numbers };
   }
 
   /**
@@ -147,7 +143,7 @@ export class PhoneNumbersService {
       });
     if (!saved) {
       throw new InternalServerErrorException(
-        `${e164} was purchased but could not be saved — contact support with sid ${purchased.provider_sid}`,
+        `${e164} was purchased but could not be saved — please contact support`,
       );
     }
     this.logger.log(

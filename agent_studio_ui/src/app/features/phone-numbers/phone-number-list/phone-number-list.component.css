@@ -61,18 +61,10 @@
   white-space: nowrap;
 }
 
-.pn-provider {
+.pn-number-type {
   font-size: 11.5px;
   font-weight: 600;
   color: var(--text-muted);
-}
-
-.pn-provider[data-provider='twilio'] {
-  color: var(--accent);
-}
-
-.pn-provider[data-provider='exotel'] {
-  color: var(--info);
 }
 
 .pn-status-note {

@@ -15,7 +15,6 @@ import {
   phoneNumberCountryName,
   phoneNumberEnvironmentLabel,
   phoneNumberMatchesSearch,
-  phoneNumberProviderLabel,
   phoneNumberTypeLabel,
 } from '../../../core/models/phone-number.model';
 import { PhoneNumberService } from '../../../core/services/phone-number.service';
@@ -52,7 +51,6 @@ export class PhoneNumberListComponent implements OnInit {
   readonly isAdmin = computed(() => this.authService.role() === 'admin');
 
   readonly buyCountries = BUY_COUNTRIES;
-  readonly phoneNumberProviderLabel = phoneNumberProviderLabel;
   readonly phoneNumberTypeLabel = phoneNumberTypeLabel;
   readonly formatMonthlyPrice = formatMonthlyPrice;
 
@@ -232,7 +230,7 @@ export class PhoneNumberListComponent implements OnInit {
     this.searchAvailable();
   }
 
-  /** Runs on country/type change and on Search/Enter — not per keystroke, to spare provider rate limits. */
+  /** Runs on country/type change and on Search/Enter — not per keystroke, to spare search rate limits. */
   searchAvailable(): void {
     const country = this.buyCountry();
     const areaCode = this.buyAreaCode.trim();
@@ -267,7 +265,7 @@ export class PhoneNumberListComponent implements OnInit {
         error: (err: unknown) => {
           this.searching.set(false);
           this.searchResults.set([]);
-          this.searchError.set(this.providerErrorMessage(err, 'Could not search numbers. Try again.'));
+          this.searchError.set(this.buyErrorMessage(err, 'Could not search numbers. Try again.'));
         },
       });
   }
@@ -322,15 +320,15 @@ export class PhoneNumberListComponent implements OnInit {
             // Usually taken by someone else since the search — drop it from the results.
             this.searchResults.update((list) => list.filter((n) => n.e164 !== number.e164));
           }
-          this.buyError = this.providerErrorMessage(err, 'Purchase failed. You have not been charged.');
+          this.buyError = this.buyErrorMessage(err, 'Purchase failed. You have not been charged.');
           this.toast.error('Could not buy number');
         },
       });
   }
 
-  private providerErrorMessage(err: unknown, fallback: string): string {
+  private buyErrorMessage(err: unknown, fallback: string): string {
     if (err instanceof HttpErrorResponse && err.status === 503) {
-      return `${phoneNumberProviderLabel(this.buyCountry().provider)} is not configured on the server yet.`;
+      return `Buying ${this.buyCountry().name} numbers isn't available right now. Try again later.`;
     }
     if (err instanceof HttpErrorResponse && err.status === 403) {
       return 'Only admins can buy numbers.';
@@ -347,12 +345,12 @@ export class PhoneNumberListComponent implements OnInit {
       return;
     }
     const e164 = phoneNumberE164(phoneNumber);
-    const provider = phoneNumberProviderLabel(phoneNumber.provider);
     this.confirmDialog
       .confirm({
         title: `Release ${e164}?`,
-        message: phoneNumber.provider
-          ? `The number goes back to ${provider} and billing stops. You may not be able to get the same number again.`
+        // Legacy manually-entered numbers were never purchased.
+        message: phoneNumber.purchased_at
+          ? 'The number is released and billing stops. You may not be able to get the same number again.'
           : 'This manually added number will be retired and can no longer be assigned.',
         confirmLabel: 'Release number',
         tone: 'danger',
