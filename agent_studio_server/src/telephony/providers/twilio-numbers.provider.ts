@@ -48,10 +48,8 @@ export class TwilioNumbersProvider implements TelephonyNumbersProvider {
     };
 
     try {
-      const results =
-        query.type === 'toll_free'
-          ? await country.tollFree.list(options)
-          : await country.local.list(options);
+      // Only local numbers are offered (see TELEPHONY_COUNTRIES.US).
+      const results = await country.local.list(options);
 
       return results.map((n) => ({
         e164: n.phoneNumber,

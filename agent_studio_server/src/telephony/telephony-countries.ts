@@ -14,7 +14,8 @@ export const TELEPHONY_COUNTRIES: Record<string, TelephonyCountry> = {
     isoCountry: 'US',
     dialCode: '+1',
     provider: 'twilio',
-    numberTypes: ['local', 'toll_free'],
+    // Toll-free is supported by the schema but not offered for now.
+    numberTypes: ['local'],
   },
   IN: {
     isoCountry: 'IN',

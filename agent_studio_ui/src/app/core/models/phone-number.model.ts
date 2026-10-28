@@ -96,7 +96,7 @@ export const BUY_COUNTRIES: readonly BuyCountry[] = [
     name: 'United States',
     flag: '🇺🇸',
     dialCode: '+1',
-    numberTypes: ['local', 'toll_free'],
+    numberTypes: ['local'],
     locationFilter: 'areaCode',
   },
   {
