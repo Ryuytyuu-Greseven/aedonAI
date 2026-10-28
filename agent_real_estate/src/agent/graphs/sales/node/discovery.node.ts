@@ -12,9 +12,9 @@ export async function Discovery_Node(state: SalesState) {
   const extractorLlm = llmInstance.withStructuredOutput(
     z.object({
       buyerType: z
-        .enum(['end_user', 'investor'])
+        .enum(['end_user', 'investor', 'renter', 'undecided'])
         .nullable()
-        .describe("Whether the property is for personal/family living ('end_user') or investment ('investor'). Null if not mentioned."),
+        .describe("Whether the customer is looking for buying for personal/family living ('end_user'), investment ('investor'), renting ('renter'), or exploring/undecided ('undecided'). Null if not mentioned."),
       preferredType: z
         .string()
         .nullable()

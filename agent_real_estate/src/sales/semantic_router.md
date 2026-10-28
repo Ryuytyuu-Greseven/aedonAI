@@ -7,34 +7,55 @@ Analyze the customer's latest message, conversation history, and current funnel 
 # ROUTING NODES & CRITERIA
 
 **Greeting_Pitch_Node**
-- The call just connected, the customer said hello, or asked "Who is this?" / "Why are you calling?"
+- The call just connected, or the customer opens with a greeting or initial touchpoint: "Hi", "Hello", "Hey", "Good morning", "Good evening", "How are you?", "Can you help me?", "Just checking", "I saw your advertisement", "Who is this?", or "Why are you calling?"
 
 **Intro_Pitch_Node**
-- The current funnel stage is Greeting_Pitch_Node and the customer agrees to talk (e.g. "yes", "sure", "go ahead", "tell me", "okay"). This node briefly states what we'd like to share and asks if they are interested. Never route here more than once per call.
+- The current funnel stage is Greeting_Pitch_Node and the customer agrees to talk (e.g. "yes", "sure", "go ahead", "tell me", "okay"), or asks what you have to offer without stating specific criteria yet. Never route here more than once per call.
 
 **Discovery_Node**
-- The customer is sharing their requirements (e.g. 2BHK vs 3BHK, family living vs investment, preferred locality), or the agent needs to ask about their unit size or area preference before listing properties.
+- The customer is sharing their search intent or requirements:
+  - Stating they want to buy a flat/villa/plot.
+  - Stating they want a house for rent or rental property.
+  - Looking for an investment property (rental income vs appreciation).
+  - Stating they are undecided or exploring: "I'm not sure what I want yet."
+  - Stating or answering configuration preferences: 2BHK, 3BHK, 4BHK, Villa.
+  - Discussing preferred locality, neighborhood, or move-in timeline.
 
 **Budget_Discovery_Node**
-- The customer discusses their budget comfort (e.g. "under 80 lakhs", "around 1.5 crore"), asks how much homes cost in general, or asks for options in a different price tier.
+- The customer discusses their budget comfort (e.g. "around 90 lakhs", "under 1.5 crore", "around ₹90 lakhs near Gachibowli"), asks for options in a specific price tier, or asks general pricing questions.
 
 **Property_Listing_Node**
-- The current funnel stage is Intro_Pitch_Node and the customer says they are interested (e.g. "yes", "sure", "tell me more"), or no properties have been listed yet and the customer asks to hear about properties, or they explicitly ask to see the full list of properties again. Do NOT route here straight from Greeting_Pitch_Node — a "yes" to "do you have a minute?" goes to Intro_Pitch_Node first.
+- When the customer's requirements (like BHK, location, or budget) have been shared and they want to see matching options ("show me options", "what projects do you have in Gachibowli?"), or when following up on Intro_Pitch_Node.
 
 **Presentation_Node**
-- The customer picked a specific property ("tell me about the first one", "the one with the large balconies"), asks about its layout, price, floor plans, or responds positively to details just given.
+- The customer asks about a specific project or listing:
+  - "Can you tell me more about the project?"
+  - "Can you send me photos?" / floor plan requests.
+  - "Do you have a brochure?"
+  - "Is this flat still available?" (availability check).
+  - "Which is better, Project A or Project B?" (comparing properties).
+  - Layouts, carpet area, price, or possession date of a specific property.
 
 **Amenities_Node**
-- The customer asks specifically about community amenities (swimming pool, gym, clubhouse, sports courts, kids play area, power backup, security).
+- The customer asks specifically about community amenities (swimming pool, gym, clubhouse, sports courts, kids play area, power backup, security, parking).
 
 **Nearby_Facilities_Node**
-- The customer asks about surrounding infrastructure (schools, colleges, hospitals, metro connectivity, tech park commute, restaurants, shopping malls).
+- The customer asks about surrounding infrastructure (schools, hospitals, metro connectivity, commute to tech parks, shopping malls).
 
 **Objection_Handling_Node**
-- The customer expresses hesitation, price concern ("too expensive"), location/traffic concern ("too far"), says they need to discuss with spouse/family, or worries about builder delay.
+- The customer expresses hesitation, price concern, or early exploration:
+  - "That's too expensive" / "Do you have anything cheaper?" / "Is the price negotiable?"
+  - "I'm just looking around for now" / "I'm not planning to buy immediately."
+  - "Another builder is offering a lower price."
+  - Distance or commute concern: "too far" / "traffic is bad."
+  - Need to discuss with family or spouse: "need to consult my family."
+  - Builder credibility / construction delays concerns.
 
 **Closing_Node**
-- The customer expresses interest in visiting the site ("can I visit?", "I'd like to see it"), agrees to schedule a visit, responds to visit slot questions ("Saturday morning works"), or accepts the pricing and wants to move forward.
+- The customer is interested in next steps, site visits, or human handoff:
+  - "Can I visit the property tomorrow?" / "Sunday morning" / "Book it for 11 AM."
+  - "Can I talk to a real estate agent?" / "Call me" / "WhatsApp me."
+  - Agrees to schedule a visit or requests location pin / pass.
 
 **FAQ_Node**
 - General real estate legal/financial questions not tied to a single project (how home loans work, stamp duty percentage, general RERA portal check, GST on property).
@@ -46,7 +67,7 @@ Analyze the customer's latest message, conversation history, and current funnel 
 - The customer went silent, says "hello?", or speech is inaudible.
 
 # ROUTING RULES & EDGE CASES
-1. Site Visit Over Transaction: If a customer says "I want to see the flat" or "When can we visit?", always route to Closing_Node.
-2. In-Depth Property Questions: If the customer asks about amenities for the property currently being discussed, route to Amenities_Node. If they ask about schools or metro, route to Nearby_Facilities_Node. If they ask about price or layouts, route to Presentation_Node.
-3. Multi-Question Queries: Route to the node that addresses their primary action (e.g. if asking "How much is it and when can I visit?", route to Closing_Node which can touch on price and book the visit).
-4. Do not route to disabled nodes (human handoff is handled via Closing_Node service tickets).
+1. Human Agent / Site Visit Priority: If customer asks to talk to an agent or wants to visit the site, always route to Closing_Node.
+2. Browsing & Price Hesitation: If the customer says they are just browsing or that the price is too high/negotiable, route to Objection_Handling_Node.
+3. Availability & Project Materials: Asking for photos, brochures, project overviews, or comparisons routes to Presentation_Node.
+4. Direct Factual Questions: Answer the question first at the relevant node before routing into further discovery.

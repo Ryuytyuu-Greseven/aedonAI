@@ -14,7 +14,7 @@ export const FILLER_LANGUAGES: readonly FillerLanguage[] = ['en', 'hi', 'te', 't
 /** The sentinel the gateway sends to start a call; its turn is the greeting. */
 export const CONVERSATION_START = 'SYSTEM_START_CONVERSATION';
 
-const DEFAULT_GENERIC_AFTER_MS = 3000;
+const DEFAULT_GENERIC_AFTER_MS = 6000;
 // Measured RAG turns reply ~5 s after their filler; a "still working" line
 // any sooner would land just before the reply and delay it.
 const DEFAULT_STILL_WORKING_AFTER_MS = 7000;
@@ -49,7 +49,9 @@ export function resolveFillerLanguage(...candidates: (string | null | undefined)
 }
 
 function readMs(envName: string, fallback: number): number {
-  const parsed = Number(process.env[envName]);
+  const raw = process.env[envName];
+  if (raw === '0' || raw === 'false' || raw === 'off') return 0;
+  const parsed = Number(raw);
   return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
 }
 
@@ -109,14 +111,14 @@ export class FillerController {
     this.random = options.random ?? Math.random;
     this.phrases = options.phrases ?? FILLER_PHRASES;
     this.slowNodes = options.slowNodes ?? SLOW_NODE_FILLERS;
-    if (options.isConversationStart) {
+    if (options.isConversationStart || process.env.ENABLE_FILLERS === 'false') {
       this.finished = true;
     }
   }
 
   /** Arms the generic-filler timer; call when the turn starts. */
   start(): void {
-    if (this.finished) return;
+    if (this.finished || this.genericAfterMs <= 0) return;
     this.genericTimer = setTimeout(() => {
       this.genericTimer = null;
       this.emit('generic');
@@ -125,6 +127,7 @@ export class FillerController {
 
   /** The router picked `node`; speak right away if that node is slow. */
   onRoute(node: string): void {
+    if (process.env.ENABLE_ROUTE_FILLERS === 'false') return;
     const kind = this.slowNodes[node];
     if (this.finished || !kind || this.sent.length > 0) return;
     this.emit(kind);

@@ -13,19 +13,24 @@ import * as path from 'path';
 export function buildGlobalGuardrails(currentLanguage?: string): string {
   const isEnglish = currentLanguage?.trim().toLowerCase().startsWith('en');
   const languageRule = currentLanguage
-    ? `5. LANGUAGE: Respond ONLY in ${currentLanguage}. Every sentence of your spoken response must be entirely in ${currentLanguage}${isEnglish ? '' : ' — do not mix in English or any other language'}. The customer's language can change between turns; always match the language given here for THIS turn, regardless of what language earlier turns used.`
-    : `5. LANGUAGE: Respond in the same language the customer is currently speaking in.`;
+    ? `8. LANGUAGE: Respond ONLY in ${currentLanguage}. Every sentence of your spoken response must be entirely in ${currentLanguage}${isEnglish ? '' : ' — do not mix in English or any other language'}. The customer's language can change between turns; always match the language given here for THIS turn, regardless of what language earlier turns used.`
+    : `8. LANGUAGE: Respond in the same language the customer is currently speaking in.`;
 
   return `
 
-*** CRITICAL GLOBAL VOICE GUARDRAILS ***
-1. ONLY output the exact spoken words you want the customer to hear over the phone. Never include internal reasoning, notes, self-corrections, or asterisks (like *Self-Correction:*).
-2. NEVER output markdown syntax, bullet points, headers, numbered lists, quotation marks, emojis, or technical function names.
+*** CRITICAL GLOBAL VOICE GUARDRAILS & CONSULTANT PERSONA ***
+1. SPOKEN VOICE ONLY: Output ONLY the exact spoken words you want the customer to hear. Never include internal reasoning, notes, self-corrections, or asterisks.
+2. NO FORMATTING: NEVER output markdown syntax, bullet points, headers, numbered lists, quotation marks, emojis, or technical function names.
 3. SPOKEN NUMBERS & UNITS: Always pronounce figures conversationally in Indian currency/realty units: say "75 lakhs", "1.25 crore", "two BHK", "1800 square feet". Never output raw unformatted digits like "7500000".
-4. VOICE CADENCE: Keep sentences short (10–18 words maximum per breath) and responses concise (under 70 words total).
-5. THREE-STEP FLOW: In every turn: (a) briefly acknowledge what the customer said ("Understood", "That makes sense", "Great choice"), (b) answer directly or share the highlight, and (c) steer forward with ONE clear, low-pressure question.
-6. Never break character. You are speaking live on a telephone call.
-${languageRule}`;
+4. VOICE CADENCE: Keep sentences short (10–18 words maximum per breath) and responses concise (generally 1 to 3 short sentences, under 60 words total).
+5. CONVERSATIONAL THREE-STEP FLOW:
+   (a) Acknowledge what the customer said with warmth and variety ("Sure, absolutely!", "Of course, I'd be happy to help", "That makes sense", "Got it!").
+   (b) Answer direct factual questions FIRST (pricing, amenities, location, availability) before steering forward.
+   (c) Ask ONE or at most TWO relevant, low-pressure follow-up questions. NEVER ask five questions at once.
+6. CONTEXT RETENTION: Remember what the customer already shared. Never repeatedly ask for budget, location, or BHK if they have already mentioned it.
+7. ACCURACY & TRUST: Never invent property prices, availability, discounts, amenities, or possession dates. If information is unavailable or unverified, be transparent and offer to check with the sales team. Never claim a site visit or booking is confirmed until confirmed.
+${languageRule}
+9. NO HIGH PRESSURE: Respect customers who are just browsing or exploring. Speak like a trusted consultant, never like a pushy telemarketer.`;
 }
 
 // In-memory heap cache for raw prompt file contents only (no guardrails —
