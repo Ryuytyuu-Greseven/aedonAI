@@ -37,7 +37,7 @@ import { RevealDirective } from '../../shared/reveal.directive';
       </div>
     </section>
 
-    <app-cta-banner title="Don't see your industry?" subtitle="Design a custom conversation graph with our team, or build your own in Aedon Studio." />
+    <app-cta-banner title="Don't see your industry?" subtitle="Design a custom conversation graph with our team, or build your own in Lyre Studio." />
   `,
   styles: `
     .sol { display: flex; flex-direction: column; gap: 4px; }

@@ -8,7 +8,7 @@ export const SOLUTIONS: Solution[] = [
     icon: 'fa-building',
     tagline: 'Call every property enquiry within minutes, not days.',
     summary:
-      'Aedon calls your Meta and portal leads the moment they land, qualifies budget and location, pitches matching listings with amenities and nearby facilities, and books site visits for your sales team.',
+      'Lyre calls your Meta and portal leads the moment they land, qualifies budget and location, pitches matching listings with amenities and nearby facilities, and books site visits for your sales team.',
     direction: 'Outbound',
     agentName: 'Clara',
     outcomes: ['Site visits booked', 'Budget & location qualified', 'Referral leads collected', 'Hot leads handed off live'],
@@ -33,7 +33,7 @@ export const SOLUTIONS: Solution[] = [
     icon: 'fa-motorcycle',
     tagline: 'Turn showroom enquiries into confirmed test rides.',
     summary:
-      'From commuters to cruisers, Aedon walks riders through models, specs, EMI options and on-road pricing, handles comparisons with competitor bikes and books test rides at the nearest dealer.',
+      'From commuters to cruisers, Lyre walks riders through models, specs, EMI options and on-road pricing, handles comparisons with competitor bikes and books test rides at the nearest dealer.',
     direction: 'Outbound',
     agentName: 'Arjun',
     outcomes: ['Test rides booked', 'EMI & finance queries resolved', 'Dealer visits scheduled', 'Exchange interest captured'],
@@ -58,7 +58,7 @@ export const SOLUTIONS: Solution[] = [
     icon: 'fa-tv',
     tagline: 'A product expert on every call, for every SKU.',
     summary:
-      'Aedon knows your full catalogue — sizes, finishes, energy ratings and offers. It recommends the right product, answers delivery and installation questions and raises a store request the moment a buyer says yes.',
+      'Lyre knows your full catalogue — sizes, finishes, energy ratings and offers. It recommends the right product, answers delivery and installation questions and raises a store request the moment a buyer says yes.',
     direction: 'Inbound & Outbound',
     agentName: 'Maya',
     outcomes: ['Store visits booked', 'Service requests raised', 'Delivery & installation answered', 'Upsell to premium models'],
