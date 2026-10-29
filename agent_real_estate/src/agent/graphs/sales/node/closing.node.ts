@@ -39,9 +39,25 @@ export async function Closing_Node(state: SalesState) {
         .string()
         .nullable()
         .describe("Customer's pickup address/locality if mentioned for cab arrangement. Null otherwise."),
+      customerPhone: z
+        .string()
+        .nullable()
+        .describe("Customer's phone number if mentioned or confirmed for visit pass/callback. Null otherwise."),
+      customerEmail: z
+        .string()
+        .nullable()
+        .describe("Customer's email address if mentioned for visitor pass or confirmation. Null otherwise."),
+      preferredContactMethod: z
+        .string()
+        .nullable()
+        .describe("Preferred contact method if stated ('phone', 'whatsapp', 'email'). Null otherwise."),
       responseToUser: z
         .string()
-        .describe('Closing response — follow the site visit scheduling phases in the prompt.'),
+        .describe(
+          'Closing response — follow the site visit scheduling phases in the prompt. ' +
+          'Collect missing phone number or preferred contact method (phone vs WhatsApp) when arranging the visit/pass. ' +
+          'If contact details are already known, do NOT ask for them again.',
+        ),
     }),
     { name: 'closing_extract' }
   );
@@ -59,7 +75,13 @@ export async function Closing_Node(state: SalesState) {
         : `\n\nCurrent phase: Propose the two convenient weekend viewing slots (Saturday morning or Sunday afternoon) to view the sample flat and project amenities.`;
 
   const messages = [
-    new SystemMessage(promptText + propContext + phaseContext + Prompts.identityContext(state)),
+    new SystemMessage(
+      promptText +
+      propContext +
+      phaseContext +
+      Prompts.customerProfileContext(state) +
+      Prompts.identityContext(state),
+    ),
     ...state.messages,
   ];
 
@@ -95,9 +117,22 @@ export async function Closing_Node(state: SalesState) {
     updates.customerAddress = result.customerAddress;
   }
 
+  if (result.customerPhone && !state.customerPhNo) {
+    updates.customerPhNo = result.customerPhone;
+  }
+
+  if (result.customerEmail && !state.customerEmail) {
+    updates.customerEmail = result.customerEmail;
+  }
+
+  if (result.preferredContactMethod && !state.preferredContactMethod) {
+    updates.preferredContactMethod = result.preferredContactMethod;
+  }
+
   const visitDate = updates.siteVisitPreferredDate ?? state.siteVisitPreferredDate;
   const visitSlot = updates.siteVisitTimeSlot ?? state.siteVisitTimeSlot;
   const cabReq = updates.cabRequired ?? state.cabRequired;
+  const phoneToUse = updates.customerPhNo ?? state.customerPhNo ?? '';
 
   // Raise the ticket once a visit date or slot is settled and hasn't been raised yet
   const readyToRaiseTicket = visitDate && !state.serviceRequestRaised && focusProp;
@@ -105,7 +140,7 @@ export async function Closing_Node(state: SalesState) {
   if (readyToRaiseTicket) {
     const ticket = await raiseServiceRequestTicket({
       customerName: updates.customerName ?? state.customerName,
-      customerPhone: state.customerPhNo ?? '',
+      customerPhone: phoneToUse,
       propertyId: focusProp.id,
       siteVisitPreferredDate: visitDate,
       siteVisitTimeSlot: visitSlot,
@@ -120,7 +155,9 @@ export async function Closing_Node(state: SalesState) {
     if (!state.leadSaved) {
       await saveLeadToCrm({
         customerName: updates.customerName ?? state.customerName,
-        customerPhone: state.customerPhNo ?? '',
+        customerPhone: phoneToUse,
+        customerEmail: updates.customerEmail ?? state.customerEmail,
+        preferredContactMethod: updates.preferredContactMethod ?? state.preferredContactMethod,
         customerId: state.customerId ?? '',
         agentId: state.agentDetails?.id ?? state.agentDetails?.agent_id ?? '',
         customerAddress: updates.customerAddress ?? state.customerAddress,

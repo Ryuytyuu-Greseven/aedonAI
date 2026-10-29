@@ -8,6 +8,7 @@
     "start:dev": "nest start --watch",
     "start:prod": "node dist/main",
     "test": "tsx --test \"src/**/*.test.ts\"",
+    "create:index": "tsx scripts/create-vector-index.ts",
     "seed:properties": "tsx scripts/seed-properties.ts",
     "test:conversations": "tsx scripts/verify-conversations.ts"
   },

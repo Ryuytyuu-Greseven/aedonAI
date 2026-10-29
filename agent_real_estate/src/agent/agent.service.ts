@@ -24,9 +24,13 @@ interface AgentMessage {
 
 /**
  * What a turn produces, in order: which node the router picked (so the
- * gateway can play a filler while a slow node runs), then the reply text.
+ * gateway can play a filler while a slow node runs), the reply text,
+ * and optionally an end_call event when the conversation is gracefully terminated.
  */
-export type AgentTurnEvent = { kind: 'route'; node: string } | { kind: 'text'; text: string };
+export type AgentTurnEvent =
+  | { kind: 'route'; node: string }
+  | { kind: 'text'; text: string }
+  | { kind: 'end_call' };
 
 @Injectable()
 export class AgentService implements OnModuleInit {
@@ -74,16 +78,25 @@ export class AgentService implements OnModuleInit {
         { configurable: { thread_id: msg.threadId }, callbacks: [tracker] },
       );
 
+      let callTerminationTriggered = false;
+
       for await (const chunk of result) {
         const nodeState = Object.values(chunk)[0] as any;
         if (typeof nodeState?.routeDestination === 'string') {
           yield { kind: 'route', node: nodeState.routeDestination };
+        }
+        if (nodeState?.endCall === true || nodeState?.currentNode === 'Graceful_Rejection_Node') {
+          callTerminationTriggered = true;
         }
         if (nodeState?.messages?.length > 0) {
           const token = nodeState.messages[nodeState.messages.length - 1];
           const text = typeof token?.text === 'string' ? token.text : (token?.content ?? '');
           if (text) yield { kind: 'text', text };
         }
+      }
+
+      if (callTerminationTriggered) {
+        yield { kind: 'end_call' };
       }
     } catch (err: any) {
       this.logger.error('sales agent error:', err);

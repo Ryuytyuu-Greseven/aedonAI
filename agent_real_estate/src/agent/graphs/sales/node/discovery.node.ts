@@ -27,10 +27,30 @@ export async function Discovery_Node(state: SalesState) {
         .string()
         .nullable()
         .describe('When the customer wants to move in (ready-to-move vs under-construction). Null if not stated.'),
+      budgetMin: z
+        .number()
+        .nullable()
+        .describe('Minimum budget in INR if mentioned. Null if not stated.'),
+      budgetMax: z
+        .number()
+        .nullable()
+        .describe('Maximum budget in INR if mentioned. Null if not stated.'),
       customerName: z
         .string()
         .nullable()
         .describe("Customer's name if mentioned or volunteered in this message. Null otherwise."),
+      customerEmail: z
+        .string()
+        .nullable()
+        .describe("Customer's email address if shared. Null otherwise."),
+      customerPhNo: z
+        .string()
+        .nullable()
+        .describe("Customer's phone number if shared. Null otherwise."),
+      preferredContactMethod: z
+        .string()
+        .nullable()
+        .describe("Preferred contact method if stated ('phone', 'whatsapp', 'email'). Null otherwise."),
       customerAddress: z
         .string()
         .nullable()
@@ -45,7 +65,12 @@ export async function Discovery_Node(state: SalesState) {
         .describe('Day or timeframe proposed for site visit, if any (e.g. "Saturday", "this weekend"). Null if not stated.'),
       responseToUser: z
         .string()
-        .describe('Conversational spoken response — acknowledge their requirements warmly, then ask ONE natural next question.'),
+        .describe(
+          'Conversational spoken response — acknowledge requirements warmly and ask ONE natural next question. ' +
+          'If the customer just shared their name, acknowledge warmly: "Nice to meet you, [Name]!". ' +
+          'If requirements (like BHK/location) are emerging and customer name is still missing, you may ask naturally: "By the way, may I know your name so I can personalize our conversation?". ' +
+          'Never ask for phone or email unless arranging a site visit, callback, or brochure delivery.',
+        ),
     }),
     { name: 'extract_preferences' }
   );
@@ -53,15 +78,17 @@ export async function Discovery_Node(state: SalesState) {
   const promptText = await Prompts.getPrompt('discovery', state.currentLanguage);
   const alreadyKnown = [
     state.customerName && `Name: ${state.customerName}`,
-    state.buyerType && `Buyer type: ${state.buyerType === 'end_user' ? 'Family living' : 'Investment'}`,
+    state.buyerType && `Buyer type: ${state.buyerType === 'end_user' ? 'Family living' : state.buyerType === 'investor' ? 'Investment' : state.buyerType}`,
     state.preferredType && `Configuration: ${state.preferredType}`,
     state.preferredLocation && `Location: ${state.preferredLocation}`,
     state.moveInTimeline && `Timeline: ${state.moveInTimeline}`,
+    (state.budgetMin !== null || state.budgetMax !== null) && `Budget: ${state.budgetMin ?? 0} to ${state.budgetMax ?? 999999999}`,
     state.siteVisitInterested !== null && `Site visit interest: ${state.siteVisitInterested ? 'Yes' : 'No'}`,
   ].filter(Boolean).join(', ');
 
   const stillMissing = [
-    !state.buyerType && 'purpose (family living vs investment)',
+    !state.customerName && 'customer name (ask naturally if requirements are emerging to personalize)',
+    !state.buyerType && 'purpose (buying for living vs investment vs renting)',
     !state.preferredType && 'configuration (2BHK, 3BHK, Villa)',
     !state.preferredLocation && 'preferred locality or commute area',
     !state.moveInTimeline && 'possession timeline (ready vs under-construction)',
@@ -72,6 +99,7 @@ export async function Discovery_Node(state: SalesState) {
       promptText +
       (alreadyKnown ? `\n\nAlready captured: ${alreadyKnown}` : '') +
       (stillMissing ? `\n\nStill discovering (ask for ONE of these next, whichever flows most naturally): ${stillMissing}` : '') +
+      Prompts.customerProfileContext(state) +
       Prompts.identityContext(state),
     ),
     ...state.messages,
@@ -88,7 +116,12 @@ export async function Discovery_Node(state: SalesState) {
   if (result.preferredType) updates.preferredType = result.preferredType;
   if (result.preferredLocation) updates.preferredLocation = result.preferredLocation;
   if (result.moveInTimeline) updates.moveInTimeline = result.moveInTimeline;
+  if (result.budgetMin !== null && result.budgetMin !== undefined) updates.budgetMin = result.budgetMin;
+  if (result.budgetMax !== null && result.budgetMax !== undefined) updates.budgetMax = result.budgetMax;
   if (result.customerName) updates.customerName = result.customerName;
+  if (result.customerEmail) updates.customerEmail = result.customerEmail;
+  if (result.customerPhNo) updates.customerPhNo = result.customerPhNo;
+  if (result.preferredContactMethod) updates.preferredContactMethod = result.preferredContactMethod;
   if (result.customerAddress) updates.customerAddress = result.customerAddress;
   if (result.siteVisitInterested !== null) updates.siteVisitInterested = result.siteVisitInterested;
   if (result.siteVisitPreferredDate) updates.siteVisitPreferredDate = result.siteVisitPreferredDate;

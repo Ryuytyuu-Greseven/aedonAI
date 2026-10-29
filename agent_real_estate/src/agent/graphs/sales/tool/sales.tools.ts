@@ -127,6 +127,7 @@ export function buildReferralPitch(): ReferralCommission {
 export interface LeadPayload {
   customerName: string | null;
   customerPhone: string;
+  customerEmail?: string | null;
   customerId: string;
   agentId: string;
   customerAddress: string | null;
@@ -136,6 +137,7 @@ export interface LeadPayload {
   preferredType: string | null;
   moveInTimeline: string | null;
   buyerType?: string | null;
+  preferredContactMethod?: string | null;
   siteVisitInterested: boolean | null;
   siteVisitPreferredDate: string | null;
   siteVisitTimeSlot?: string | null;
@@ -159,6 +161,7 @@ export async function saveLeadToCrm(lead: LeadPayload): Promise<boolean> {
       source: 'call',
       fullName: lead.customerName,
       phoneNumber: lead.customerPhone,
+      email: lead.customerEmail,
       address: lead.customerAddress,
       budgetMin: lead.budgetMin,
       budgetMax: lead.budgetMax,
@@ -174,6 +177,7 @@ export async function saveLeadToCrm(lead: LeadPayload): Promise<boolean> {
       referralName: lead.referralName,
       referralPhone: lead.referralPhone,
       sessionId: lead.sessionId,
+      customFields: lead.preferredContactMethod ? { preferredContactMethod: lead.preferredContactMethod } : undefined,
     });
     console.log('[CRM] Lead upserted into agent_leads:', leadId);
     return true;

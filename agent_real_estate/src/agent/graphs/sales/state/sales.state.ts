@@ -82,6 +82,14 @@ export const SalesStateAnnotation = Annotation.Root({
     reducer: (left, right) => right !== undefined ? right : left,
     default: () => null,
   }),
+  customerEmail: Annotation<string | null>({
+    reducer: (left, right) => right !== undefined ? right : left,
+    default: () => null,
+  }),
+  preferredContactMethod: Annotation<string | null>({
+    reducer: (left, right) => right !== undefined ? right : left,
+    default: () => null,
+  }),
 
   // Budget discovery
   budgetMin: Annotation<number | null>({
@@ -193,6 +201,12 @@ export const SalesStateAnnotation = Annotation.Root({
 
   // CRM persistence flag
   leadSaved: Annotation<boolean>({
+    reducer: (left, right) => right !== undefined ? right : left,
+    default: () => false,
+  }),
+
+  // Graceful call termination flag
+  endCall: Annotation<boolean>({
     reducer: (left, right) => right !== undefined ? right : left,
     default: () => false,
   }),

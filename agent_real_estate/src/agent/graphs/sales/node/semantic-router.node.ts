@@ -67,6 +67,7 @@ export async function Semantic_Router_Node(state: SalesState) {
       (preferencesContext ? `\nCustomer Preferences: ${preferencesContext}` : '') +
       (qualifyingGapsContext ? `\nQualifying details still missing: ${qualifyingGapsContext}` : '') +
       propertiesContext +
+      Prompts.customerProfileContext(state) +
       Prompts.identityContext(state),
     ),
     ...state.messages,

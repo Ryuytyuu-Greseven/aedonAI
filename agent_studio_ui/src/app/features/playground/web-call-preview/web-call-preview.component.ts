@@ -62,6 +62,7 @@ export class WebCallPreviewComponent implements OnChanges, OnDestroy {
   private completedTurns = 0;
   private captionBuffer = '';
   private subscribed = false;
+  private isEndingCall = false;
 
   constructor() {
     // Keep the newest message in view: scroll the conversation to the bottom after each render that adds one.
@@ -157,12 +158,23 @@ export class WebCallPreviewComponent implements OnChanges, OnDestroy {
 
     this.ws.turnComplete$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => {
       this.finalizeCaption();
-      this.assistantState.set('listening');
+      if (!this.isEndingCall) {
+        this.assistantState.set('listening');
+      }
       this.completedTurns += 1;
       if (this.completedTurns > 0 && !this.previewPassed()) {
         this.previewPassed.set(true);
         this.passed.emit();
       }
+    });
+
+    this.ws.endCall$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(async () => {
+      this.isEndingCall = true;
+      // Immediately stop mic capture so caller background noise does not interrupt the farewell
+      void this.capture.stop();
+      // Wait for all audio to finish playing completely before ending the call
+      await this.playback.waitForPlaybackToFinish(800);
+      this.endCall();
     });
 
     this.ws.error$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe((message) => {
@@ -208,6 +220,7 @@ export class WebCallPreviewComponent implements OnChanges, OnDestroy {
     this.ws.disconnect();
     this.assistantState.set('idle');
     this.micLevel.set(0);
+    this.isEndingCall = false;
   }
 
   private reset(): void {
@@ -219,5 +232,6 @@ export class WebCallPreviewComponent implements OnChanges, OnDestroy {
     this.micLevel.set(0);
     this.completedTurns = 0;
     this.captionBuffer = '';
+    this.isEndingCall = false;
   }
 }

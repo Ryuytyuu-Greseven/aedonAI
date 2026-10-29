@@ -54,6 +54,21 @@ export class PcmPlaybackService implements OnDestroy {
     this.nextPlayTime = 0;
   }
 
+  /** Returns the remaining playback time in milliseconds for all currently queued audio. */
+  getRemainingPlaybackMs(): number {
+    if (!this.audioContext) return 0;
+    const remainingSec = Math.max(0, this.nextPlayTime - this.audioContext.currentTime);
+    return Math.round(remainingSec * 1000);
+  }
+
+  /** Resolves when all queued audio has finished playing, with an optional padding delay. */
+  async waitForPlaybackToFinish(paddingMs: number = 600): Promise<void> {
+    const remaining = this.getRemainingPlaybackMs();
+    if (remaining > 0) {
+      await new Promise<void>((resolve) => setTimeout(resolve, remaining + paddingMs));
+    }
+  }
+
   dispose(): void {
     this.stopImmediately();
     if (this.audioContext) {

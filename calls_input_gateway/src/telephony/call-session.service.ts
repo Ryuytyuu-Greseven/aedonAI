@@ -53,6 +53,7 @@ export class CallSessionService {
 
   async start(call: TelephonyCall): Promise<void> {
     const { client, context } = call;
+    client.hangup = call.hangup;
     this.logger.log(
       `[CallSession] Start — provider=${context.provider} streamSid=${client.streamSid} callSid=${client.callSid} business=${context.business} direction=${context.direction}`,
     );

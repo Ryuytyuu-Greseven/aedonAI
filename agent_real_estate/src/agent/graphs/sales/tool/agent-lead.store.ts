@@ -20,6 +20,7 @@ export interface AgentLeadUpsertInput {
   source: string;
   fullName: string | null;
   phoneNumber: string;
+  email?: string | null;
   address: string | null;
   budgetMin: number | null;
   budgetMax: number | null;
@@ -35,6 +36,7 @@ export interface AgentLeadUpsertInput {
   referralName: string | null;
   referralPhone: string | null;
   sessionId: string;
+  customFields?: Record<string, any>;
 }
 
 // One lead document per call session — upserted as more qualifying details

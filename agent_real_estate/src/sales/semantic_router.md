@@ -75,7 +75,13 @@ Analyze the customer's latest message, conversation history, and current funnel 
 
 **Graceful_Rejection_Node**
 
-- The customer firmly declines ("not interested at all", "do not call me again", "wrong number", "hang up").
+- The customer is ending the conversation or declining further interaction:
+  - Explicit goodbyes: "Bye", "Goodbye", "See you", "Talk to you later", "Have a good day."
+  - Wrapping up after receiving information: "That's all I needed", "That's all, thank you", "Thanks for the information", "Okay, thank you. Bye!"
+  - Customer is busy, driving, or postponing: "I'm a little busy right now", "I'll talk to you later", "I have to go", "I'm driving right now", "I am driving", "I'll call you back if I need anything."
+  - Declining or not interested: "I'm not interested anymore", "Not interested at all", "Please do not call me", "Wrong number."
+  - Clear completion or termination: "Okay, that's it", "Nothing else", "We're done", "Hang up", "End the call."
+  - NOTE: Do not terminate on a standalone "okay" or "thanks" if the customer is actively continuing a query. Only route here when they clearly indicate they want to finish the call.
 
 **Silence_Recovery_Node**
 
@@ -87,3 +93,4 @@ Analyze the customer's latest message, conversation history, and current funnel 
 6. Browsing & Price Hesitation: If the customer says they are just browsing or that the price is too high/negotiable, route to Objection_Handling_Node.
 7. Availability & Project Materials: Asking for photos, brochures, project overviews, or comparisons routes to Presentation_Node.
 8. Direct Factual Questions: Answer the question first at the relevant node before routing into further discovery.
+9. Call Ending Priority: If the customer clearly signals they want to end the call (saying goodbye, stating they are busy, that's all they needed, or not interested), ALWAYS route immediately to Graceful_Rejection_Node. Never prolong the call or ask more questions.

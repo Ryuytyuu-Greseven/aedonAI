@@ -205,6 +205,172 @@ async function runTests() {
     const result = await salesGraph.invoke(state, { configurable: { thread_id: 'flow_test_5' } });
     assert(result.currentNode === 'Graceful_Rejection_Node', 'Navigated to Graceful_Rejection_Node');
     assert(result.messages.length > 0, 'Polite exit response generated');
+    assert(result.endCall === true, 'Graceful Rejection sets endCall to true');
+  }
+
+  // Test 6: Natural Customer Information Collection Flow (User Scenario)
+  console.log('\n[Test 6] Natural Customer Information Collection Flow (User Scenario)');
+  {
+    const threadId = 'flow_test_6';
+    let threadState: any = {
+      messages: [],
+      currentNode: '',
+      customerName: null,
+      budgetMin: null,
+      budgetMax: null,
+      preferredLocation: null,
+      preferredType: null,
+      moveInTimeline: null,
+    };
+
+    // Turn 1: Customer expresses initial search
+    (llmInstance as any).withStructuredOutput = (schema: any, opts: any) => {
+      if (opts?.name === 'route_sales_user') {
+        return { invoke: async () => ({ routeDestination: 'Discovery_Node' }) };
+      }
+      if (opts?.name === 'extract_preferences') {
+        return {
+          invoke: async () => ({
+            buyerType: 'end_user',
+            preferredType: '3 BHK',
+            preferredLocation: 'Hyderabad',
+            moveInTimeline: null,
+            budgetMin: null,
+            budgetMax: null,
+            customerName: null,
+            customerEmail: null,
+            customerPhNo: null,
+            preferredContactMethod: null,
+            customerAddress: null,
+            siteVisitInterested: null,
+            siteVisitPreferredDate: null,
+            responseToUser: "Hi! I'd be happy to help you find a 3 BHK in Hyderabad. Which area are you considering, and what's your approximate budget?",
+          }),
+        };
+      }
+      return { invoke: async () => ({}) };
+    };
+
+    threadState.messages.push(new HumanMessage("Hi, I'm looking for a 3 BHK flat in Hyderabad."));
+    threadState = await salesGraph.invoke(threadState, { configurable: { thread_id: threadId } });
+    assert(threadState.preferredType === '3 BHK', 'Turn 1: Captured 3 BHK');
+    assert(threadState.customerName === null, 'Turn 1: Customer name is still null (no interruption)');
+
+    // Turn 2: Customer specifies location and budget -> Budget_Discovery_Node
+    (llmInstance as any).withStructuredOutput = (schema: any, opts: any) => {
+      if (opts?.name === 'route_sales_user') {
+        return { invoke: async () => ({ routeDestination: 'Budget_Discovery_Node' }) };
+      }
+      if (opts?.name === 'extract_budget') {
+        return {
+          invoke: async () => ({
+            budgetMin: null,
+            budgetMax: 9_000_000,
+            preferredLocation: 'Gachibowli',
+            preferredType: '3 BHK',
+            customerName: null,
+            customerEmail: null,
+            customerPhNo: null,
+            preferredContactMethod: null,
+            responseToUser: "Got it! I'll focus on 3 BHK options around Gachibowli within your budget. By the way, may I know your name so I can personalize our conversation?",
+          }),
+        };
+      }
+      return { invoke: async () => ({}) };
+    };
+
+    threadState.messages.push(new HumanMessage("Around Gachibowli, budget is ₹90 lakhs."));
+    threadState = await salesGraph.invoke(threadState, { configurable: { thread_id: threadId } });
+    assert(threadState.currentNode === 'Budget_Discovery_Node', 'Turn 2: Handled by Budget_Discovery_Node');
+    assert(threadState.budgetMax === 9_000_000, 'Turn 2: Captured budgetMax as 90 lakhs');
+    assert(threadState.preferredLocation === 'Gachibowli', 'Turn 2: Captured Gachibowli location');
+    const lastMsgContent = String(threadState.messages[threadState.messages.length - 1].content);
+    assert(lastMsgContent.includes('may I know your name'), 'Turn 2: Naturally asked for customer name');
+    assert(threadState.customerName === null, 'Turn 2: Customer name still missing, waited for user response');
+
+    // Turn 3: Customer introduces name ("I'm Rahul") and asks for ready-to-move-in flats
+    (llmInstance as any).withStructuredOutput = (schema: any, opts: any) => {
+      if (opts?.name === 'route_sales_user') {
+        return { invoke: async () => ({ routeDestination: 'Property_Listing_Node' }) };
+      }
+      if (opts?.name === 'property_listing_extract') {
+        return {
+          invoke: async () => ({
+            customerName: 'Rahul',
+            moveInTimeline: 'ready to move',
+            preferredType: '3 BHK',
+            preferredLocation: 'Gachibowli',
+            customerPhNo: null,
+            customerEmail: null,
+            preferredContactMethod: null,
+            responseToUser: "Nice to meet you, Rahul! I'll prioritize ready-to-move-in properties. Let me check the available options. If you'd like to arrange a visit or get a callback, I can collect your contact details when you're ready.",
+          }),
+        };
+      }
+      return { invoke: async () => ({}) };
+    };
+
+    threadState.messages.push(new HumanMessage("I'm Rahul. Do you have any ready-to-move-in flats?"));
+    threadState = await salesGraph.invoke(threadState, { configurable: { thread_id: threadId } });
+    assert(threadState.customerName === 'Rahul', 'Turn 3: Extracted customerName as Rahul');
+    assert(threadState.moveInTimeline === 'ready to move', 'Turn 3: Extracted moveInTimeline as ready to move');
+    const turn3Reply = String(threadState.messages[threadState.messages.length - 1].content);
+    assert(turn3Reply.includes('Nice to meet you, Rahul!'), 'Turn 3: Warmly greeted Rahul by name');
+  }
+
+  // Test 7: Graceful Goodbye and Call Termination Scenarios
+  console.log('\n[Test 7] Graceful Goodbye & Call Termination Scenarios');
+  {
+    const scenarios = [
+      {
+        name: 'Scenario 1: Customer says goodbye',
+        input: 'Okay, thank you. Bye!',
+        expectedResponse: "You're most welcome! Thank you for your time. Have a wonderful day. Goodbye!",
+      },
+      {
+        name: 'Scenario 2: Customer is busy',
+        input: "I'm a little busy right now. I'll talk to you later.",
+        expectedResponse: "Of course, no problem at all. Take care, and feel free to reach out whenever it's convenient. Goodbye!",
+      },
+      {
+        name: 'Scenario 3: Customer is not interested',
+        input: "I'm not interested anymore. Thanks.",
+        expectedResponse: "I understand. Thank you for your time, and I appreciate you letting me know. Have a great day. Goodbye!",
+      },
+      {
+        name: 'Scenario 4: Customer will call later',
+        input: "I'll call you back if I need anything.",
+        expectedResponse: "Absolutely! I'll leave it with you. Thanks for your time, and have a lovely day. Goodbye!",
+      },
+      {
+        name: 'Scenario 5: Customer thanks after getting details',
+        input: "That's all I needed. Thanks for the information.",
+        expectedResponse: "You're very welcome! I'm glad I could help. Thanks for speaking with me, and enjoy the rest of your day. Goodbye!",
+      },
+    ];
+
+    for (let i = 0; i < scenarios.length; i++) {
+      const scenario = scenarios[i];
+      (llmInstance as any).withStructuredOutput = (schema: any, opts: any) => {
+        if (opts?.name === 'route_sales_user') {
+          return { invoke: async () => ({ routeDestination: 'Graceful_Rejection_Node' }) };
+        }
+        return { invoke: async () => ({}) };
+      };
+      (llmInstance as any).invoke = async () => new AIMessage(scenario.expectedResponse);
+
+      const state: Partial<SalesState> = {
+        messages: [new HumanMessage(scenario.input)],
+        currentNode: 'Property_Listing_Node',
+        customerName: 'Rahul',
+      };
+
+      const result = await salesGraph.invoke(state, { configurable: { thread_id: `flow_test_7_${i}` } });
+      assert(result.currentNode === 'Graceful_Rejection_Node', `${scenario.name}: Routed to Graceful_Rejection_Node`);
+      assert(result.endCall === true, `${scenario.name}: Triggered endCall flag`);
+      const reply = String(result.messages[result.messages.length - 1].content);
+      assert(reply === scenario.expectedResponse, `${scenario.name}: Generated warm context-appropriate farewell`);
+    }
   }
 
   console.log(`\n=== SUMMARY: ${passed} PASSED, ${failed} FAILED ===\n`);
