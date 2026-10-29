@@ -1,10 +1,11 @@
 import { Injectable, Logger } from '@nestjs/common';
 import * as fs from 'fs';
 import * as path from 'path';
-import { pcmToWav } from '../../assistant/helpers/audio.helper';
-import { decodeMulawToLinear16 } from '../utils/audio.util';
-
-const TWILIO_MULAW_SAMPLE_RATE = 8000;
+import {
+  mulawToLinear16,
+  pcmToWav,
+} from '../../assistant/helpers/audio.helper';
+import { CarrierAudioFormat } from '../telephony.types';
 
 @Injectable()
 export class LovebytRecordingService {
@@ -14,6 +15,7 @@ export class LovebytRecordingService {
     streamSid: string,
     chunks: Buffer[],
     startedAt: number,
+    audio: CarrierAudioFormat,
   ): Promise<void> {
     if (chunks.length === 0) {
       this.logger.warn(
@@ -22,10 +24,9 @@ export class LovebytRecordingService {
       return;
     }
 
-    const mulawAudio = Buffer.concat(chunks);
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
-    const linear16 = decodeMulawToLinear16(mulawAudio);
-    const wavBuffer = pcmToWav(linear16, TWILIO_MULAW_SAMPLE_RATE);
+    const raw = Buffer.concat(chunks);
+    const linear16 = audio.encoding === 'MULAW' ? mulawToLinear16(raw) : raw;
+    const wavBuffer = pcmToWav(linear16, audio.sampleRateHertz);
 
     const recordingsDir = path.join(process.cwd(), 'recordings', 'lovebyt');
     fs.mkdirSync(recordingsDir, { recursive: true });
@@ -35,7 +36,7 @@ export class LovebytRecordingService {
 
     await fs.promises.writeFile(filePath, wavBuffer);
 
-    const durationSec = (mulawAudio.length / TWILIO_MULAW_SAMPLE_RATE).toFixed(1);
+    const durationSec = (linear16.length / 2 / audio.sampleRateHertz).toFixed(1);
     this.logger.log(
       `[LovebytRecording] Saved ${filename} (${durationSec}s, ${chunks.length} chunks)`,
     );

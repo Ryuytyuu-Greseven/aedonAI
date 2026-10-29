@@ -32,7 +32,7 @@ const describeError = (err: unknown): string =>
   err instanceof Error ? (err.stack ?? err.message) : String(err);
 
 // Matches the rest of the pipeline: the browser plays 24 kHz PCM and
-// convertTtsForTwilio downsamples 24 kHz → 8 kHz μ-law.
+// the phone adapters resample 24 kHz to their carrier format (TTS_SAMPLE_RATE).
 const OUTPUT_SAMPLE_RATE = 24000;
 
 // Upper bound on waiting for the last sentence's audio after the reply text

@@ -48,11 +48,41 @@
 }
 
 .pn-country {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
   font-size: 13px;
   color: var(--text-secondary);
+}
+
+.pn-country > span {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.pn-number-type {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+}
+
+.pn-status-note {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+}
+
+.icon-action-danger {
+  --tone: var(--danger);
+}
+
+.icon-action:disabled {
+  cursor: progress;
+  opacity: 0.7;
 }
 
 .pn-env {
@@ -212,8 +242,99 @@
   border-radius: 0 var(--radius-md) var(--radius-md) 0;
 }
 
+/* ---------- Buy dialog ---------- */
+.pn-buy-segmented {
+  display: inline-flex;
+  flex-wrap: wrap;
+  max-width: 100%;
+}
+
+.pn-buy-filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr auto;
+  align-items: end;
+  gap: 10px;
+}
+
+.pn-buy-search {
+  height: 44px;
+  margin-bottom: 16px;
+}
+
+.pn-results {
+  display: grid;
+  gap: 8px;
+  max-height: 320px;
+  overflow-y: auto;
+  margin: 4px 0;
+  padding-right: 2px;
+}
+
+.pn-result {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+}
+
+.pn-result-main {
+  display: grid;
+  min-width: 0;
+}
+
+.pn-result-main > span {
+  font-size: 12px;
+  color: var(--text-muted);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.pn-caps {
+  display: flex;
+  gap: 4px;
+}
+
+.pn-price {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.pn-results-empty {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 18px 14px;
+  border-radius: 12px;
+  border: 1px dashed var(--border-strong);
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
 @media (max-width: 520px) {
   .pn-env-options {
     grid-template-columns: 1fr;
+  }
+
+  .pn-buy-filters {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .pn-buy-search {
+    grid-column: 1 / -1;
+  }
+
+  .pn-result {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+
+  .pn-caps {
+    display: none;
   }
 }

@@ -70,6 +70,7 @@ import {
     DeepGram,
     SarvamSttService,
     SarvamTtsService,
+    AgentsRepository,
   ],
 })
 export class AssistantModule {}

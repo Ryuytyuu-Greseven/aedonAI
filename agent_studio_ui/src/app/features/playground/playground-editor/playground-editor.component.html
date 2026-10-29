@@ -396,13 +396,13 @@
         <select id="production_phone_number" class="select input" [value]="productionPhoneNumberId()" (change)="onProductionPhoneNumberChange($event)">
           <option value="">Select a number</option>
           @for (number of productionPhoneNumbers(); track number.id) {
-            <option [value]="number.id">{{ phoneNumberDisplayLabel(number) }}</option>
+            <option [value]="number.id">{{ phoneNumberDisplayLabel(number) }}{{ number.id === currentLiveNumberId() ? ' · Current live number' : '' }}</option>
           }
         </select>
       </div>
       @if (productionPhoneNumbers().length === 0) {
         <div class="note-box pg-golive-note">
-          <i class="fa-solid fa-circle-info" aria-hidden="true"></i> No production numbers found for this agent's country. Request one from Phone Numbers.
+          <i class="fa-solid fa-circle-info" aria-hidden="true"></i> No free production numbers for this agent's country. An admin can buy one from Phone Numbers.
         </div>
       }
     </div>

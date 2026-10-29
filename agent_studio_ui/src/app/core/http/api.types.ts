@@ -110,7 +110,8 @@ export interface TwilioCallRequest {
 
 /** Body for `POST /agents/:id/live` — production number, distinct from the staging `phone_number`. */
 export interface GoLiveRequest {
-  phone_number: string;
+  /** `phone_numbers` id of the production number — the server assigns it to the agent. */
+  phone_number_id: string;
 }
 
 /**
