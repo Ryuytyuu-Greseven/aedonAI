@@ -1,6 +1,7 @@
 import {
   BadGatewayException,
   ConflictException,
+  HttpException,
   Injectable,
   Logger,
   ServiceUnavailableException,
@@ -10,6 +11,7 @@ import axios, { AxiosError, AxiosInstance } from 'axios';
 import {
   AvailableNumber,
   NumberCapabilities,
+  OwnedNumber,
   PhoneNumberType,
   PurchasedNumber,
   PurchaseNumberOptions,
@@ -19,6 +21,12 @@ import {
 import { toE164 } from '../utils/e164.util';
 
 const PURCHASE_FAILED = 'Failed to purchase number. Please try again later.';
+
+// IncomingPhoneNumbers paging. The response carries `page`/`page_size`; the
+// matching request params are assumed, and listOwned() guards against them
+// being ignored.
+const OWNED_PAGE_SIZE = 50;
+const MAX_OWNED_PAGES = 100;
 
 // Singapore cluster; Mumbai accounts set EXOTEL_API_HOST=api.in.exotel.com
 // (same convention as calls_input_gateway).
@@ -40,6 +48,7 @@ interface ExotelNumber {
   number_type?: string;
   rental_price?: string | number;
   currency?: string;
+  voice_url?: string | null;
 }
 
 /**
@@ -137,7 +146,8 @@ export class ExotelNumbersProvider implements TelephonyNumbersProvider {
         inbound_configured: Boolean(voiceUrl),
       };
     } catch (error) {
-      if (error instanceof BadGatewayException) throw error;
+      // Our own errors: no sid (outcome unknown) or missing credentials (nothing sent).
+      if (error instanceof HttpException) throw error;
       const status = (error as AxiosError).response?.status;
       if (status && status >= 400 && status < 500) {
         this.logger.warn(
@@ -163,15 +173,49 @@ export class ExotelNumbersProvider implements TelephonyNumbersProvider {
     }
   }
 
+  async listOwned(): Promise<OwnedNumber[]> {
+    const owned = new Map<string, OwnedNumber>();
+    try {
+      for (let page = 0; page < MAX_OWNED_PAGES; page++) {
+        const { data } = await this.getHttp().get<unknown>(
+          '/IncomingPhoneNumbers',
+          { params: { page, page_size: OWNED_PAGE_SIZE } },
+        );
+        const { numbers, pageSize } = unwrapOwnedPage(data);
+        const fresh = numbers.filter((n) => n.sid && !owned.has(n.sid));
+        for (const n of fresh) {
+          owned.set(n.sid as string, {
+            provider_sid: n.sid as string,
+            e164: toE164(n.phone_number, '+91'),
+            friendly_name: n.friendly_name ?? n.phone_number,
+            capabilities: toCapabilities(n.capabilities),
+            inbound_configured: Boolean(n.voice_url),
+          });
+        }
+        if (numbers.length < pageSize) return [...owned.values()];
+        // A full page with nothing new: paging params were ignored.
+        if (fresh.length === 0) break;
+      }
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw this.toHttpError('list numbers', error);
+    }
+    // Callers delete reservations missing from this list, so never return a partial one.
+    this.logger.error(
+      `Exotel IncomingPhoneNumbers paging did not finish (${owned.size} numbers seen) — refusing to return a partial list`,
+    );
+    throw new BadGatewayException(
+      'Failed to list numbers. Please try again later.',
+    );
+  }
+
   private getHttp(): AxiosInstance {
     if (this.http) return this.http;
     const apiKey = this.config.get<string>('EXOTEL_API_KEY');
     const apiToken = this.config.get<string>('EXOTEL_API_TOKEN');
     const accountSid = this.config.get<string>('EXOTEL_ACCOUNT_SID');
     if (!apiKey || !apiToken || !accountSid) {
-      throw new ServiceUnavailableException(
-        'Not Configured',
-      );
+      throw new ServiceUnavailableException('Not Configured');
     }
     const host = this.config.get<string>('EXOTEL_API_HOST') ?? DEFAULT_API_HOST;
     this.http = axios.create({
@@ -201,6 +245,23 @@ function unwrapList(data: unknown): ExotelNumber[] {
   const list =
     wrapped.AvailablePhoneNumbers ?? wrapped.available_phone_numbers ?? [];
   return Array.isArray(list) ? (list as ExotelNumber[]) : [];
+}
+
+/** IncomingPhoneNumbers list: `{ page, page_size, incoming_phone_numbers: [...] }`. */
+function unwrapOwnedPage(data: unknown): {
+  numbers: ExotelNumber[];
+  pageSize: number;
+} {
+  const wrapped = (data ?? {}) as Record<string, unknown>;
+  const list = Array.isArray(data)
+    ? data
+    : (wrapped.incoming_phone_numbers ?? wrapped.IncomingPhoneNumbers ?? []);
+  const pageSize = Number(wrapped.page_size);
+  return {
+    numbers: Array.isArray(list) ? (list as ExotelNumber[]) : [],
+    pageSize:
+      Number.isInteger(pageSize) && pageSize > 0 ? pageSize : OWNED_PAGE_SIZE,
+  };
 }
 
 function unwrapOne(data: unknown): ExotelNumber | null {

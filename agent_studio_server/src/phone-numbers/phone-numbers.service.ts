@@ -1,6 +1,9 @@
 import {
+  BadGatewayException,
   BadRequestException,
   ConflictException,
+  HttpException,
+  HttpStatus,
   Injectable,
   InternalServerErrorException,
   Logger,
@@ -9,27 +12,50 @@ import {
 import { AuthenticatedUser } from '../common/interfaces/user.interface';
 import { assertSameCompany } from '../common/utils/company-scope.util';
 import { isDuplicateKeyError } from '../common/utils/mongo-error.util';
-import { PhoneNumbersRepository } from '../repos/phone-numbers.repository';
+import {
+  PhoneNumbersRepository,
+  PurchasedPhoneNumberFields,
+} from '../repos/phone-numbers.repository';
 import {
   PhoneNumber,
   PhoneNumberEnvType,
 } from '../schemas/phone-number.schema';
+import { PurchaseRejectedException } from '../telephony/telephony.errors';
 import { TelephonyNumbersRegistry } from '../telephony/telephony-numbers.registry';
-import { AvailableNumber } from '../telephony/telephony.types';
+import {
+  AvailableNumber,
+  OwnedNumber,
+  TelephonyProviderName,
+} from '../telephony/telephony.types';
 import { nationalNumber } from '../telephony/utils/e164.util';
 import { PurchasePhoneNumberDto } from './dto/purchase-phone-number.dto';
 import { SearchAvailableNumbersDto } from './dto/search-available-numbers.dto';
 
 const DEFAULT_SEARCH_LIMIT = 20;
 
+/** Provisioning rows younger than this may still have a purchase in flight. */
+const STALE_PROVISIONING_MS = 10 * 60 * 1000;
+
 export interface AvailableNumbersResult {
   country: string;
   numbers: AvailableNumber[];
 }
 
+/** E.164s settled by reconcileProvisioning(). */
+export interface ReconcileProvisioningResult {
+  /** On the provider account — now Available. */
+  recovered: string[];
+  /** Not on the provider account — never bought, reservation dropped. */
+  removed: string[];
+  /** Left Provisioning (provider list or DB write failed) — run again later. */
+  unresolved: string[];
+}
+
 @Injectable()
 export class PhoneNumbersService {
   private readonly logger = new Logger(PhoneNumbersService.name);
+  /** Waits between attempts to record a purchase the provider already billed. */
+  private readonly saveRetryDelaysMs = [250, 1000];
 
   constructor(
     private readonly phoneNumbersRepository: PhoneNumbersRepository,
@@ -119,28 +145,37 @@ export class PhoneNumbersService {
         .byName(country.provider)
         .purchase(e164, { friendlyName: dto.label.trim() });
     } catch (error) {
-      await this.phoneNumbersRepository.deleteById(reservationId);
-      throw error;
+      if (isPurchaseRejected(error)) {
+        await this.phoneNumbersRepository.deleteById(reservationId);
+        throw error;
+      }
+      // Timeout / 5xx: the provider may have bought (and billed) the number.
+      // Keep the Provisioning row for reconcileProvisioning() to settle.
+      this.logger.error(
+        `Purchase of ${e164} on ${country.provider} has an unknown outcome — kept phone number ${reservationId} as Provisioning`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      throw new BadGatewayException(
+        `Could not confirm the purchase of ${e164}. It stays listed as Provisioning until it is verified — do not buy it again.`,
+      );
     }
 
-    const saved = await this.phoneNumbersRepository
-      .markPurchased(reservationId, {
-        provider_sid: purchased.provider_sid,
-        friendly_name: purchased.friendly_name,
-        capabilities: purchased.capabilities,
-        monthly_price: purchased.monthly_price,
-        currency: purchased.currency,
-        inbound_configured: purchased.inbound_configured,
-      })
-      .catch((error: unknown) => {
-        // Bought and billed at the provider but not recorded here — leave the
-        // Provisioning row and log the sid so it can be reconciled by hand.
-        this.logger.error(
-          `Purchased ${e164} on ${country.provider} (sid=${purchased.provider_sid}) but failed to save phone number ${reservationId}`,
-          error instanceof Error ? error.stack : String(error),
-        );
-        return null;
-      });
+    const saved = await this.savePurchase(reservationId, {
+      provider_sid: purchased.provider_sid,
+      friendly_name: purchased.friendly_name,
+      capabilities: purchased.capabilities,
+      monthly_price: purchased.monthly_price,
+      currency: purchased.currency,
+      inbound_configured: purchased.inbound_configured,
+    }).catch((error: unknown) => {
+      // Bought and billed at the provider but not recorded here — leave the
+      // Provisioning row for reconcileProvisioning() and log the sid.
+      this.logger.error(
+        `Purchased ${e164} on ${country.provider} (sid=${purchased.provider_sid}) but failed to save phone number ${reservationId}`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      return null;
+    });
     if (!saved) {
       throw new InternalServerErrorException(
         `${e164} was purchased but could not be saved — please contact support`,
@@ -150,6 +185,112 @@ export class PhoneNumbersService {
       `Purchased ${e164} on ${country.provider} (sid=${purchased.provider_sid}) for company ${user.companyId}`,
     );
     return saved;
+  }
+
+  /** markPurchased with retries — the number is already billed, so a DB blip must not lose it. */
+  private async savePurchase(
+    id: string,
+    fields: PurchasedPhoneNumberFields,
+  ): Promise<PhoneNumber | null> {
+    for (let attempt = 0; ; attempt++) {
+      try {
+        return await this.phoneNumbersRepository.markPurchased(id, fields);
+      } catch (error) {
+        const delay = this.saveRetryDelaysMs[attempt];
+        if (delay === undefined) throw error;
+        this.logger.warn(
+          `Saving purchased phone number ${id} failed (attempt ${attempt + 1}) — retrying in ${delay}ms`,
+        );
+        await new Promise((resolve) => setTimeout(resolve, delay));
+      }
+    }
+  }
+
+  /**
+   * Settles the company's purchases stuck in Provisioning (a save that failed
+   * after the provider billed, or a provider call with an unknown outcome) by
+   * checking which numbers the provider account actually owns.
+   */
+  async reconcileProvisioning(
+    companyId: string | null,
+  ): Promise<ReconcileProvisioningResult> {
+    const result: ReconcileProvisioningResult = {
+      recovered: [],
+      removed: [],
+      unresolved: [],
+    };
+    const stale = await this.phoneNumbersRepository.findStaleProvisioning(
+      companyId,
+      new Date(Date.now() - STALE_PROVISIONING_MS),
+    );
+
+    const byProvider = new Map<TelephonyProviderName, typeof stale>();
+    for (const row of stale) {
+      if (!row.provider || !row.e164) {
+        result.unresolved.push(row.e164 ?? String(row._id));
+        continue;
+      }
+      byProvider.set(row.provider, [
+        ...(byProvider.get(row.provider) ?? []),
+        row,
+      ]);
+    }
+
+    for (const [provider, rows] of byProvider) {
+      let owned: Map<string, OwnedNumber>;
+      try {
+        const numbers = await this.telephony.byName(provider).listOwned();
+        owned = new Map(numbers.map((n) => [n.e164, n]));
+      } catch (error) {
+        // Without the full list we can't tell "never bought" from "bought".
+        this.logger.error(
+          `Could not list ${provider} numbers — left ${rows.length} Provisioning row(s) unresolved`,
+          error instanceof Error ? error.stack : String(error),
+        );
+        result.unresolved.push(...rows.map((row) => row.e164 as string));
+        continue;
+      }
+
+      for (const row of rows) {
+        const id = String(row._id);
+        const e164 = row.e164 as string;
+        const match = owned.get(e164);
+        try {
+          if (match) {
+            await this.phoneNumbersRepository.markPurchased(
+              id,
+              {
+                provider_sid: match.provider_sid,
+                friendly_name: match.friendly_name,
+                capabilities: match.capabilities,
+                // The provider's list doesn't quote prices.
+                monthly_price: null,
+                currency: null,
+                inbound_configured: match.inbound_configured,
+              },
+              row.created_at,
+            );
+            result.recovered.push(e164);
+          } else {
+            await this.phoneNumbersRepository.deleteProvisioning(id);
+            result.removed.push(e164);
+          }
+        } catch (error) {
+          this.logger.error(
+            `Could not reconcile phone number ${id} (${e164})`,
+            error instanceof Error ? error.stack : String(error),
+          );
+          result.unresolved.push(e164);
+        }
+      }
+    }
+
+    if (stale.length > 0) {
+      this.logger.log(
+        `Reconciled Provisioning numbers for company ${companyId}: recovered=${result.recovered.join(',') || '-'} removed=${result.removed.join(',') || '-'} unresolved=${result.unresolved.join(',') || '-'}`,
+      );
+    }
+    return result;
   }
 
   /** Returns the number to its provider (stops billing) and marks it Released. */
@@ -270,4 +411,15 @@ export class PhoneNumbersService {
       );
     }
   }
+}
+
+/**
+ * True only when the provider surely did not buy the number: an explicit
+ * rejection, a 4xx, or 503 (credentials missing, nothing was sent).
+ */
+function isPurchaseRejected(error: unknown): boolean {
+  if (error instanceof PurchaseRejectedException) return true;
+  if (!(error instanceof HttpException)) return false;
+  const status = error.getStatus();
+  return status < 500 || status === Number(HttpStatus.SERVICE_UNAVAILABLE);
 }

@@ -4,6 +4,7 @@ import {
   AvailablePhoneNumbersResult,
   PhoneNumber,
   PurchasePhoneNumberInput,
+  ReconcileProvisioningResult,
   SearchAvailableNumbersQuery,
   phoneNumberCountryName,
 } from '../models/phone-number.model';
@@ -58,6 +59,10 @@ export class PhoneNumberService {
       notes: input.notes?.trim() || undefined,
       envType: input.environmentType,
     });
+  }
+
+  reconcile(): Observable<ReconcileProvisioningResult> {
+    return this.api.reconcilePhoneNumbers();
   }
 
   release(id: string): Observable<PhoneNumber> {

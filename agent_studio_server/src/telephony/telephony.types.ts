@@ -60,14 +60,30 @@ export interface PurchasedNumber {
   inbound_configured: boolean;
 }
 
+/** A number currently on the platform's provider account. */
+export interface OwnedNumber {
+  provider_sid: string;
+  e164: string;
+  friendly_name: string;
+  capabilities: NumberCapabilities;
+  /** True when the number routes inbound calls (has a voice URL / flow). */
+  inbound_configured: boolean;
+}
+
 /** One implementation per telephony provider (Twilio, Exotel). */
 export interface TelephonyNumbersProvider {
   readonly name: TelephonyProviderName;
   search(query: SearchNumbersQuery): Promise<AvailableNumber[]>;
+  /**
+   * Throws PurchaseRejectedException (or a 4xx) only when the provider surely
+   * did not buy the number; any other error means the outcome is unknown.
+   */
   purchase(
     e164: string,
     options: PurchaseNumberOptions,
   ): Promise<PurchasedNumber>;
   /** Releases the number back to the provider; a missing number is a no-op. */
   release(providerSid: string): Promise<void>;
+  /** Every number on the account; throws rather than return a partial list. */
+  listOwned(): Promise<OwnedNumber[]>;
 }

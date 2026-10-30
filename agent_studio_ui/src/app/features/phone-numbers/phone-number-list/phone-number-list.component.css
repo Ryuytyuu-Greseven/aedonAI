@@ -338,3 +338,16 @@
     display: none;
   }
 }
+
+/* ---------- Header actions ---------- */
+.pn-head-actions {
+  display: flex;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+@media (max-width: 760px) {
+  .pn-head-actions {
+    flex-direction: column;
+  }
+}

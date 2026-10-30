@@ -71,6 +71,10 @@ export class PhoneNumberListComponent implements OnInit {
   readonly page = signal(1);
 
   readonly releasingId = signal<string | null>(null);
+  readonly reconciling = signal(false);
+
+  /** Purchases still in flight or stuck — what Reconcile settles. */
+  readonly provisioningCount = computed(() => this.numbers().filter((n) => n.status === 'Provisioning').length);
 
   // Buy-number dialog
   showBuyForm = false;
@@ -334,6 +338,36 @@ export class PhoneNumberListComponent implements OnInit {
       return 'Only admins can buy numbers.';
     }
     return extractErrorMessage(err, fallback);
+  }
+
+  // ── Reconcile ───────────────────────────────────────────
+
+  /**
+   * Checks Provisioning numbers against the provider account: bought ones become Available,
+   * the rest are dropped. The server only touches rows older than 10 minutes.
+   */
+  reconcile(): void {
+    if (!this.isAdmin() || this.reconciling()) return;
+    this.reconciling.set(true);
+    this.phoneNumberService.reconcile().subscribe({
+      next: ({ recovered, removed, unresolved }) => {
+        this.reconciling.set(false);
+        if (recovered.length) this.toast.success(`Recovered ${recovered.join(', ')}`);
+        if (removed.length) this.toast.info(`Removed ${removed.length} purchase(s) that never went through`);
+        if (unresolved.length) {
+          this.toast.warning(`Couldn't verify ${unresolved.join(', ')} yet — try again later`);
+        }
+        if (!recovered.length && !removed.length && !unresolved.length) {
+          this.toast.info('Nothing to reconcile yet — purchases are checked 10 minutes after they start');
+        } else {
+          this.load();
+        }
+      },
+      error: (err: unknown) => {
+        this.reconciling.set(false);
+        this.toast.error(extractErrorMessage(err, 'Failed to reconcile numbers'));
+      },
+    });
   }
 
   // ── Release ─────────────────────────────────────────────

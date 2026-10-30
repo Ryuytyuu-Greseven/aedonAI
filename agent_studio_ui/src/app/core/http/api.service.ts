@@ -6,7 +6,12 @@ import { AgentCallStats, CallDetail, CallRecord } from '../models/call-record.mo
 import { AuthSession, ForgotPasswordRequest, LoginCredentials, MessageResponse, ResetPasswordRequest } from '../models/auth.model';
 import { CreateSalesAgentAccountInput, SalesAgentAccount } from '../models/sales-agent-account.model';
 import { KnowledgeBase, NewKnowledgeBaseFileInput } from '../models/knowledge-base.model';
-import { AvailablePhoneNumbersResult, PhoneNumber, SearchAvailableNumbersQuery } from '../models/phone-number.model';
+import {
+  AvailablePhoneNumbersResult,
+  PhoneNumber,
+  ReconcileProvisioningResult,
+  SearchAvailableNumbersQuery,
+} from '../models/phone-number.model';
 import { ApiUser, UserProfileResponse } from '../models/profile.model';
 import { MetaPage } from '../models/meta-integration.model';
 import { AgentLead, LeadsPage, LeadsQuery, PageLead, PageLeadCallResult } from '../models/lead.model';
@@ -468,6 +473,11 @@ export class ApiService {
     return this.http
       .post<ApiPhoneNumber>(ApiEndpoints.phoneNumbers.purchase, body)
       .pipe(map(fromApiPhoneNumber));
+  }
+
+  /** Settles purchases stuck in Provisioning against the provider account — admin only. */
+  reconcilePhoneNumbers(): Observable<ReconcileProvisioningResult> {
+    return this.http.post<ReconcileProvisioningResult>(ApiEndpoints.phoneNumbers.reconcile, null);
   }
 
   /** Releases the number back to its provider (stops billing) — admin only. */

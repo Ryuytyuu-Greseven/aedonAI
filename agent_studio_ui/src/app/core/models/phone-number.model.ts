@@ -71,6 +71,16 @@ export interface SearchAvailableNumbersQuery {
   limit?: number;
 }
 
+/** E.164s settled by `POST /phone-numbers/reconcile` (admin only). */
+export interface ReconcileProvisioningResult {
+  /** Found on the provider account — now Available. */
+  recovered: string[];
+  /** Never bought — the reservation was dropped. */
+  removed: string[];
+  /** Couldn't be checked this time — try again later. */
+  unresolved: string[];
+}
+
 export interface PurchasePhoneNumberInput {
   country: string;
   number: AvailablePhoneNumber;

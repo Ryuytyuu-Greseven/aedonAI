@@ -47,6 +47,17 @@ export class PhoneNumbersController {
     return this.phoneNumbersService.purchase(dto, user);
   }
 
+  /**
+   * Settles purchases stuck in Provisioning against the provider account:
+   * owned numbers become Available, the rest are dropped.
+   */
+  @Post('reconcile')
+  @Roles('admin')
+  @HttpCode(HttpStatus.OK)
+  reconcile(@CurrentUser() user: AuthenticatedUser) {
+    return this.phoneNumbersService.reconcileProvisioning(user.companyId);
+  }
+
   @Get()
   findAll(
     @Query() query: ListPhoneNumbersDto,

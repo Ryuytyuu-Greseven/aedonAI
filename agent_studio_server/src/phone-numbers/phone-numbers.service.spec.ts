@@ -1,12 +1,15 @@
 /* eslint-disable @typescript-eslint/no-unsafe-argument, @typescript-eslint/no-unsafe-member-access */
 import {
+  BadGatewayException,
   BadRequestException,
   ConflictException,
   InternalServerErrorException,
+  ServiceUnavailableException,
 } from '@nestjs/common';
 import { model } from 'mongoose';
 import { AuthenticatedUser } from '../common/interfaces/user.interface';
 import { PhoneNumberSchema } from '../schemas/phone-number.schema';
+import { PurchaseRejectedException } from '../telephony/telephony.errors';
 import { TelephonyNumbersRegistry } from '../telephony/telephony-numbers.registry';
 import { toE164 } from '../telephony/utils/e164.util';
 import { PhoneNumbersService } from './phone-numbers.service';
@@ -36,21 +39,28 @@ function setup() {
       .fn()
       .mockResolvedValue({ id: 'pn-doc', status: 'Available' }),
     deleteById: jest.fn().mockResolvedValue(undefined),
+    findStaleProvisioning: jest.fn().mockResolvedValue([]),
+    deleteProvisioning: jest.fn().mockResolvedValue(undefined),
     filterById: jest.fn(),
     markReleased: jest.fn().mockResolvedValue({ status: 'Released' }),
-    updateAssignedAgent: jest
-      .fn()
-      .mockResolvedValue({ assigned_agent: null }),
+    updateAssignedAgent: jest.fn().mockResolvedValue({ assigned_agent: null }),
   };
   const twilio = {
     name: 'twilio',
     search: jest.fn().mockResolvedValue([]),
     purchase: jest.fn().mockResolvedValue(purchased),
     release: jest.fn().mockResolvedValue(undefined),
+    listOwned: jest.fn().mockResolvedValue([]),
   };
-  const exotel = { ...twilio, name: 'exotel', search: jest.fn() };
+  const exotel = {
+    ...twilio,
+    name: 'exotel',
+    search: jest.fn(),
+    listOwned: jest.fn().mockResolvedValue([]),
+  };
   const registry = new TelephonyNumbersRegistry(twilio as any, exotel as any);
   const service = new PhoneNumbersService(repo as any, registry);
+  (service as any).saveRetryDelaysMs = [0, 0];
   return { service, repo, twilio, exotel };
 }
 
@@ -141,21 +151,135 @@ describe('PhoneNumbersService.purchase', () => {
     expect(repo.deleteById).toHaveBeenCalledWith('pn-doc');
   });
 
+  it('drops the reservation on an explicit rejection or missing credentials', async () => {
+    for (const error of [
+      new PurchaseRejectedException('no'),
+      new ServiceUnavailableException('Not Configured'),
+    ]) {
+      const { service, repo, twilio } = setup();
+      twilio.purchase.mockRejectedValue(error);
+      await expect(service.purchase(purchaseDto, admin)).rejects.toBe(error);
+      expect(repo.deleteById).toHaveBeenCalledWith('pn-doc');
+    }
+  });
+
+  it('keeps the reservation when the provider outcome is unknown', async () => {
+    for (const error of [
+      new BadGatewayException('timeout'),
+      new Error('socket hang up'),
+    ]) {
+      const { service, repo, twilio } = setup();
+      twilio.purchase.mockRejectedValue(error);
+      await expect(service.purchase(purchaseDto, admin)).rejects.toBeInstanceOf(
+        BadGatewayException,
+      );
+      expect(repo.deleteById).not.toHaveBeenCalled();
+    }
+  });
+
+  it('retries saving a billed purchase', async () => {
+    const { service, repo } = setup();
+    repo.markPurchased
+      .mockRejectedValueOnce(new Error('db blip'))
+      .mockRejectedValueOnce(new Error('db blip'));
+    await expect(service.purchase(purchaseDto, admin)).resolves.toEqual({
+      id: 'pn-doc',
+      status: 'Available',
+    });
+    expect(repo.markPurchased).toHaveBeenCalledTimes(3);
+  });
+
   it('keeps the reservation when the purchase succeeded but saving failed', async () => {
     const { service, repo } = setup();
     repo.markPurchased.mockRejectedValue(new Error('db down'));
     await expect(service.purchase(purchaseDto, admin)).rejects.toBeInstanceOf(
       InternalServerErrorException,
     );
+    expect(repo.markPurchased).toHaveBeenCalledTimes(3);
     expect(repo.deleteById).not.toHaveBeenCalled();
   });
 
   it('rejects a number from another country', async () => {
     const { service, repo } = setup();
     await expect(
-      service.purchase({ ...purchaseDto, phone_number: '+919876543210' }, admin),
+      service.purchase(
+        { ...purchaseDto, phone_number: '+919876543210' },
+        admin,
+      ),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(repo.createProvisioning).not.toHaveBeenCalled();
+  });
+});
+
+describe('PhoneNumbersService.reconcileProvisioning', () => {
+  const createdAt = new Date('2026-10-30T10:00:00Z');
+  const row = (id: string, e164: string, provider = 'exotel') => ({
+    _id: id,
+    e164,
+    provider,
+    status: 'Provisioning',
+    created_at: createdAt,
+  });
+  const ownedExo = {
+    provider_sid: 'exo-sid-1',
+    e164: '+919876543210',
+    friendly_name: '09876543210',
+    capabilities: { voice: true, sms: true, mms: false },
+    inbound_configured: true,
+  };
+
+  it('recovers owned numbers and drops the ones never bought', async () => {
+    const { service, repo, exotel } = setup();
+    repo.findStaleProvisioning.mockResolvedValue([
+      row('r1', '+919876543210'),
+      row('r2', '+919000000000'),
+    ]);
+    exotel.listOwned.mockResolvedValue([ownedExo]);
+
+    const result = await service.reconcileProvisioning('c1');
+
+    expect(result).toEqual({
+      recovered: ['+919876543210'],
+      removed: ['+919000000000'],
+      unresolved: [],
+    });
+    expect(repo.findStaleProvisioning).toHaveBeenCalledWith(
+      'c1',
+      expect.any(Date),
+    );
+    expect(repo.markPurchased).toHaveBeenCalledWith(
+      'r1',
+      expect.objectContaining({
+        provider_sid: 'exo-sid-1',
+        inbound_configured: true,
+      }),
+      createdAt,
+    );
+    expect(repo.deleteProvisioning).toHaveBeenCalledWith('r2');
+  });
+
+  it('deletes nothing when the provider list is unavailable', async () => {
+    const { service, repo, exotel } = setup();
+    repo.findStaleProvisioning.mockResolvedValue([row('r1', '+919876543210')]);
+    exotel.listOwned.mockRejectedValue(new BadGatewayException('down'));
+
+    const result = await service.reconcileProvisioning('c1');
+
+    expect(result.unresolved).toEqual(['+919876543210']);
+    expect(repo.deleteProvisioning).not.toHaveBeenCalled();
+    expect(repo.markPurchased).not.toHaveBeenCalled();
+  });
+
+  it('lists each provider once', async () => {
+    const { service, repo, exotel, twilio } = setup();
+    repo.findStaleProvisioning.mockResolvedValue([
+      row('r1', '+919876543210'),
+      row('r2', '+919000000000'),
+      row('r3', '+14155550199', 'twilio'),
+    ]);
+    await service.reconcileProvisioning('c1');
+    expect(exotel.listOwned).toHaveBeenCalledTimes(1);
+    expect(twilio.listOwned).toHaveBeenCalledTimes(1);
   });
 });
 

@@ -7,9 +7,23 @@
       <p class="text-muted">Dedicated US and India numbers to assign to your agents.</p>
     </div>
     @if (isAdmin()) {
-      <button type="button" class="btn btn-primary page-cta" (click)="openBuyForm()">
-        <i class="fa-solid fa-cart-shopping" aria-hidden="true"></i> Buy number
-      </button>
+      <div class="pn-head-actions">
+        @if (provisioningCount() > 0) {
+          <button
+            type="button"
+            class="btn btn-secondary page-cta"
+            [disabled]="reconciling()"
+            title="Check purchases stuck in Provisioning against the provider account"
+            (click)="reconcile()"
+          >
+            <i class="fa-solid fa-arrows-rotate" [class.fa-spin]="reconciling()" aria-hidden="true"></i>
+            {{ reconciling() ? 'Reconciling…' : 'Reconcile (' + provisioningCount() + ')' }}
+          </button>
+        }
+        <button type="button" class="btn btn-primary page-cta" (click)="openBuyForm()">
+          <i class="fa-solid fa-cart-shopping" aria-hidden="true"></i> Buy number
+        </button>
+      </div>
     }
   </header>
 

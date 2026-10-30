@@ -57,11 +57,12 @@ export class PhoneNumbersRepository {
   async markPurchased(
     id: string,
     fields: PurchasedPhoneNumberFields,
+    purchasedAt: Date = new Date(),
   ): Promise<PhoneNumberDocument | null> {
     return this.phoneNumberModel
       .findByIdAndUpdate(
         id,
-        { ...fields, status: 'Available', purchased_at: new Date() },
+        { ...fields, status: 'Available', purchased_at: purchasedAt },
         { new: true },
       )
       .exec();
@@ -69,6 +70,25 @@ export class PhoneNumbersRepository {
 
   async deleteById(id: string): Promise<void> {
     await this.phoneNumberModel.findByIdAndDelete(id).exec();
+  }
+
+  /** The company's `Provisioning` rows created before `before` — purchases that never finished. */
+  async findStaleProvisioning(
+    companyId: string | null,
+    before: Date,
+  ): Promise<(PhoneNumberDocument & { created_at: Date })[]> {
+    return this.phoneNumberModel
+      .find({ companyId, status: 'Provisioning', created_at: { $lt: before } })
+      .exec() as unknown as Promise<
+      (PhoneNumberDocument & { created_at: Date })[]
+    >;
+  }
+
+  /** Drops a reservation only while it is still `Provisioning`. */
+  async deleteProvisioning(id: string): Promise<void> {
+    await this.phoneNumberModel
+      .deleteOne({ _id: id, status: 'Provisioning' })
+      .exec();
   }
 
   async filterAll(

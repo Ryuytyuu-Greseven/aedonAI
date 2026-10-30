@@ -1,15 +1,18 @@
 import {
   BadGatewayException,
   ConflictException,
+  HttpException,
   Injectable,
   Logger,
   ServiceUnavailableException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as Twilio from 'twilio';
+import { PurchaseRejectedException } from '../telephony.errors';
 import {
   AvailableNumber,
   NumberCapabilities,
+  OwnedNumber,
   PurchasedNumber,
   PurchaseNumberOptions,
   SearchNumbersQuery,
@@ -99,12 +102,37 @@ export class TwilioNumbersProvider implements TelephonyNumbersProvider {
         inbound_configured: true,
       };
     } catch (error) {
-      if ((error as TwilioRestError).code === TWILIO_NUMBER_UNAVAILABLE) {
+      // e.g. 503 when credentials are missing — no request was sent.
+      if (error instanceof HttpException) throw error;
+      const { status, code } = error as TwilioRestError;
+      if (code === TWILIO_NUMBER_UNAVAILABLE) {
         throw new ConflictException(
           `${e164} is no longer available — search again`,
         );
       }
-      throw this.toHttpError('purchase number', error);
+      const httpError = this.toHttpError('purchase number', error);
+      // Twilio answered with a 4xx, so the number was not bought.
+      if (status && status >= 400 && status < 500) {
+        throw new PurchaseRejectedException(httpError.message);
+      }
+      throw httpError;
+    }
+  }
+
+  async listOwned(): Promise<OwnedNumber[]> {
+    try {
+      // No limit — the SDK pages through every number on the account.
+      const numbers = await this.getClient().incomingPhoneNumbers.list();
+      return numbers.map((n) => ({
+        provider_sid: n.sid,
+        e164: n.phoneNumber,
+        friendly_name: n.friendlyName,
+        capabilities: toCapabilities(n.capabilities),
+        inbound_configured: Boolean(n.voiceUrl),
+      }));
+    } catch (error) {
+      if (error instanceof HttpException) throw error;
+      throw this.toHttpError('list numbers', error);
     }
   }
 

@@ -85,6 +85,7 @@ export const ApiEndpoints = {
     list: '/phone-numbers',
     available: '/phone-numbers/available',
     purchase: '/phone-numbers/purchase',
+    reconcile: '/phone-numbers/reconcile',
     byId: (id: string) => `/phone-numbers/${id}`,
     assignAgent: (id: string) => `/phone-numbers/${id}/assign-agent`,
     disable: (id: string) => `/phone-numbers/${id}/disable`,
