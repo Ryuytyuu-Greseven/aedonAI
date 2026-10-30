@@ -68,6 +68,27 @@ async function runTests() {
     assert(Array.isArray(result.properties), 'Properties array initialized in state');
   }
 
+  // Test 1c: Configured Initial Greeting Honored
+  console.log('\n[Test 1c] Configured Initial Greeting Honored');
+  {
+    const configuredGreeting = "Hi, thanks for reaching out about our MVV Builders listings. I'm here to help you find the right property.";
+    const state: Partial<SalesState> = {
+      messages: [new HumanMessage('SYSTEM_START_CONVERSATION')],
+      userQuery: 'SYSTEM_START_CONVERSATION',
+      currentNode: '',
+      routeDestination: 'Greeting_Pitch_Node',
+      agentDetails: {
+        agent_name: 'Clara',
+        greeting: configuredGreeting,
+      } as any,
+    };
+
+    const result = await salesGraph.invoke(state, { configurable: { thread_id: 'flow_test_1c' } });
+    assert(result.currentNode === 'Greeting_Pitch_Node', 'Graph navigated to Greeting_Pitch_Node');
+    const firstReply = String(result.messages[result.messages.length - 1].content);
+    assert(firstReply === configuredGreeting, 'Configured initial greeting was used directly without LLM hallucination');
+  }
+
   // Test 2: Consultative Discovery -> Budget Discovery
   console.log('\n[Test 2] Consultative Discovery Flow');
   {
@@ -325,27 +346,27 @@ async function runTests() {
       {
         name: 'Scenario 1: Customer says goodbye',
         input: 'Okay, thank you. Bye!',
-        expectedResponse: "You're most welcome! Thank you for your time. Have a wonderful day. Goodbye!",
+        expectedResponse: 'You are most welcome. Thank you for your time. Have a wonderful day. Goodbye.',
       },
       {
         name: 'Scenario 2: Customer is busy',
         input: "I'm a little busy right now. I'll talk to you later.",
-        expectedResponse: "Of course, no problem at all. Take care, and feel free to reach out whenever it's convenient. Goodbye!",
+        expectedResponse: "Of course, no problem at all. Take care, and feel free to reach out whenever it's convenient. Goodbye.",
       },
       {
         name: 'Scenario 3: Customer is not interested',
         input: "I'm not interested anymore. Thanks.",
-        expectedResponse: "I understand. Thank you for your time, and I appreciate you letting me know. Have a great day. Goodbye!",
+        expectedResponse: 'I understand. Thank you for your time, and I appreciate you letting me know. Have a great day. Goodbye.',
       },
       {
         name: 'Scenario 4: Customer will call later',
         input: "I'll call you back if I need anything.",
-        expectedResponse: "Absolutely! I'll leave it with you. Thanks for your time, and have a lovely day. Goodbye!",
+        expectedResponse: "Absolutely, I will leave it with you. Thanks for your time, and have a lovely day. Goodbye.",
       },
       {
         name: 'Scenario 5: Customer thanks after getting details',
         input: "That's all I needed. Thanks for the information.",
-        expectedResponse: "You're very welcome! I'm glad I could help. Thanks for speaking with me, and enjoy the rest of your day. Goodbye!",
+        expectedResponse: 'You are very welcome. I am glad I could help. Thanks for speaking with me, and enjoy the rest of your day. Goodbye.',
       },
     ];
 

@@ -12,6 +12,7 @@ export function buildAgentSetup(agent: Agent): AudioProcessorSetup {
   const setup: AudioProcessorSetup = {
     business: agent.base_template_id ?? '',
     agentId: agent.agent_id,
+    greeting: agent.greeting ?? '',
     generationConfig: {
       speechConfig: {
         voiceConfig: {

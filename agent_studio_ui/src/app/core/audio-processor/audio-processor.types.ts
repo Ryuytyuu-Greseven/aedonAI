@@ -12,6 +12,8 @@ export interface AudioProcessorSetup {
   /** Routes to a domain agent. Send one of `business` or `phoneNumber`. */
   business?: string;
   agentId?: string;
+  /** Initial greeting configured on the agent. */
+  greeting?: string;
   /** Staging/testing alternative to `business` — resolved to a business server-side. */
   phoneNumber?: string;
   generationConfig?: {

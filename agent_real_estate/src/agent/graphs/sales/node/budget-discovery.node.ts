@@ -18,7 +18,7 @@ export async function Budget_Discovery_Node(state: SalesState) {
       preferredContactMethod: z.string().nullable().describe("Preferred contact method if stated ('phone', 'whatsapp', 'email'). Null otherwise."),
       responseToUser: z.string().describe(
         'Conversational response — acknowledge the budget/location warmly. ' +
-        'If customer name is missing, ask for their name naturally: "Got it! I\'ll focus on [type] options around [location] within your budget. By the way, may I know your name so I can personalize our conversation?". ' +
+        'If customer name is missing, ask for their name naturally: "Got it, I\'ll focus on [type] options around [location] within your budget. By the way, may I know your name so I can personalize our conversation?". ' +
         'If customer name is already known, personalize with their name and do NOT ask for their name again.',
       ),
     }),
@@ -38,7 +38,7 @@ export async function Budget_Discovery_Node(state: SalesState) {
     : '';
 
   const nameGuidance = !state.customerName
-    ? `\n\nNAME COLLECTION OPPORTUNITY: Customer's name is NOT yet known. Acknowledge their requirements/budget warmly and ask for their name naturally to personalize: "Got it! I'll focus on ${state.preferredType ?? 'options'} around ${state.preferredLocation ?? 'your preferred area'} within your budget. By the way, may I know your name so I can personalize our conversation?"`
+    ? `\n\nNAME COLLECTION OPPORTUNITY: Customer's name is NOT yet known. Acknowledge their requirements/budget warmly and ask for their name naturally to personalize: "Got it, I'll focus on ${state.preferredType ?? 'options'} around ${state.preferredLocation ?? 'your preferred area'} within your budget. By the way, may I know your name so I can personalize our conversation?"`
     : `\n\nCUSTOMER NAME ALREADY KNOWN: Customer's name is "${state.customerName}". Address them by name and do NOT ask for their name again.`;
 
   const messages = [

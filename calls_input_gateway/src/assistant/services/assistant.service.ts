@@ -223,8 +223,11 @@ export class AssistantService {
       ? {
           ...agentPlain,
           currentLanguage: agentPlain.language || session.language,
+          greeting: agentPlain.greeting || session.config.greeting,
         }
-      : null;
+      : session.config.greeting
+        ? ({ greeting: session.config.greeting, currentLanguage: session.language } as any)
+        : null;
 
     session.agentMongoId = agentPlain?._id ? String(agentPlain._id) : undefined;
     // Telephony setups carry no agentId of their own — adopt the resolved

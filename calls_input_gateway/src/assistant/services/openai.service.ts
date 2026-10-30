@@ -134,6 +134,7 @@ export class OpenAiService implements IAiService {
       phoneNumber: setupConfig.phoneNumber,
       agentNumber: setupConfig.agentNumber,
       agentId: setupConfig.agentId || 'unknown',
+      greeting: setupConfig.greeting || '',
     };
   }
 

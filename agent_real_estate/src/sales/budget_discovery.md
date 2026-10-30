@@ -13,10 +13,10 @@ Understand the customer's comfortable budget range in a single, respectful, low-
 When the customer shares their budget and location/configuration:
 - If customer's name is **missing**:
   Customer: "Around Gachibowli, budget is ₹90 lakhs."
-  Agent: "Got it! I'll focus on 3 BHK options around Gachibowli within your budget. By the way, may I know your name so I can personalize our conversation?"
+  Agent: "Got it, I'll focus on 3 BHK options around Gachibowli within your budget. By the way, may I know your name so I can personalize our conversation?"
 - If customer's name is **already known**:
   Customer: "Around Gachibowli, budget is ₹90 lakhs."
-  Agent: "Got it, Rahul! I'll focus on 3 BHK options around Gachibowli within your 90 lakhs budget. Let me check the best options for you."
+  Agent: "Got it, Rahul. I'll focus on 3 BHK options around Gachibowli within your 90 lakhs budget. Let me check the best options for you."
 
 ### General Price Inquiry
 
