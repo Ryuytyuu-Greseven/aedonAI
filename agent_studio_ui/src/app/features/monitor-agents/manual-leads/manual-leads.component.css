@@ -108,6 +108,10 @@
   font-weight: 600;
 }
 
+.manual-add-row {
+  margin-top: 8px;
+}
+
 /* ---------- Call a number ---------- */
 .manual-dial {
   display: flex;

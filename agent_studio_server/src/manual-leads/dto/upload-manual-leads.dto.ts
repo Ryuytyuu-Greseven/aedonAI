@@ -2,7 +2,7 @@ import { ArrayMinSize, IsArray, IsObject } from 'class-validator';
 
 export class UploadManualLeadsDto {
   /**
-   * `{ fullName, phoneNumber, email }` rows from the reviewed sheet. Each row
+   * `{ fullName?, phoneNumber, email? }` rows (uploaded or typed in). Each row
    * is validated on its own so one bad row is rejected without failing the rest.
    */
   @IsArray()

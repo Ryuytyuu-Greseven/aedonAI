@@ -1,4 +1,4 @@
-import { Component, Input, OnChanges, computed, inject, signal } from '@angular/core';
+import { Component, ElementRef, Input, OnChanges, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { ManualLead, ManualLeadInput } from '../../../core/models/lead.model';
 import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
@@ -8,6 +8,7 @@ import { extractErrorMessage } from '../../../core/utils/http-error.util';
 import {
   LEAD_SHEET_TEMPLATE_CSV,
   LeadSheetRow,
+  isBlankLeadRow,
   leadRowErrors,
   parseLeadSheet,
   resolveLeadPhone,
@@ -27,9 +28,11 @@ interface DraftRow extends LeadSheetRow {
   serverErrors: string[];
 }
 
+type ReviewMode = 'upload' | 'typed';
+
 /**
- * Manual leads for one agent: upload a sheet (reviewed and fixed in a table before it's sent),
- * call a typed-in number, and call stored leads. Calls go through meta-adapter, whose cron also
+ * Manual leads for one agent: upload a sheet or type leads in (both reviewed and fixed in one
+ * table before they're sent), call a typed-in number, and call stored leads. Calls go through meta-adapter, whose cron also
  * dials new manual leads once within a week, like Page leads.
  */
 @Component({
@@ -43,6 +46,7 @@ export class ManualLeadsComponent implements OnChanges {
   private readonly leadService = inject(LeadService);
   private readonly confirmDialog = inject(ConfirmDialogService);
   private readonly toast = inject(ToastService);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   @Input({ required: true }) agentId!: string;
 
@@ -60,10 +64,14 @@ export class ManualLeadsComponent implements OnChanges {
   readonly parsing = signal(false);
   readonly drafts = signal<DraftRow[]>([]);
   readonly showReview = signal(false);
+  /** How the table was opened — only changes its title and copy. */
+  readonly reviewMode = signal<ReviewMode>('upload');
   readonly submitting = signal(false);
   /** Outcome of the last submit, shown above the rows that still need fixing. */
   readonly lastUpload = signal<{ inserted: number; duplicates: number } | null>(null);
-  readonly invalidCount = computed(() => this.drafts().filter((row) => this.rowErrors(row).length > 0).length);
+  /** Rows that will be sent; fully blank ones are skipped. */
+  readonly filledDrafts = computed(() => this.drafts().filter((row) => !isBlankLeadRow(row)));
+  readonly invalidCount = computed(() => this.filledDrafts().filter((row) => this.rowErrors(row).length > 0).length);
   private nextKey = 0;
 
   // Call a number
@@ -130,7 +138,8 @@ export class ManualLeadsComponent implements OnChanges {
         this.toast.error('The sheet has a header row but no leads');
         return;
       }
-      this.drafts.set(rows.map((row) => ({ ...row, key: this.nextKey++, dialCode: '', serverErrors: [] })));
+      this.drafts.set(rows.map((row) => this.newDraft(row)));
+      this.reviewMode.set('upload');
       this.lastUpload.set(null);
       this.showReview.set(true);
     } catch (error) {
@@ -140,7 +149,30 @@ export class ManualLeadsComponent implements OnChanges {
     }
   }
 
+  /** Opens the review table empty, to type leads in. */
+  openTypedLeads(): void {
+    this.drafts.set([this.newDraft()]);
+    this.reviewMode.set('typed');
+    this.lastUpload.set(null);
+    this.showReview.set(true);
+  }
+
+  /** Appends an empty row and focuses its phone field (works for uploads too). */
+  addRow(): void {
+    this.drafts.update((rows) => [...rows, this.newDraft()]);
+    setTimeout(() => {
+      const phones = this.host.nativeElement.querySelectorAll<HTMLInputElement>('.manual-review-table input[aria-label="Phone"]');
+      phones[phones.length - 1]?.focus();
+    });
+  }
+
+  private newDraft(row: LeadSheetRow = { fullName: '', phone: '', email: '' }): DraftRow {
+    return { ...row, key: this.nextKey++, dialCode: '', serverErrors: [] };
+  }
+
+  /** Blank rows aren't flagged — they're just left out on submit. */
   rowErrors(row: DraftRow): string[] {
+    if (isBlankLeadRow(row) && row.serverErrors.length === 0) return [];
     return [...leadRowErrors(row, row.dialCode), ...row.serverErrors];
   }
 
@@ -151,7 +183,7 @@ export class ManualLeadsComponent implements OnChanges {
 
   removeRow(row: DraftRow): void {
     this.drafts.update((rows) => rows.filter((r) => r.key !== row.key));
-    if (this.drafts().length === 0) this.closeReview();
+    if (this.drafts().length === 0 && this.reviewMode() === 'upload') this.closeReview();
   }
 
   closeReview(): void {
@@ -161,11 +193,11 @@ export class ManualLeadsComponent implements OnChanges {
   }
 
   /**
-   * Sends every row (all pass the local checks). Added and duplicate rows leave the table; rows the
-   * server rejects stay with its reasons, so only those are fixed and sent again.
+   * Sends every non-blank row (all pass the local checks). Added and duplicate rows leave the
+   * table; rows the server rejects stay with its reasons, so only those are fixed and sent again.
    */
   submitDrafts(): void {
-    const rows = this.drafts();
+    const rows = this.filledDrafts();
     if (rows.length === 0 || this.invalidCount() > 0 || this.submitting()) return;
 
     const payload: ManualLeadInput[] = rows.map((row) => ({

@@ -1,6 +1,6 @@
 <div class="manual-toolbar">
   <p class="text-muted text-sm">
-    Upload leads from another source. New leads are called once automatically within a week of being added.
+    Upload or type in leads from another source. New leads are called once automatically within a week of being added.
   </p>
   <div class="manual-toolbar-actions">
     <button type="button" class="btn btn-secondary btn-sm" (click)="downloadTemplate()">
@@ -8,6 +8,9 @@
     </button>
     <button type="button" class="btn btn-secondary btn-sm" (click)="openDial()">
       <i class="fa-solid fa-phone" aria-hidden="true"></i> Call a number
+    </button>
+    <button type="button" class="btn btn-secondary btn-sm" (click)="openTypedLeads()">
+      <i class="fa-solid fa-user-plus" aria-hidden="true"></i> Add leads
     </button>
     <label class="btn btn-primary btn-sm manual-upload" [class.manual-upload-busy]="parsing()">
       @if (parsing()) {
@@ -38,7 +41,7 @@
   </div>
 } @else if (leads().length === 0) {
   <div class="empty-state">
-    <p>No manual leads yet. Upload an .xlsx or .csv with Name, Phone and Email columns, or call a number directly.</p>
+    <p>No manual leads yet. Upload an .xlsx or .csv with a Phone column (Name and Email are optional), add leads by hand, or call a number directly.</p>
   </div>
 } @else {
   <div class="lead-list">
@@ -101,11 +104,13 @@
 <!-- Review an uploaded sheet -->
 @if (showReview()) {
   <app-modal
-    [title]="lastUpload() ? 'Fix rejected rows' : 'Review leads'"
+    [title]="lastUpload() ? 'Fix rejected rows' : reviewMode() === 'typed' ? 'Add leads' : 'Review leads'"
     [subtitle]="
       lastUpload()
         ? 'These rows were not added. Fix them and submit again — only these are sent.'
-        : 'Check and edit the rows before adding them. Numbers without a country code need one picked.'
+        : reviewMode() === 'typed'
+          ? 'Only the phone number is required. Blank rows are skipped.'
+          : 'Check and edit the rows before adding them. Numbers without a country code need one picked.'
     "
     icon="fa-table-list"
     [width]="1040"
@@ -131,12 +136,12 @@
           </tr>
         </thead>
         <tbody>
-          @for (row of drafts(); track row.key; let i = $index) {
+          @for (row of drafts(); track row.key; let i = $index, last = $last) {
             @let errors = rowErrors(row);
             <tr [class.manual-row-invalid]="errors.length > 0">
               <td class="text-muted">{{ i + 1 }}</td>
               <td>
-                <input class="input input-sm" [ngModel]="row.fullName" (ngModelChange)="updateRow(row, { fullName: $event })" aria-label="Name" />
+                <input class="input input-sm" [ngModel]="row.fullName" (ngModelChange)="updateRow(row, { fullName: $event })" aria-label="Name" placeholder="Optional" />
               </td>
               <td>
                 <select class="select select-sm" [ngModel]="row.dialCode" (ngModelChange)="updateRow(row, { dialCode: $event })" aria-label="Country">
@@ -147,10 +152,18 @@
                 </select>
               </td>
               <td>
-                <input class="input input-sm input-mono" [ngModel]="row.phone" (ngModelChange)="updateRow(row, { phone: $event })" aria-label="Phone" />
+                <input class="input input-sm input-mono" [ngModel]="row.phone" (ngModelChange)="updateRow(row, { phone: $event })" aria-label="Phone" placeholder="Required" />
               </td>
               <td>
-                <input class="input input-sm" type="email" [ngModel]="row.email" (ngModelChange)="updateRow(row, { email: $event })" aria-label="Email" />
+                <input
+                  class="input input-sm"
+                  type="email"
+                  [ngModel]="row.email"
+                  (ngModelChange)="updateRow(row, { email: $event })"
+                  (keydown.enter)="last && addRow()"
+                  aria-label="Email"
+                  placeholder="Optional"
+                />
               </td>
               <td>
                 <button type="button" class="btn btn-ghost btn-sm" title="Remove row" (click)="removeRow(row)" [disabled]="submitting()">
@@ -168,21 +181,29 @@
         </tbody>
       </table>
     </div>
+    <button type="button" class="btn btn-ghost btn-sm manual-add-row" [disabled]="submitting()" (click)="addRow()">
+      <i class="fa-solid fa-plus" aria-hidden="true"></i> Add row
+    </button>
 
     <div modal-footer class="manual-review-footer">
       <span class="text-muted text-sm">
-        {{ drafts().length }} row{{ drafts().length === 1 ? '' : 's' }}
+        {{ filledDrafts().length }} lead{{ filledDrafts().length === 1 ? '' : 's' }}
         @if (invalidCount() > 0) {
           · <span class="manual-invalid-count">{{ invalidCount() }} to fix</span>
         }
       </span>
       <div class="flex gap-sm">
         <button type="button" class="btn btn-secondary" [disabled]="submitting()" (click)="closeReview()">Cancel</button>
-        <button type="button" class="btn btn-primary" [disabled]="invalidCount() > 0 || submitting()" (click)="submitDrafts()">
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="filledDrafts().length === 0 || invalidCount() > 0 || submitting()"
+          (click)="submitDrafts()"
+        >
           @if (submitting()) {
             <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Adding…
           } @else {
-            Add {{ drafts().length }} lead{{ drafts().length === 1 ? '' : 's' }}
+            Add {{ filledDrafts().length }} lead{{ filledDrafts().length === 1 ? '' : 's' }}
           }
         </button>
       </div>

@@ -23,20 +23,15 @@ export function normalizeLeadPhone(raw: unknown): string | null {
   return null;
 }
 
-/**
- * Validates one uploaded row. Name, phone and email are required for uploads;
- * `requireEmail: false` (and an optional name) is for a dialled number.
- */
-export function validateManualLead(
-  raw: unknown,
-  options: { requireName?: boolean; requireEmail?: boolean } = {},
-): { lead: ManualLeadFields; errors: string[] } {
-  const { requireName = true, requireEmail = true } = options;
+/** Validates one manual lead row. Only the phone number is required. */
+export function validateManualLead(raw: unknown): {
+  lead: ManualLeadFields;
+  errors: string[];
+} {
   const row = (raw ?? {}) as Record<string, unknown>;
   const errors: string[] = [];
 
   const fullName = typeof row.fullName === 'string' ? row.fullName.trim() : '';
-  if (!fullName && requireName) errors.push('Name is required');
   if (fullName.length > MAX_NAME_LENGTH) {
     errors.push(`Name must be at most ${MAX_NAME_LENGTH} characters`);
   }
@@ -54,8 +49,7 @@ export function validateManualLead(
   }
 
   const email = typeof row.email === 'string' ? row.email.trim() : '';
-  if (!email && requireEmail) errors.push('Email is required');
-  else if (email && !EMAIL.test(email)) errors.push('Email is not valid');
+  if (email && !EMAIL.test(email)) errors.push('Email is not valid');
 
   return {
     lead: { fullName, phoneNumber: phoneNumber ?? rawPhone, email },

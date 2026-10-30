@@ -44,12 +44,15 @@ describe('normalizeLeadPhone', () => {
 });
 
 describe('validateManualLead', () => {
-  it('requires name, phone and email for uploads', () => {
-    expect(validateManualLead({}).errors).toEqual([
-      'Name is required',
-      'Phone number is required',
-      'Email is required',
-    ]);
+  it('requires only the phone number', () => {
+    expect(validateManualLead({}).errors).toEqual(['Phone number is required']);
+    expect(validateManualLead({ phoneNumber: '9876543210' })).toEqual({
+      lead: { fullName: '', phoneNumber: '+919876543210', email: '' },
+      errors: [],
+    });
+  });
+
+  it('still checks an email when one is given', () => {
     expect(validateManualLead(row('9876543210', 'A', 'nope')).errors).toEqual([
       'Email is not valid',
     ]);

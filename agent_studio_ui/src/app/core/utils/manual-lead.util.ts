@@ -16,7 +16,7 @@ const HEADER_ALIASES: Record<keyof LeadSheetRow, string[]> = {
 };
 
 /** CSV the "Download template" link hands out. */
-export const LEAD_SHEET_TEMPLATE_CSV = 'Name,Phone,Email\nAsha Rao,9876543210,asha@example.com\n';
+export const LEAD_SHEET_TEMPLATE_CSV = 'Name,Phone,Email\nAsha Rao,9876543210,asha@example.com\n,+14155550199,\n';
 
 /**
  * E.164 for a typed number — mirrors the server. With a dial code chosen it's prefixed (a leading
@@ -34,16 +34,19 @@ export function resolveLeadPhone(raw: string, dialCode = ''): string | null {
   return /^\d{10}$/.test(cleaned) ? `+91${cleaned}` : null;
 }
 
-/** Same checks the server runs; empty when the row can be submitted. */
+/** A row with nothing typed in it — skipped on submit rather than flagged. */
+export function isBlankLeadRow(row: LeadSheetRow): boolean {
+  return !row.fullName.trim() && !row.phone.trim() && !row.email.trim();
+}
+
+/** Same checks the server runs; only the phone is required. Empty when the row can be submitted. */
 export function leadRowErrors(row: LeadSheetRow, dialCode = ''): string[] {
   const errors: string[] = [];
-  if (!row.fullName.trim()) errors.push('Name is required');
   if (!row.phone.trim()) errors.push('Phone is required');
   else if (!resolveLeadPhone(row.phone, dialCode)) {
     errors.push(dialCode ? 'Phone is not valid for this country' : 'Pick a country — only 10-digit numbers default to India');
   }
-  if (!row.email.trim()) errors.push('Email is required');
-  else if (!EMAIL.test(row.email.trim())) errors.push('Email is not valid');
+  if (row.email.trim() && !EMAIL.test(row.email.trim())) errors.push('Email is not valid');
   return errors;
 }
 
@@ -56,17 +59,16 @@ export async function parseLeadSheet(file: File): Promise<LeadSheetRow[]> {
   const headers = rows[0].map((h) => h.toLowerCase().replace(/[\s_\-.]/g, ''));
   const column = (key: keyof LeadSheetRow) => headers.findIndex((h) => HEADER_ALIASES[key].includes(h));
   const columns = { fullName: column('fullName'), phone: column('phone'), email: column('email') };
-  const missing = Object.entries(columns)
-    .filter(([, index]) => index === -1)
-    .map(([key]) => ({ fullName: 'Name', phone: 'Phone', email: 'Email' })[key]);
-  if (missing.length) {
-    throw new Error(`The first row needs ${missing.join(', ')} column${missing.length > 1 ? 's' : ''} — see the template`);
+  // Name and Email columns are optional; only Phone is required.
+  if (columns.phone === -1) {
+    throw new Error('The first row needs a Phone column — see the template');
   }
 
+  const cell = (cells: string[], index: number) => (index === -1 ? '' : (cells[index] ?? '').trim());
   return rows.slice(1).map((cells) => ({
-    fullName: (cells[columns.fullName] ?? '').trim(),
-    phone: (cells[columns.phone] ?? '').trim(),
-    email: (cells[columns.email] ?? '').trim(),
+    fullName: cell(cells, columns.fullName),
+    phone: cell(cells, columns.phone),
+    email: cell(cells, columns.email),
   }));
 }
 
