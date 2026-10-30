@@ -50,7 +50,8 @@ export async function Presentation_Node(state: SalesState) {
         .describe(
           'Conversational response to the customer, following the phase instructions in the system prompt. ' +
           'If the customer requests brochures or floor plans, offer to send via WhatsApp or ask for their email address. ' +
-          'If customer just gave their name, acknowledge warmly: "Nice to meet you, [Name]!".',
+          'If customer just gave their name, acknowledge warmly: "Nice to meet you, [Name].". ' +
+          'Maintain a calm, steady vocal delivery without exclamation marks.',
         ),
     }),
     { name: 'extract_presentation' }

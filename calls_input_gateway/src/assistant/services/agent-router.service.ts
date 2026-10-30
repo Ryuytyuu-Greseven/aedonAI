@@ -74,8 +74,14 @@ export class AgentRouterService {
           ? (fetched as any).toObject()
           : fetched;
       agentDetails = fetchedPlain
-        ? { ...fetchedPlain, currentLanguage: language }
-        : null;
+        ? {
+            ...fetchedPlain,
+            currentLanguage: language,
+            greeting: fetchedPlain.greeting || config.greeting,
+          }
+        : config.greeting
+          ? ({ greeting: config.greeting, currentLanguage: language } as any)
+          : null;
     }
     const effectiveLanguage = agentDetails?.currentLanguage || language;
 

@@ -67,9 +67,9 @@ export async function Discovery_Node(state: SalesState) {
         .string()
         .describe(
           'Conversational spoken response — acknowledge requirements warmly and ask ONE natural next question. ' +
-          'If the customer just shared their name, acknowledge warmly: "Nice to meet you, [Name]!". ' +
+          'If the customer just shared their name, acknowledge warmly: "Nice to meet you, [Name].". ' +
           'If requirements (like BHK/location) are emerging and customer name is still missing, you may ask naturally: "By the way, may I know your name so I can personalize our conversation?". ' +
-          'Never ask for phone or email unless arranging a site visit, callback, or brochure delivery.',
+          'Never ask for phone or email unless arranging a site visit, callback, or brochure delivery. Maintain a calm, steady vocal tone without exclamation marks.',
         ),
     }),
     { name: 'extract_preferences' }

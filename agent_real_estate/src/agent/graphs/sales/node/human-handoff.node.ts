@@ -31,7 +31,8 @@ export async function Human_Handoff_Node(state: SalesState) {
           'Spoken response — connect with sales specialist. ' +
           'If preferred contact method (phone call vs WhatsApp) is unknown, ask their preference. ' +
           'If phone number is missing and they request a call, ask for their preferred number. ' +
-          'If details are already known, confirm without re-asking: "Certainly! I\'ll have a team member reach out on this number."',
+          'If details are already known, confirm without re-asking: "Certainly, I\'ll have a team member reach out on this number.". ' +
+          'Maintain a calm, steady vocal delivery without exclamation marks or shouting.',
         ),
     }),
     { name: 'human_handoff_extract' }

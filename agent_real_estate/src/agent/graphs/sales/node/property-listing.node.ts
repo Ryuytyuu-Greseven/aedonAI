@@ -51,9 +51,10 @@ export async function Property_Listing_Node(state: SalesState) {
         .string()
         .describe(
           'Spoken response to user. ' +
-          'If customer just shared their name (or if name was just introduced), acknowledge warmly: "Nice to meet you, [Name]!". ' +
+          'If customer just shared their name (or if name was just introduced), acknowledge warmly: "Nice to meet you, [Name].". ' +
           'Answer their question directly (e.g. prioritizing ready-to-move properties), present matching options, ' +
-          'and offer next steps (e.g. "If you\'d like to arrange a visit or get a callback, I can collect your contact details when you\'re ready.").',
+          'and offer next steps (e.g. "If you\'d like to arrange a visit or get a callback, I can collect your contact details when you\'re ready."). ' +
+          'Maintain a calm, steady vocal delivery without exclamation marks or shouting.',
         ),
     }),
     { name: 'property_listing_extract' }

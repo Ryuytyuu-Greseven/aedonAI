@@ -40,6 +40,8 @@ export interface UserConfig {
    * *template*.
    */
   agentId: string;
+  /** Configured initial opening greeting from client setup or agent doc. */
+  greeting?: string;
 }
 
 /**
