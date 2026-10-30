@@ -68,6 +68,7 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
         let routedNode: string | null = null;
         let routedAtMs: number | null = null;
         let firstReplyAtMs: number | null = null;
+        let callEnded = false;
         fillers.start();
 
         try {
@@ -76,6 +77,10 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
               routedNode ??= event.node;
               routedAtMs ??= Date.now() - turnStartedAt;
               fillers.onRoute(event.node);
+              continue;
+            }
+            if (event.kind === 'end_call') {
+              callEnded = true;
               continue;
             }
             fillers.onReply();
@@ -95,7 +100,10 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
 
         if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({ type: 'done' }));
+          client.send(JSON.stringify({ type: 'done', endCall: callEnded }));
+          if (callEnded) {
+            client.send(JSON.stringify({ type: 'end_call' }));
+          }
         }
       } catch (err: any) {
         this.logger.error('Agent error:', err.message);

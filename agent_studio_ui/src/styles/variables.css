@@ -1,4 +1,4 @@
-/* Aedon AI design tokens — shared palette with the marketing site (front_face).
+/* Lyre AI design tokens — shared palette with the marketing site (front_face).
    Dark is the default; [data-theme='light'] overrides only what changes.
    Token names are kept stable because every component stylesheet reads them. */
 :root,

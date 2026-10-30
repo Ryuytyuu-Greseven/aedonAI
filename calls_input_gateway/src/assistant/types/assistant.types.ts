@@ -51,6 +51,7 @@ export interface UserConfig {
 export interface AgentTextChunk {
   text: string;
   filler?: boolean;
+  endCall?: boolean;
 }
 
 export interface SessionState {
@@ -62,6 +63,7 @@ export interface SessionState {
   isGenerating: boolean;
   isProcessingQueue: boolean;
   turnInterrupted: boolean;
+  endCallTriggered?: boolean;
   /** True while this turn has spoken only filler — the reply hasn't started. */
   fillerOnly: boolean;
   /**

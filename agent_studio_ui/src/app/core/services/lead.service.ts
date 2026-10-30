@@ -1,6 +1,16 @@
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { AgentLead, LeadsPage, LeadsQuery, PageLead, PageLeadCallResult } from '../models/lead.model';
+import {
+  AgentLead,
+  LeadsPage,
+  LeadsQuery,
+  ManualLead,
+  ManualLeadCallResult,
+  ManualLeadInput,
+  ManualLeadsUploadResult,
+  PageLead,
+  PageLeadCallResult,
+} from '../models/lead.model';
 import { ApiService } from '../http/api.service';
 
 @Injectable({ providedIn: 'root' })
@@ -8,8 +18,8 @@ export class LeadService {
   private readonly api = inject(ApiService);
 
   /**
-   * Real `GET /api/agents/:id/leads` (agents-lead.md) — nothing writes to `agent_leads`
-   * server-side yet, so this returns empty for every agent for now. That's expected, not an error.
+   * Real `GET /api/agents/:id/leads` (agents-lead.md) — every source but manual leads, which
+   * have their own view. Nothing else writes to `agent_leads` yet, so this is usually empty.
    */
   getAgentLeads(agentId: string, query: LeadsQuery = {}): Observable<LeadsPage<AgentLead>> {
     return this.api.getAgentLeads(agentId, query);
@@ -29,5 +39,23 @@ export class LeadService {
    */
   callPageLead(leadgenId: string): Observable<PageLeadCallResult> {
     return this.api.callMetaLead(leadgenId);
+  }
+
+  /** Manual leads (uploaded or dialled) — `GET /api/agents/:id/leads?source=manual`. */
+  getManualLeads(agentId: string, query: LeadsQuery = {}): Observable<LeadsPage<ManualLead>> {
+    return this.api.getManualLeads(agentId, query);
+  }
+
+  /** Adds reviewed sheet rows; invalid rows come back in `rejected`, today's repeats in `duplicates`. */
+  uploadManualLeads(agentId: string, leads: ManualLeadInput[]): Observable<ManualLeadsUploadResult> {
+    return this.api.uploadManualLeads(agentId, leads);
+  }
+
+  callManualLead(agentId: string, leadId: string): Observable<ManualLeadCallResult> {
+    return this.api.callManualLead(agentId, leadId);
+  }
+
+  dialManualLead(agentId: string, phoneNumber: string, fullName?: string): Observable<ManualLeadCallResult> {
+    return this.api.dialManualLead(agentId, { phoneNumber, ...(fullName ? { fullName } : {}) });
   }
 }

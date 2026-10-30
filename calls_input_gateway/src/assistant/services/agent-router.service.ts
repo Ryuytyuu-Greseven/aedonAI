@@ -149,7 +149,13 @@ export class AgentRouterService {
           if (!isActive()) break;
           agentResponse += item.text;
           yield { text: item.text };
+        } else if (item.type === 'end_call') {
+          yield { text: '', endCall: true };
+          break;
         } else if (item.type === 'done') {
+          if ((item as any).endCall) {
+            yield { text: '', endCall: true };
+          }
           break;
         } else if (item.type === 'error') {
           throw new Error(item.message ?? 'Domain agent error');

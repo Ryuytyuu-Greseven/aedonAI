@@ -17,6 +17,7 @@ describe('AgentsService knowledge base linking', () => {
     {} as any,
     {} as any,
     {} as any,
+    {} as any,
   );
   const dto = {
     agent_name: 'Sales',

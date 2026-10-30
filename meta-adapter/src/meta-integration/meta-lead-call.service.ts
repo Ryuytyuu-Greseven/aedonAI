@@ -14,6 +14,7 @@ import { ConnectedPagesRepository } from '../repos/connected-pages.repository';
 import { MetaLeadsRepository } from '../repos/meta-leads.repository';
 import { AgentDocument } from '../schemas/agent.schema';
 import { MetaLead } from '../schemas/meta-lead.schema';
+import { CallsGatewayClient } from './calls-gateway.client';
 
 export interface LeadCallRunResult {
   initiated: number;
@@ -42,6 +43,7 @@ export class MetaLeadCallService {
     private readonly connectedPagesRepository: ConnectedPagesRepository,
     private readonly agentsRepository: AgentsRepository,
     private readonly metaLeadsRepository: MetaLeadsRepository,
+    private readonly callsGateway: CallsGatewayClient,
   ) { }
 
   async dispatchPendingCalls(): Promise<LeadCallRunResult> {
@@ -159,26 +161,7 @@ export class MetaLeadCallService {
     return agent;
   }
 
-  /** POST {CALLS_GATEWAY_URL}/twilio/call — returns the provider's call id. */
-  private async placeCall(gatewayUrl: string, lead: MetaLead, agent: AgentDocument): Promise<string> {
-    const res = await fetch(`${gatewayUrl}/twilio/call`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        // The gateway rejects outbound-call requests without its internal key
-        'x-internal-api-key': this.configService.get<string>('CALLS_GATEWAY_API_KEY') ?? '',
-      },
-      body: JSON.stringify({
-        to: lead.phoneNumber,
-        from: agent.phone_number,
-        business: agent.base_template_id,
-        agentId: agent.agent_id,
-      }),
-    });
-
-    const data: any = await res.json().catch(() => ({}));
-    if (!res.ok) throw new Error(`Gateway responded ${res.status}: ${JSON.stringify(data)}`);
-    if (!data.callSid) throw new Error(`Gateway returned no callSid: ${JSON.stringify(data)}`);
-    return data.callSid;
+  private placeCall(gatewayUrl: string, lead: MetaLead, agent: AgentDocument): Promise<string> {
+    return this.callsGateway.placeCall(gatewayUrl, lead.phoneNumber, agent);
   }
 }

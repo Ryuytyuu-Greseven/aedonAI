@@ -4,11 +4,27 @@
     <div>
       <span class="page-eyebrow"><i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i> Telephony · Numbers</span>
       <h1>Phone numbers</h1>
-      <p class="text-muted">Dedicated mobile numbers available to assign to your agents, by country.</p>
+      <p class="text-muted">Dedicated US and India numbers to assign to your agents.</p>
     </div>
-    <button type="button" class="btn btn-primary page-cta" (click)="openRequestForm()">
-      <i class="fa-solid fa-phone-volume" aria-hidden="true"></i> Request number
-    </button>
+    @if (isAdmin()) {
+      <div class="pn-head-actions">
+        @if (provisioningCount() > 0) {
+          <button
+            type="button"
+            class="btn btn-secondary page-cta"
+            [disabled]="reconciling()"
+            title="Check purchases stuck in Provisioning against the provider account"
+            (click)="reconcile()"
+          >
+            <i class="fa-solid fa-arrows-rotate" [class.fa-spin]="reconciling()" aria-hidden="true"></i>
+            {{ reconciling() ? 'Reconciling…' : 'Reconcile (' + provisioningCount() + ')' }}
+          </button>
+        }
+        <button type="button" class="btn btn-primary page-cta" (click)="openBuyForm()">
+          <i class="fa-solid fa-cart-shopping" aria-hidden="true"></i> Buy number
+        </button>
+      </div>
+    }
   </header>
 
   <!-- Stats -->
@@ -85,8 +101,8 @@
         <span role="columnheader" class="hide-sm">Environment</span>
         <span role="columnheader" class="hide-sm">Assigned agent</span>
         <span role="columnheader">Status</span>
-        <span role="columnheader">Requested</span>
-        <span role="columnheader" class="col-end">Copy</span>
+        <span role="columnheader">Added</span>
+        <span role="columnheader" class="col-end">Actions</span>
       </div>
 
       @if (loading()) {
@@ -115,10 +131,14 @@
             <span><i class="fa-solid fa-sim-card"></i></span>
           </div>
           <h3>No phone numbers yet</h3>
-          <p class="text-muted">Request a number to start assigning dedicated lines to your agents.</p>
-          <button type="button" class="btn btn-primary" (click)="openRequestForm()">
-            <i class="fa-solid fa-phone-volume" aria-hidden="true"></i> Request your first number
-          </button>
+          @if (isAdmin()) {
+            <p class="text-muted">Buy a number to start assigning dedicated lines to your agents.</p>
+            <button type="button" class="btn btn-primary" (click)="openBuyForm()">
+              <i class="fa-solid fa-cart-shopping" aria-hidden="true"></i> Buy your first number
+            </button>
+          } @else {
+            <p class="text-muted">Ask an admin to buy a number for your agents.</p>
+          }
         </div>
       } @else if (filtered().length === 0) {
         <div class="list-empty list-empty-compact">
@@ -129,7 +149,7 @@
         </div>
       } @else {
         @for (number of pagedNumbers(); track number.id; let i = $index) {
-          <div class="list-row" role="row" [class.list-row-muted]="number.status === 'Disabled'" [style.--i]="i">
+          <div class="list-row" role="row" [class.list-row-muted]="number.status === 'Disabled' || number.status === 'Released'" [style.--i]="i">
             <div class="identity-cell" role="cell">
               <span class="pn-flag" [attr.data-env]="number.environmentType" aria-hidden="true">{{ countryFor(number.country_code)?.flag ?? '🌐' }}</span>
               <div class="identity-text">
@@ -138,7 +158,12 @@
               </div>
             </div>
 
-            <div class="pn-country hide-sm" role="cell">{{ phoneNumberCountryName(number) }}</div>
+            <div class="pn-country hide-sm" role="cell">
+              <span>{{ phoneNumberCountryName(number) }}</span>
+              @if (number.number_type) {
+                <span class="pn-number-type">{{ phoneNumberTypeLabel(number.number_type) }}</span>
+              }
+            </div>
 
             <div class="hide-sm" role="cell">
               <span class="pn-env" [attr.data-env]="number.environmentType">
@@ -156,6 +181,11 @@
             </div>
 
             <div class="status-cell" role="cell">
+              @if (number.status === 'Provisioning') {
+                <span class="pn-status-note"><i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Provisioning</span>
+              } @else if (number.status === 'Released') {
+                <span class="pn-status-note"><i class="fa-solid fa-box-archive" aria-hidden="true"></i> Released</span>
+              } @else {
               <button
                 type="button"
                 role="switch"
@@ -170,10 +200,11 @@
                 <span class="status-switch-knob"></span>
               </button>
               <span class="status-cell-label">{{ number.status }}</span>
+              }
             </div>
 
             <div class="date-cell" role="cell">
-              <i class="fa-regular fa-calendar" aria-hidden="true"></i> {{ formatDate(number.created_at) }}
+              <i class="fa-regular fa-calendar" aria-hidden="true"></i> {{ formatDate(number.purchased_at ?? number.created_at) }}
             </div>
 
             <div class="row-actions" role="cell">
@@ -181,6 +212,18 @@
                 <i class="fa-regular fa-copy" aria-hidden="true"></i>
                 <span class="icon-action-tip">Copy number</span>
               </button>
+              @if (isAdmin() && !isLocked(number)) {
+                <button
+                  type="button"
+                  class="icon-action icon-action-danger"
+                  [attr.aria-label]="'Release ' + phoneNumberE164(number)"
+                  [disabled]="releasingId() === number.id"
+                  (click)="releaseNumber(number)"
+                >
+                  <i class="fa-solid" [class.fa-trash-can]="releasingId() !== number.id" [class.fa-circle-notch]="releasingId() === number.id" [class.fa-spin]="releasingId() === number.id" aria-hidden="true"></i>
+                  <span class="icon-action-tip">{{ number.assigned_agent ? 'Unassign agent to release' : 'Release number' }}</span>
+                </button>
+              }
             </div>
           </div>
         }
@@ -204,77 +247,177 @@
   </section>
 </div>
 
-<!-- Request number -->
-@if (showRequestForm) {
+<!-- Buy number (admin only) -->
+@if (showBuyForm) {
   <app-modal
-    title="Request a phone number"
-    subtitle="Add a dedicated line you can assign to an agent."
-    icon="fa-phone-volume"
-    [width]="540"
-    (closed)="cancelRequest()"
+    [title]="buyStep() === 'search' ? 'Buy a phone number' : 'Confirm purchase'"
+    [subtitle]="buyStep() === 'search'
+      ? 'Search available numbers in ' + buyCountry().name + '.'
+      : 'This number is billed monthly until it is released.'"
+    icon="fa-cart-shopping"
+    [width]="buyStep() === 'search' ? 640 : 540"
+    (closed)="closeBuyForm()"
   >
-    <div class="preview-card">
-      <span class="pn-flag pn-flag-lg" [attr.data-env]="requestEnvironmentType || 'staging'" aria-hidden="true">
-        {{ countryFor(requestCountryCode)?.flag ?? '🌐' }}
-      </span>
-      <div>
-        <strong class="pn-number">{{ requestCountryCode || '+··' }} {{ requestNumber.trim() || '··········' }}</strong>
-        <span>{{ requestLabel.trim() || 'Untitled line' }}{{ requestEnvironmentType ? ' · ' + phoneNumberEnvironmentLabel(requestEnvironmentType) : '' }}</span>
+    @if (buyStep() === 'search') {
+      <div class="form-group">
+        <span class="label">Country</span>
+        <div class="segmented pn-buy-segmented" role="tablist" aria-label="Country">
+          @for (country of buyCountries; track country.isoCountry) {
+            <button
+              type="button"
+              role="tab"
+              [attr.aria-selected]="buyCountry().isoCountry === country.isoCountry"
+              [class.segmented-on]="buyCountry().isoCountry === country.isoCountry"
+              (click)="setBuyCountry(country.isoCountry)"
+            >
+              {{ country.flag }} {{ country.name }}
+            </button>
+          }
+        </div>
       </div>
-    </div>
 
-    <div class="form-group">
-      <span class="label">Environment</span>
-      <div class="pn-env-options" role="radiogroup" aria-label="Environment">
-        @for (env of environmentTypes; track env) {
-          <label class="pn-env-option" [class.pn-env-option-on]="requestEnvironmentType === env" [attr.data-env]="env">
-            <input type="radio" name="request-environment" [value]="env" [(ngModel)]="requestEnvironmentType" />
-            <i class="fa-solid" [class.fa-rocket]="env === 'production'" [class.fa-flask]="env === 'staging'" aria-hidden="true"></i>
-            <span>
-              <strong>{{ phoneNumberEnvironmentLabel(env) }}</strong>
-              <small>{{ env === 'production' ? 'Live customer calls' : 'Testing before launch' }}</small>
-            </span>
-          </label>
+      @if (buyCountry().numberTypes.length > 1) {
+      <div class="form-group">
+        <span class="label">Number type</span>
+        <div class="segmented pn-buy-segmented" role="tablist" aria-label="Number type">
+          @for (type of buyCountry().numberTypes; track type) {
+            <button type="button" role="tab" [attr.aria-selected]="buyType === type" [class.segmented-on]="buyType === type" (click)="setBuyType(type)">
+              {{ phoneNumberTypeLabel(type) }}
+            </button>
+          }
+        </div>
+      </div>
+      }
+
+      <div class="pn-buy-filters">
+        @if (buyCountry().locationFilter === 'areaCode') {
+          <div class="form-group">
+            <label class="label" for="buy-area-code">Area code</label>
+            <input id="buy-area-code" class="input input-mono" [(ngModel)]="buyAreaCode" placeholder="e.g. 415" maxlength="3" inputmode="numeric" (keydown.enter)="searchAvailable()" />
+          </div>
+        } @else {
+          <div class="form-group">
+            <label class="label" for="buy-region">Telecom circle</label>
+            <input id="buy-region" class="input input-mono" [(ngModel)]="buyRegion" placeholder="e.g. KA, DL, MH" maxlength="2" (keydown.enter)="searchAvailable()" />
+          </div>
+        }
+        <div class="form-group">
+          <label class="label" for="buy-contains">Contains digits</label>
+          <input id="buy-contains" class="input input-mono" [(ngModel)]="buyContains" placeholder="e.g. 7777" maxlength="10" inputmode="numeric" (keydown.enter)="searchAvailable()" />
+        </div>
+        <button type="button" class="btn btn-secondary pn-buy-search" [disabled]="searching()" (click)="searchAvailable()">
+          <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Search
+        </button>
+      </div>
+
+      @if (searchError()) {
+        <div class="alert-box" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ searchError() }}</div>
+      }
+
+      <div class="pn-results" role="list" aria-label="Available numbers" [attr.aria-busy]="searching()">
+        @if (searching()) {
+          @for (i of [1, 2, 3, 4]; track i) {
+            <div class="pn-result" role="listitem">
+              <div class="skeleton-lines">
+                <div class="skeleton skeleton-line"></div>
+                <div class="skeleton skeleton-line short"></div>
+              </div>
+            </div>
+          }
+        } @else if (!searchError() && searchResults().length === 0) {
+          <div class="pn-results-empty">
+            <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+            <span>No numbers match. Try a different {{ buyCountry().locationFilter === 'areaCode' ? 'area code' : 'circle' }} or fewer digits.</span>
+          </div>
+        } @else {
+          @for (number of searchResults(); track number.e164) {
+            <div class="pn-result" role="listitem">
+              <div class="pn-result-main">
+                <strong class="pn-number">{{ number.e164 }}</strong>
+                <span>
+                  {{ resultLocation(number) }}
+                  · {{ phoneNumberTypeLabel(number.number_type) }}
+                </span>
+              </div>
+              <div class="pn-caps" aria-label="Capabilities">
+                @if (number.capabilities.voice) { <span class="badge badge-voice">Voice</span> }
+                @if (number.capabilities.sms) { <span class="badge badge-inactive">SMS</span> }
+              </div>
+              <span class="pn-price">{{ formatMonthlyPrice(number.monthly_price, number.currency) ?? 'Standard rate' }}</span>
+              <button type="button" class="btn btn-primary btn-sm" [disabled]="!number.capabilities.voice" (click)="selectNumber(number)">Select</button>
+            </div>
+          }
         }
       </div>
-    </div>
 
-    <div class="form-group">
-      <label class="label" for="request-number">Mobile number</label>
-      <div class="pn-phone-input">
-        <select class="select" aria-label="Country code" [(ngModel)]="requestCountryCode">
-          <option value="" disabled>Country</option>
-          @for (country of countries; track country.name) {
-            <option [value]="country.code">{{ country.flag }} {{ country.name }} ({{ country.code }})</option>
+    } @else {
+      @if (selectedNumber(); as number) {
+      <div class="preview-card">
+        <span class="pn-flag pn-flag-lg" [attr.data-env]="buyEnvironmentType || 'staging'" aria-hidden="true">{{ buyCountry().flag }}</span>
+        <div>
+          <strong class="pn-number">{{ number.e164 }}</strong>
+          <span>
+            {{ buyLabel.trim() || number.friendly_name }} · {{ phoneNumberTypeLabel(number.number_type) }}{{ buyEnvironmentType ? ' · ' + phoneNumberEnvironmentLabel(buyEnvironmentType) : '' }}
+          </span>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <span class="label">Environment</span>
+        <div class="pn-env-options" role="radiogroup" aria-label="Environment">
+          @for (env of environmentTypes; track env) {
+            <label class="pn-env-option" [class.pn-env-option-on]="buyEnvironmentType === env" [attr.data-env]="env">
+              <input type="radio" name="buy-environment" [value]="env" [(ngModel)]="buyEnvironmentType" />
+              <i class="fa-solid" [class.fa-rocket]="env === 'production'" [class.fa-flask]="env === 'staging'" aria-hidden="true"></i>
+              <span>
+                <strong>{{ phoneNumberEnvironmentLabel(env) }}</strong>
+                <small>{{ env === 'production' ? 'Live customer calls' : 'Testing before launch' }}</small>
+              </span>
+            </label>
           }
-        </select>
-        <input id="request-number" class="input input-mono" [(ngModel)]="requestNumber" placeholder="9876543210" inputmode="tel" (keydown.enter)="submitRequest()" />
+        </div>
       </div>
-    </div>
 
-    <div class="form-group">
-      <label class="label" for="request-label">Label</label>
-      <div class="icon-field">
-        <i class="fa-solid fa-tag" aria-hidden="true"></i>
-        <input id="request-label" class="input" [(ngModel)]="requestLabel" placeholder="e.g. Sales line" (keydown.enter)="submitRequest()" />
+      <div class="form-group">
+        <label class="label" for="buy-label">Label</label>
+        <div class="icon-field">
+          <i class="fa-solid fa-tag" aria-hidden="true"></i>
+          <input id="buy-label" class="input" [(ngModel)]="buyLabel" [placeholder]="number.friendly_name" maxlength="80" (keydown.enter)="purchaseSelected()" />
+        </div>
       </div>
-    </div>
 
-    <div class="form-group">
-      <label class="label" for="request-notes">Notes <span class="text-muted">(optional)</span></label>
-      <textarea id="request-notes" class="textarea" rows="3" [(ngModel)]="requestNotes" placeholder="What is this number for?"></textarea>
-    </div>
+      <div class="form-group">
+        <label class="label" for="buy-notes">Notes <span class="text-muted">(optional)</span></label>
+        <textarea id="buy-notes" class="textarea" rows="3" [(ngModel)]="buyNotes" maxlength="500" placeholder="What is this number for?"></textarea>
+      </div>
 
-    @if (requestError) {
-      <div class="alert-box" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ requestError }}</div>
+      <div class="note-box">
+        <i class="fa-solid fa-receipt" aria-hidden="true"></i>
+        <span>
+          Buying charges
+          <b>{{ formatMonthlyPrice(number.monthly_price, number.currency) ?? 'the standard monthly rate' }}</b>
+          until the number is released.
+        </span>
+      </div>
+
+      @if (buyError) {
+        <div class="alert-box" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ buyError }}</div>
+      }
+      }
     }
 
     <ng-container ngProjectAs="[modal-footer]">
-      <button type="button" class="btn btn-ghost" (click)="cancelRequest()">Cancel</button>
-      <button type="button" class="btn btn-primary" [disabled]="requesting" (click)="submitRequest()">
-        @if (requesting) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Requesting… }
-        @else { <i class="fa-solid fa-paper-plane" aria-hidden="true"></i> Request number }
-      </button>
+      @if (buyStep() === 'search') {
+        <button type="button" class="btn btn-ghost" (click)="closeBuyForm()">Cancel</button>
+      } @else {
+        <button type="button" class="btn btn-ghost" [disabled]="purchasing" (click)="backToResults()">
+          <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back
+        </button>
+        <button type="button" class="btn btn-primary" [disabled]="purchasing" (click)="purchaseSelected()">
+          @if (purchasing) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Buying… }
+          @else { <i class="fa-solid fa-cart-shopping" aria-hidden="true"></i> Buy number }
+        </button>
+      }
     </ng-container>
   </app-modal>
 }

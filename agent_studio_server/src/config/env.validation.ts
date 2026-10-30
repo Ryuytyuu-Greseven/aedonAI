@@ -107,6 +107,46 @@ class EnvironmentVariables {
 
   @IsString()
   PINECONE_INDEX: string;
+
+  /**
+   * Phone number search/purchase. Optional so the server boots without them;
+   * the buy-number routes return 503 until the provider is configured.
+   * US numbers come from Twilio, IN numbers from Exotel.
+   */
+  @IsOptional()
+  @IsString()
+  TWILIO_ACCOUNT_SID?: string;
+
+  @IsOptional()
+  @IsString()
+  TWILIO_AUTH_TOKEN?: string;
+
+  /** Public base URL of calls_input_gateway (same as its TWILIO_WEBHOOK_URL); purchased numbers get `<base>/twilio/voice`. Defaults to AUDIO_PROCESSOR_URL. */
+  @IsOptional()
+  @IsString()
+  TWILIO_WEBHOOK_URL?: string;
+
+  @IsOptional()
+  @IsString()
+  EXOTEL_API_KEY?: string;
+
+  @IsOptional()
+  @IsString()
+  EXOTEL_API_TOKEN?: string;
+
+  @IsOptional()
+  @IsString()
+  EXOTEL_ACCOUNT_SID?: string;
+
+  /** api.exotel.com (Singapore, default) or api.in.exotel.com (Mumbai). */
+  @IsOptional()
+  @IsString()
+  EXOTEL_API_HOST?: string;
+
+  /** Flow URL (https://my.exotel.com/exoml/start/<flow_id>) set as VoiceUrl on purchased ExoPhones. */
+  @IsOptional()
+  @IsString()
+  EXOTEL_VOICE_FLOW_URL?: string;
 }
 
 export function validateEnv(config: Record<string, unknown>) {

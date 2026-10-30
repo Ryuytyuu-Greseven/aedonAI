@@ -1,0 +1,247 @@
+<div class="manual-toolbar">
+  <p class="text-muted text-sm">
+    Upload or type in leads from another source. New leads are called once automatically within a week of being added.
+  </p>
+  <div class="manual-toolbar-actions">
+    <button type="button" class="btn btn-secondary btn-sm" (click)="downloadTemplate()">
+      <i class="fa-solid fa-download" aria-hidden="true"></i> Template
+    </button>
+    <button type="button" class="btn btn-secondary btn-sm" (click)="openDial()">
+      <i class="fa-solid fa-phone" aria-hidden="true"></i> Call a number
+    </button>
+    <button type="button" class="btn btn-secondary btn-sm" (click)="openTypedLeads()">
+      <i class="fa-solid fa-user-plus" aria-hidden="true"></i> Add leads
+    </button>
+    <label class="btn btn-primary btn-sm manual-upload" [class.manual-upload-busy]="parsing()">
+      @if (parsing()) {
+        <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Reading…
+      } @else {
+        <i class="fa-solid fa-file-arrow-up" aria-hidden="true"></i> Upload sheet
+      }
+      <input
+        #fileInput
+        type="file"
+        accept=".xlsx,.csv,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet,text/csv"
+        [disabled]="parsing()"
+        (change)="onFileSelected(fileInput)"
+        hidden
+      />
+    </label>
+  </div>
+</div>
+
+@if (loading()) {
+  <div class="lead-list">
+    @for (i of [1, 2]; track i) {
+      <div class="card lead-card">
+        <div class="skeleton skeleton-line short"></div>
+        <div class="skeleton skeleton-line"></div>
+      </div>
+    }
+  </div>
+} @else if (leads().length === 0) {
+  <div class="empty-state">
+    <p>No manual leads yet. Upload an .xlsx or .csv with a Phone column (Name and Email are optional), add leads by hand, or call a number directly.</p>
+  </div>
+} @else {
+  <div class="lead-list">
+    @for (lead of leads(); track lead.lead_id) {
+      <div class="card lead-card">
+        <div class="lead-header">
+          <div class="lead-who">
+            <strong>{{ lead.full_name || 'Unnamed lead' }}</strong>
+            <span class="text-muted text-sm">{{ lead.phone_number }}</span>
+          </div>
+          <span class="badge badge-inactive">Manual</span>
+        </div>
+
+        @if (lead.email) {
+          <p class="lead-summary text-sm">{{ lead.email }}</p>
+        }
+
+        <div class="lead-footer">
+          <span class="text-muted text-sm">Added {{ formatDateTime(lead.created_at) }}</span>
+          <div class="lead-call-actions">
+            <span
+              class="badge lead-call-attempts"
+              [class.badge-active]="lead.call_attempts_count > 0 && lead.call_status !== 'failed'"
+              [class.badge-inactive]="lead.call_attempts_count === 0 && lead.call_status !== 'failed'"
+              [class.lead-badge-drop]="lead.call_status === 'failed'"
+              [title]="lead.call_status === 'failed' && lead.last_call_error ? lead.last_call_error : callAttemptsLabel(lead)"
+            >
+              <i class="fa-solid fa-phone" aria-hidden="true"></i>
+              {{ callAttemptsLabel(lead) }}
+            </span>
+            <button
+              type="button"
+              class="btn btn-primary btn-sm"
+              [disabled]="!canCallLead(lead)"
+              [title]="callButtonTitle(lead)"
+              (click)="callLead(lead)"
+            >
+              @if (callingLeadIds().has(lead.lead_id)) {
+                <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Calling…
+              } @else {
+                <i class="fa-solid fa-phone" aria-hidden="true"></i>
+                {{ lead.call_attempts_count > 0 || lead.call_status === 'failed' ? 'Call again' : 'Call' }}
+              }
+            </button>
+          </div>
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="flex justify-between items-center leads-pagination">
+    <span class="text-muted text-sm">{{ total() }} lead{{ total() === 1 ? '' : 's' }} · Page {{ page() }} of {{ totalPages() }}</span>
+    <div class="flex gap-sm">
+      <button type="button" class="btn btn-secondary btn-sm" [disabled]="page() === 1" (click)="prevPage()">Previous</button>
+      <button type="button" class="btn btn-secondary btn-sm" [disabled]="page() === totalPages()" (click)="nextPage()">Next</button>
+    </div>
+  </div>
+}
+
+<!-- Review an uploaded sheet -->
+@if (showReview()) {
+  <app-modal
+    [title]="lastUpload() ? 'Fix rejected rows' : reviewMode() === 'typed' ? 'Add leads' : 'Review leads'"
+    [subtitle]="
+      lastUpload()
+        ? 'These rows were not added. Fix them and submit again — only these are sent.'
+        : reviewMode() === 'typed'
+          ? 'Only the phone number is required. Blank rows are skipped.'
+          : 'Check and edit the rows before adding them. Numbers without a country code need one picked.'
+    "
+    icon="fa-table-list"
+    [width]="1040"
+    (closed)="closeReview()"
+  >
+    @if (lastUpload(); as last) {
+      <div class="manual-review-note text-sm">
+        <i class="fa-solid fa-circle-check" aria-hidden="true"></i>
+        Added {{ last.inserted }} lead{{ last.inserted === 1 ? '' : 's' }}@if (last.duplicates) {; {{ last.duplicates }} already added today were skipped}.
+      </div>
+    }
+
+    <div class="manual-review-scroll">
+      <table class="manual-review-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Country</th>
+            <th>Phone</th>
+            <th>Email</th>
+            <th><span class="sr-only">Remove</span></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (row of drafts(); track row.key; let i = $index, last = $last) {
+            @let errors = rowErrors(row);
+            <tr [class.manual-row-invalid]="errors.length > 0">
+              <td class="text-muted">{{ i + 1 }}</td>
+              <td>
+                <input class="input input-sm" [ngModel]="row.fullName" (ngModelChange)="updateRow(row, { fullName: $event })" aria-label="Name" placeholder="Optional" />
+              </td>
+              <td>
+                <select class="select select-sm" [ngModel]="row.dialCode" (ngModelChange)="updateRow(row, { dialCode: $event })" aria-label="Country">
+                  <option value="">Auto</option>
+                  @for (country of countries; track country.name) {
+                    <option [value]="country.code">{{ country.flag }} {{ country.name }} ({{ country.code }})</option>
+                  }
+                </select>
+              </td>
+              <td>
+                <input class="input input-sm input-mono" [ngModel]="row.phone" (ngModelChange)="updateRow(row, { phone: $event })" aria-label="Phone" placeholder="Required" />
+              </td>
+              <td>
+                <input
+                  class="input input-sm"
+                  type="email"
+                  [ngModel]="row.email"
+                  (ngModelChange)="updateRow(row, { email: $event })"
+                  (keydown.enter)="last && addRow()"
+                  aria-label="Email"
+                  placeholder="Optional"
+                />
+              </td>
+              <td>
+                <button type="button" class="btn btn-ghost btn-sm" title="Remove row" (click)="removeRow(row)" [disabled]="submitting()">
+                  <i class="fa-solid fa-xmark" aria-hidden="true"></i>
+                </button>
+              </td>
+            </tr>
+            @if (errors.length > 0) {
+              <tr class="manual-row-errors">
+                <td></td>
+                <td colspan="5"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ errors.join(' · ') }}</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    </div>
+    <button type="button" class="btn btn-ghost btn-sm manual-add-row" [disabled]="submitting()" (click)="addRow()">
+      <i class="fa-solid fa-plus" aria-hidden="true"></i> Add row
+    </button>
+
+    <div modal-footer class="manual-review-footer">
+      <span class="text-muted text-sm">
+        {{ filledDrafts().length }} lead{{ filledDrafts().length === 1 ? '' : 's' }}
+        @if (invalidCount() > 0) {
+          · <span class="manual-invalid-count">{{ invalidCount() }} to fix</span>
+        }
+      </span>
+      <div class="flex gap-sm">
+        <button type="button" class="btn btn-secondary" [disabled]="submitting()" (click)="closeReview()">Cancel</button>
+        <button
+          type="button"
+          class="btn btn-primary"
+          [disabled]="filledDrafts().length === 0 || invalidCount() > 0 || submitting()"
+          (click)="submitDrafts()"
+        >
+          @if (submitting()) {
+            <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Adding…
+          } @else {
+            Add {{ filledDrafts().length }} lead{{ filledDrafts().length === 1 ? '' : 's' }}
+          }
+        </button>
+      </div>
+    </div>
+  </app-modal>
+}
+
+<!-- Call a typed-in number -->
+@if (showDial()) {
+  <app-modal title="Call a number" subtitle="The agent calls this number right away. It's saved as a manual lead." icon="fa-phone" (closed)="closeDial()">
+    <div class="manual-dial">
+      <label class="label" for="dial-country">Country</label>
+      <select id="dial-country" class="select" [(ngModel)]="dialCode">
+        @for (country of countries; track country.name) {
+          <option [value]="country.code">{{ country.flag }} {{ country.name }} ({{ country.code }})</option>
+        }
+      </select>
+
+      <label class="label" for="dial-number">Phone number</label>
+      <input id="dial-number" class="input input-mono" [(ngModel)]="dialNumber" inputmode="tel" placeholder="98765 43210" (keydown.enter)="dial()" />
+
+      <label class="label" for="dial-name">Name <span class="text-muted">(optional)</span></label>
+      <input id="dial-name" class="input" [(ngModel)]="dialName" maxlength="120" (keydown.enter)="dial()" />
+
+      @if (dialError) {
+        <div class="alert-box" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ dialError }}</div>
+      }
+    </div>
+
+    <div modal-footer class="flex gap-sm">
+      <button type="button" class="btn btn-secondary" [disabled]="dialing()" (click)="closeDial()">Cancel</button>
+      <button type="button" class="btn btn-primary" [disabled]="dialing()" (click)="dial()">
+        @if (dialing()) {
+          <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i> Calling…
+        } @else {
+          <i class="fa-solid fa-phone" aria-hidden="true"></i> Call now
+        }
+      </button>
+    </div>
+  </app-modal>
+}

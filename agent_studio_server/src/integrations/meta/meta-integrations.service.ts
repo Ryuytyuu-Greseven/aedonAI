@@ -68,6 +68,37 @@ export class MetaIntegrationsService {
     );
   }
 
+  /** Calls one manual lead (`agent_leads`) via meta-adapter, which owns lead calling. */
+  async callManualLead(
+    leadId: string,
+    authorizationHeader: string,
+  ): Promise<unknown> {
+    return this.postToMetaAdapter(
+      `/leads/manual/${encodeURIComponent(leadId)}/call`,
+      {},
+      authorizationHeader,
+      'The call could not be placed',
+    );
+  }
+
+  /** Stores (or reuses today's) manual lead for a typed-in number and calls it. */
+  async dialManualLead(
+    body: {
+      agentId: string;
+      phoneNumber: string;
+      fullName: string;
+      leadDay: string;
+    },
+    authorizationHeader: string,
+  ): Promise<unknown> {
+    return this.postToMetaAdapter(
+      '/leads/manual/dial',
+      body,
+      authorizationHeader,
+      'The call could not be placed',
+    );
+  }
+
   /**
    * Lists the caller's Meta leads for one agent (paginated, with optional
    * name/phone search and a date range). Resolves the agent's linked Page

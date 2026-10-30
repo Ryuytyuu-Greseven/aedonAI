@@ -23,6 +23,7 @@ export class AudioProcessorWsService implements OnDestroy {
   private readonly audioChunkSubject = new Subject<string>();
   private readonly turnStartSubject = new Subject<void>();
   private readonly turnCompleteSubject = new Subject<void>();
+  private readonly endCallSubject = new Subject<void>();
   private readonly interruptedSubject = new Subject<void>();
   private readonly errorSubject = new Subject<string>();
 
@@ -38,6 +39,8 @@ export class AudioProcessorWsService implements OnDestroy {
   readonly turnStart$: Observable<void> = this.turnStartSubject.asObservable();
   /** AI finished speaking normally. */
   readonly turnComplete$: Observable<void> = this.turnCompleteSubject.asObservable();
+  /** Server signaled conversation/call termination. */
+  readonly endCall$: Observable<void> = this.endCallSubject.asObservable();
   /** User barged in; stop playback immediately. */
   readonly interrupted$: Observable<void> = this.interruptedSubject.asObservable();
   /** Server-reported error. */
@@ -145,6 +148,14 @@ export class AudioProcessorWsService implements OnDestroy {
 
     if (sc.turnComplete) {
       this.turnCompleteSubject.next();
+      if (sc.endCall) {
+        this.endCallSubject.next();
+      }
+      return;
+    }
+
+    if (sc.endCall) {
+      this.endCallSubject.next();
       return;
     }
 

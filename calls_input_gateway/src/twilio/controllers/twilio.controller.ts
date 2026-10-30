@@ -1,26 +1,19 @@
-import {
-  Controller,
-  Post,
-  Body,
-  Query,
-  Res,
-  Logger,
-  UseGuards,
-} from '@nestjs/common';
+import { Controller, Post, Body, Query, Res, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { TwilioService } from '../twilio.service';
-import { ExotelService } from '../../exotel/exotel.service';
 import { BusinessDirectoryService } from '../../common/services/business-directory.service';
 import { DEFAULT_BUSINESS } from '../../common/config/business-agents.registry';
-import { InternalApiKeyGuard } from '../../common/guards/internal-api-key.guard';
 
+/**
+ * Twilio webhooks. Outbound calls are placed by OutboundCallsController
+ * (POST /calls, or the legacy POST /twilio/call), which picks the carrier.
+ */
 @Controller('twilio')
 export class TwilioController {
   private readonly logger = new Logger(TwilioController.name);
 
   constructor(
     private readonly twilioService: TwilioService,
-    private readonly exotelService: ExotelService,
     private readonly configService: ConfigService,
     private readonly businessDirectoryService: BusinessDirectoryService,
   ) {}
@@ -76,7 +69,6 @@ export class TwilioController {
       business,
       voice,
       systemInstruction,
-      provider: 'twilio',
       direction,
       ...(customerNumber ? { customerNumber } : {}),
       ...(businessNumber ? { businessNumber } : {}),
@@ -103,65 +95,9 @@ export class TwilioController {
     return { received: true };
   }
 
-  /**
-   * REST endpoint to trigger an outbound call from your backend.
-   * POST /twilio/call  { "to": "+919876543210", "business": "sales", "voice": "Aoede" }
-   * Internal only (agent_studio_server previews, meta-adapter lead calls):
-   * requires the `x-internal-api-key` header.
-   */
-  @Post('call')
-  @UseGuards(InternalApiKeyGuard)
-  async initiateCall(
-    @Body()
-    body: {
-      to: string;
-      business?: string;
-      voice?: string;
-      systemInstruction?: string;
-      from?: string;
-      /** 'preview' when placed by the agent_studio playground. */
-      channel?: string;
-    },
-  ): Promise<{ callSid: string; provider: string }> {
-    // const provider = resolveProvider(body.to);
-    const provider = 'twilio';
-    this.logger.log(`Initiating call to ${body.to} via ${provider}`);
-
-    // if (provider === 'exotel') {
-    //   const callSid = await this.exotelService.makeOutboundCall(body.to, {
-    //     business: body.business,
-    //     voice: body.voice,
-    //     systemInstruction: body.systemInstruction,
-    //   }).catch((eeor) => {
-    //     this.logger.log('Exceprion');
-    //   });
-    //   return { callSid: '', provider };
-    // }
-
-    try {
-      const callSid = await this.twilioService.makeOutboundCall(body.to, {
-        business: body.business,
-        voice: body.voice,
-        systemInstruction: body.systemInstruction,
-        from: body.from,
-        channel: body.channel,
-      });
-      return { callSid, provider };
-    } catch (error) {
-      this.logger.error('Error initiating call:', error);
-      throw error;
-    }
-  }
-
   @Post('/health')
   checkMyDetails(@Body() body: { sample: boolean }) {
     this.logger.log('Hello from ', body);
     return { success: true };
   }
 }
-
-/** Route to Exotel for India (+91), Twilio for US (+1) and everywhere else. */
-// function resolveProvider(to: string): 'twilio' | 'exotel' {
-//   if (to.startsWith('+91')) return 'exotel';
-//   return 'twilio';
-// }

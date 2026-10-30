@@ -1,6 +1,7 @@
 import { Type } from 'class-transformer';
 import {
   IsDateString,
+  IsIn,
   IsInt,
   IsOptional,
   IsString,
@@ -37,4 +38,9 @@ export class ListLeadsQueryDto {
   @IsOptional()
   @IsDateString()
   toDate?: string;
+
+  /** Agent leads only: one source (e.g. `manual`); omitted = all but manual. */
+  @IsOptional()
+  @IsIn(['meta', 'call', 'manual'])
+  source?: 'meta' | 'call' | 'manual';
 }

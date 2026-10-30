@@ -25,7 +25,7 @@ export class SolutionDetailComponent {
   constructor() {
     effect(() => {
       const solution = this.solution();
-      if (solution) this.title.setTitle(`${solution.name} voice agents · Aedon AI`);
+      if (solution) this.title.setTitle(`${solution.name} voice agents · Lyre AI`);
       else this.router.navigateByUrl('/solutions');
     });
   }

@@ -7,5 +7,6 @@ import { MetaIntegrationsService } from './meta/meta-integrations.service';
   imports: [ReposModule],
   controllers: [MetaIntegrationsController],
   providers: [MetaIntegrationsService],
+  exports: [MetaIntegrationsService],
 })
 export class IntegrationsModule {}

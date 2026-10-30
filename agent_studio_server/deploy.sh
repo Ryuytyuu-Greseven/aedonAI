@@ -13,38 +13,42 @@ fi
 # We use ||| as a unique delimiter since @ is used in MongoDB connection strings
 DELIM="|||"
 ENV_VARS="NODE_ENV=production"
+ENV_FILE=${ENV_FILE:-".env.prod"}
 
-if [ -f .env ]; then
-  echo "Parsing .env file to inject environment variables..."
-  while IFS='=' read -r key val; do
-    # Skip comments and empty lines
-    if [[ -z "$key" ]] || [[ "$key" =~ ^# ]]; then
-      continue
-    fi
-    
-    # Clean up key (remove trailing spaces)
-    key=$(echo "$key" | tr -d ' ')
-    
-    # NEVER upload local paths for Google Credentials to Cloud Run
-    if [[ "$key" == "GOOGLE_APPLICATION_CREDENTIALS" ]]; then
-      echo "  -> Skipping GOOGLE_APPLICATION_CREDENTIALS (Cloud Run uses its own Service Account automatically)"
-      continue
-    fi
-    
-    # Cloud Run reserves the PORT environment variable
-    if [[ "$key" == "PORT" ]]; then
-      echo "  -> Skipping PORT (Cloud Run automatically sets this)"
-      continue
-    fi
-    
-    # Clean up value (remove surrounding quotes and carriage returns)
-    val=$(echo "$val" | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//")
-    val=$(echo "$val" | tr -d '\r')
-    
-    # Append to our string using our safe delimiter
-    ENV_VARS="${ENV_VARS}${DELIM}${key}=${val}"
-  done < .env
+if [ ! -f "$ENV_FILE" ]; then
+  echo "Error: $ENV_FILE not found. Create it or set ENV_FILE to another env file."
+  exit 1
 fi
+
+echo "Parsing $ENV_FILE file to inject environment variables..."
+while IFS='=' read -r key val || [[ -n "$key" ]]; do
+  # Skip comments and empty lines
+  if [[ -z "$key" ]] || [[ "$key" =~ ^# ]]; then
+    continue
+  fi
+  
+  # Clean up key (remove trailing spaces)
+  key=$(echo "$key" | tr -d ' ')
+  
+  # NEVER upload local paths for Google Credentials to Cloud Run
+  if [[ "$key" == "GOOGLE_APPLICATION_CREDENTIALS" ]]; then
+    echo "  -> Skipping GOOGLE_APPLICATION_CREDENTIALS (Cloud Run uses its own Service Account automatically)"
+    continue
+  fi
+  
+  # Cloud Run reserves the PORT environment variable
+  if [[ "$key" == "PORT" ]]; then
+    echo "  -> Skipping PORT (Cloud Run automatically sets this)"
+    continue
+  fi
+  
+  # Clean up value (remove surrounding quotes and carriage returns)
+  val=$(echo "$val" | sed -e 's/^"//' -e 's/"$//' -e "s/^'//" -e "s/'$//")
+  val=$(echo "$val" | tr -d '\r')
+  
+  # Append to our string using our safe delimiter
+  ENV_VARS="${ENV_VARS}${DELIM}${key}=${val}"
+done < "$ENV_FILE"
 
 echo "================================================="
 echo "Deploying $SERVICE_NAME to Google Cloud Run"

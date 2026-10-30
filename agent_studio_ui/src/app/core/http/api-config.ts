@@ -61,6 +61,10 @@ export const ApiEndpoints = {
     historyByAgentId: (agentId: string) => `/agents/by-agent-id/${agentId}/history`,
     /** Real, thin shape — no qualification/intent/follow-up/call linkage. See backend-openspec/specs/leads/spec.md. */
     leads: (id: string) => `/agents/${id}/leads`,
+    /** Manual leads: POST a reviewed sheet; list with `GET leads?source=manual`. */
+    manualLeads: (id: string) => `/agents/${id}/leads/manual`,
+    manualLeadDial: (id: string) => `/agents/${id}/leads/manual/dial`,
+    manualLeadCall: (id: string, leadId: string) => `/agents/${id}/leads/manual/${encodeURIComponent(leadId)}/call`,
     /** Per-product enquiry stats for sales agents — see agent_studio_server change add-product-enquiry-stats. */
     productStats: (id: string) => `/agents/${id}/product-stats`,
   },
@@ -83,6 +87,9 @@ export const ApiEndpoints = {
 
   phoneNumbers: {
     list: '/phone-numbers',
+    available: '/phone-numbers/available',
+    purchase: '/phone-numbers/purchase',
+    reconcile: '/phone-numbers/reconcile',
     byId: (id: string) => `/phone-numbers/${id}`,
     assignAgent: (id: string) => `/phone-numbers/${id}/assign-agent`,
     disable: (id: string) => `/phone-numbers/${id}/disable`,

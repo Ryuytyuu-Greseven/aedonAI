@@ -1,0 +1,124 @@
+/* Lead cards and pagination come from ../leads/leads.component.css; only manual-lead specifics live here. */
+.manual-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-bottom: 16px;
+}
+
+.manual-toolbar p {
+  margin: 0;
+}
+
+.manual-toolbar-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.manual-upload {
+  cursor: pointer;
+}
+
+.manual-upload-busy {
+  opacity: 0.7;
+  pointer-events: none;
+}
+
+/* ---------- Review table ---------- */
+.manual-review-note {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.manual-review-scroll {
+  max-height: 55vh;
+  overflow: auto;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-md);
+}
+
+.manual-review-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.manual-review-table th {
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  padding: 8px;
+  background: var(--bg-secondary);
+  text-align: left;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.manual-review-table td {
+  padding: 6px 8px;
+  border-top: 1px solid var(--border-color);
+  vertical-align: middle;
+}
+
+.manual-review-table .input-sm,
+.manual-review-table .select-sm {
+  height: 34px;
+  padding: 0 8px;
+  font-size: 13px;
+  min-width: 120px;
+}
+
+.manual-review-table td:first-child {
+  width: 36px;
+  text-align: right;
+}
+
+.manual-row-invalid td {
+  background: var(--danger-bg);
+}
+
+.manual-row-errors td {
+  border-top: none;
+  padding-top: 0;
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 12px;
+}
+
+.manual-review-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+
+.manual-invalid-count {
+  color: var(--danger);
+  font-weight: 600;
+}
+
+.manual-add-row {
+  margin-top: 8px;
+}
+
+/* ---------- Call a number ---------- */
+.manual-dial {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.manual-dial .label:not(:first-child) {
+  margin-top: 6px;
+}
