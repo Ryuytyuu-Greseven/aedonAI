@@ -61,6 +61,7 @@ gcloud run deploy $SERVICE_NAME \
   --region $REGION \
   --allow-unauthenticated \
   --platform managed \
+  --clear-base-image \
   --set-env-vars="^${DELIM}^${ENV_VARS}"
 
 echo "Deployment finished!"
