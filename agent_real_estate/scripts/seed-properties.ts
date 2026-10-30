@@ -2,8 +2,9 @@
 // authoring source), embeds each listing, and upserts it into the MongoDB
 // `properties` collection that sales.tools.ts reads from at runtime.
 //
-// Requires the Atlas Vector Search index to already exist — see
-// src/config/atlas-vector-search-index.json.
+// Requires the Atlas Vector Search index to already exist:
+// - Run: npm run create:index
+// - Or paste src/config/atlas-vector-search-index.json into the Atlas UI Search Index JSON Editor
 //
 // Run with: npm run seed:properties
 

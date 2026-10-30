@@ -23,5 +23,10 @@ export async function Intro_Pitch_Node(state: SalesState) {
     ...state.messages,
   ];
   const response = await llmInstance.invoke(messages);
-  return { messages: [response], currentNode: 'Intro_Pitch_Node' };
+  return {
+    messages: [response],
+    properties,
+    currentPropertyIndex: state.currentPropertyIndex ?? 0,
+    currentNode: 'Intro_Pitch_Node',
+  };
 }

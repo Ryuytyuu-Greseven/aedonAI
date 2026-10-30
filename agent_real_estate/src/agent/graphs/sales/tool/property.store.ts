@@ -77,6 +77,27 @@ export async function upsertProperty(doc: PropertyDocument): Promise<void> {
   await collection.updateOne({ id: doc.id }, { $set: doc }, { upsert: true });
 }
 
+export async function createVectorSearchIndex(): Promise<string> {
+  const collection = await getPropertiesCollection();
+  return collection.createSearchIndex({
+    name: VECTOR_INDEX_NAME,
+    type: 'vectorSearch',
+    definition: {
+      fields: [
+        {
+          type: 'vector',
+          path: 'embedding',
+          numDimensions: 768,
+          similarity: 'cosine',
+        },
+        { type: 'filter', path: 'price' },
+        { type: 'filter', path: 'location' },
+        { type: 'filter', path: 'type' },
+      ],
+    },
+  });
+}
+
 export async function closePropertyStoreConnection(): Promise<void> {
   if (clientPromise) {
     const client = await clientPromise;

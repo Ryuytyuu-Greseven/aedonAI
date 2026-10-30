@@ -5,6 +5,15 @@ import { WsAdapter } from '@nestjs/platform-ws';
 
 async function bootstrap() {
   const logger = new Logger('Bootstrap');
+
+  process.on('unhandledRejection', (reason: any) => {
+    logger.error('Unhandled Rejection:', reason?.stack || reason);
+  });
+
+  process.on('uncaughtException', (err: any) => {
+    logger.error('Uncaught Exception:', err?.stack || err);
+  });
+
   const app = await NestFactory.create(AppModule);
 
   app.enableCors({

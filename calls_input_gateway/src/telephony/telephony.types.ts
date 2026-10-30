@@ -43,6 +43,7 @@ export interface CarrierClient {
   readonly callSid: string;
   readonly readyState: number;
   send(data: string): void;
+  hangup?: () => Promise<void> | void;
 }
 
 export interface OutboundCallRequest {
