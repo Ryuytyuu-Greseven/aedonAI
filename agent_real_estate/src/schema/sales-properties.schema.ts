@@ -18,10 +18,10 @@ export class SalesProperty {
     companyId: string | null;
 
     /** The sales agent this property belongs to (Agent's Mongo `_id`). */
-    @Prop({ required: true, index: true })
+    @Prop({ type: String, required: true, index: true })
     agentId: string;
 
-    @Prop({ required: true, trim: true })
+    @Prop({ type: String, required: true, trim: true })
     name: string;
 
     @Prop({ type: String, default: null })

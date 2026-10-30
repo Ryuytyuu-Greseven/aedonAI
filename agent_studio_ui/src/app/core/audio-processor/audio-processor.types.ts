@@ -53,6 +53,7 @@ export interface ServerMessage {
     turnStart?: boolean;
     turnComplete?: boolean;
     interrupted?: boolean;
+    endCall?: boolean;
     modelTurn?: {
       parts?: ModelTurnPart[];
     };

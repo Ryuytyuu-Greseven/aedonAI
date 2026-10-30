@@ -82,6 +82,14 @@ export const SalesStateAnnotation = Annotation.Root({
     reducer: (left, right) => right !== undefined ? right : left,
     default: () => null,
   }),
+  customerEmail: Annotation<string | null>({
+    reducer: (left, right) => right !== undefined ? right : left,
+    default: () => null,
+  }),
+  preferredContactMethod: Annotation<string | null>({
+    reducer: (left, right) => right !== undefined ? right : left,
+    default: () => null,
+  }),
 
   // Budget discovery
   budgetMin: Annotation<number | null>({
@@ -102,28 +110,47 @@ export const SalesStateAnnotation = Annotation.Root({
     reducer: (left, right) => right !== undefined ? right : left,
     default: () => null,
   }),
+  buyerType: Annotation<string | null>({
+    reducer: (left, right) => right !== undefined ? right : left,
+    default: () => null,
+  }),
   moveInTimeline: Annotation<string | null>({
     reducer: (left, right) => right !== undefined ? right : left,
     default: () => null,
   }),
 
-  // Customer's residential/mailing address (captured via Discovery_Node)
+  // Customer's residential/mailing address (captured only if volunteered or for site visit pass)
   customerAddress: Annotation<string | null>({
     reducer: (left, right) => right !== undefined ? right : left,
     default: () => null,
   }),
 
   // Whether the customer is open to visiting the site in the coming days
-  // (captured via Discovery_Node)
   siteVisitInterested: Annotation<boolean | null>({
     reducer: (left, right) => right !== undefined ? right : left,
     default: () => null,
   }),
 
-  // Specific day/time the customer wants to visit — captured either during
-  // Discovery_Node (if volunteered early) or as a fallback question inside
-  // Closing_Node before the service request ticket is raised.
+  // Specific day the customer wants to visit (e.g., "Saturday", "this weekend")
   siteVisitPreferredDate: Annotation<string | null>({
+    reducer: (left, right) => right !== undefined ? right : left,
+    default: () => null,
+  }),
+
+  // Specific time window for site visit (e.g. "morning", "afternoon", "11:00 AM")
+  siteVisitTimeSlot: Annotation<string | null>({
+    reducer: (left, right) => right !== undefined ? right : left,
+    default: () => null,
+  }),
+
+  // Whether complimentary cab assistance was requested for the site visit
+  cabRequired: Annotation<boolean | null>({
+    reducer: (left, right) => right !== undefined ? right : left,
+    default: () => null,
+  }),
+
+  // Recent objection handled to prevent repetitive looping
+  lastObjection: Annotation<string | null>({
     reducer: (left, right) => right !== undefined ? right : left,
     default: () => null,
   }),
@@ -174,6 +201,12 @@ export const SalesStateAnnotation = Annotation.Root({
 
   // CRM persistence flag
   leadSaved: Annotation<boolean>({
+    reducer: (left, right) => right !== undefined ? right : left,
+    default: () => false,
+  }),
+
+  // Graceful call termination flag
+  endCall: Annotation<boolean>({
     reducer: (left, right) => right !== undefined ? right : left,
     default: () => false,
   }),

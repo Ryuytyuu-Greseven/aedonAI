@@ -1,26 +1,22 @@
 {
-  "name": "properties_vector_index",
-  "type": "vectorSearch",
-  "definition": {
-    "fields": [
-      {
-        "type": "vector",
-        "path": "embedding",
-        "numDimensions": 768,
-        "similarity": "cosine"
-      },
-      {
-        "type": "filter",
-        "path": "price"
-      },
-      {
-        "type": "filter",
-        "path": "location"
-      },
-      {
-        "type": "filter",
-        "path": "type"
-      }
-    ]
-  }
+  "fields": [
+    {
+      "type": "vector",
+      "path": "embedding",
+      "numDimensions": 768,
+      "similarity": "cosine"
+    },
+    {
+      "type": "filter",
+      "path": "price"
+    },
+    {
+      "type": "filter",
+      "path": "location"
+    },
+    {
+      "type": "filter",
+      "path": "type"
+    }
+  ]
 }

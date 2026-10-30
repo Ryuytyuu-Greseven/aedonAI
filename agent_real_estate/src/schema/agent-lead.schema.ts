@@ -4,82 +4,93 @@ import { Document } from 'mongoose';
 /**
  * Leads attributed directly to an agent (e.g. gathered via live calls),
  * independent of the Meta pipeline (`meta_leads`) — mirrors its shape,
- * keyed by `agentId` instead of `pageId`. Nothing writes to this collection
- * yet; only listing is implemented so far.
+ * keyed by `agentId` instead of `pageId`.
  */
 @Schema({ timestamps: true, collection: 'agent_leads' })
 export class AgentLead extends Document {
-    @Prop({ required: true, index: true })
+    @Prop({ type: String, required: true, index: true })
     customerId: string;
 
     /** The agent this lead is attributed to — same id as Agent's Mongo `_id`. */
-    @Prop({ required: true, index: true })
+    @Prop({ type: String, required: true, index: true })
     agentId: string;
 
-    @Prop({ required: true, unique: true, index: true })
+    @Prop({ type: String, required: true, unique: true, index: true })
     leadId: string;
 
     /** Where the lead came from, e.g. 'meta' | 'call' | 'manual'. */
-    @Prop()
+    @Prop({ type: String })
     source: string;
 
-    @Prop()
+    @Prop({ type: String })
     fullName: string;
 
-    @Prop()
+    @Prop({ type: String })
     phoneNumber: string;
 
-    @Prop()
+    @Prop({ type: String })
     email: string;
 
     // --- Real-estate sales qualification fields (captured across the call) ---
 
-    @Prop()
+    @Prop({ type: String })
     address: string;
 
-    @Prop()
+    @Prop({ type: Number })
     budgetMin: number;
 
-    @Prop()
+    @Prop({ type: Number })
     budgetMax: number;
 
-    @Prop()
+    @Prop({ type: String })
     preferredLocation: string;
 
-    @Prop()
+    @Prop({ type: String })
     preferredType: string;
 
     /** When the customer wants to purchase/move in, in their own words. */
-    @Prop()
+    @Prop({ type: String })
     purchaseTimeline: string;
 
+    /** Purpose of purchase: 'end_user' (living) | 'investor' (rental/appreciation). */
+    @Prop({ type: String })
+    buyerType: string;
+
     /** Whether the customer is open to visiting the site in the coming days. */
-    @Prop()
+    @Prop({ type: Boolean })
     siteVisitInterested: boolean;
 
     /** The day/time the customer proposed for a site visit, in their own words. */
-    @Prop()
+    @Prop({ type: String })
     siteVisitPreferredDate: string;
 
+    /** Preferred slot for site visit (e.g., 'morning', 'afternoon', '11:00 AM'). */
+    @Prop({ type: String })
+    siteVisitTimeSlot: string;
+
+    /** Whether the customer requested complimentary cab pickup for site visit. */
+    @Prop({ type: Boolean })
+    cabRequired: boolean;
+
     /** The property id the customer confirmed purchase intent on, if any. */
-    @Prop()
+    @Prop({ type: String })
     interestedPropertyId: string;
 
-    @Prop()
+    @Prop({ type: String })
     referralName: string;
 
-    @Prop()
+    @Prop({ type: String })
     referralPhone: string;
 
     /** Conversation/call session this lead was captured in. */
-    @Prop({ index: true })
+    @Prop({ type: String, index: true })
     sessionId: string;
 
     @Prop({ type: Object })
     customFields: Record<string, any>;
 
     /** When the lead was generated at its source, vs `createdAt` (row-insert time). */
-    @Prop()
+    @Prop({ type: Date })
     leadCreatedAt: Date;
 }
 
