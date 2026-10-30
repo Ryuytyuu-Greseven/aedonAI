@@ -6,6 +6,9 @@ import { CallRecord } from './call-record.model';
  */
 export type PageLeadCallStatus = 'dialing' | 'initiated' | 'failed' | 'skipped';
 
+/** How a placed call ended: anything not answered (busy, no answer, declined, failed) is `missed`. */
+export type LeadCallOutcome = 'answered' | 'missed';
+
 /** A real Facebook `leadgen` webhook submission — `GET /api/integrations/meta/leads`, company-wide across all connected Pages. */
 export interface PageLead {
   id: string;
@@ -22,6 +25,10 @@ export interface PageLead {
   call_status: PageLeadCallStatus | null;
   /** Why the last call couldn't be placed, when `call_status` is `failed`. */
   last_call_error: string | null;
+  /** How the latest call ended (carrier-reported); null until reported. */
+  last_call_outcome: LeadCallOutcome | null;
+  /** When a missed-call retry is scheduled; null when none is. */
+  next_call_at: string | null;
 }
 
 /** Response of `POST /api/integrations/meta/leads/:leadgenId/call`. */
@@ -91,6 +98,8 @@ export interface ManualLead {
   call_attempts_count: number;
   call_status: PageLeadCallStatus | null;
   last_call_error: string | null;
+  last_call_outcome: LeadCallOutcome | null;
+  next_call_at: string | null;
 }
 
 /** One row of `POST /api/agents/:id/leads/manual`. */
@@ -116,4 +125,48 @@ export interface ManualLeadCallResult {
   callSid: string;
   agentId: string;
   callStatus: 'initiated';
+}
+
+/** Shared label for a lead's call state, e.g. "Not answered" or "Called 2 times". */
+export function leadCallStateLabel(lead: {
+  call_status: PageLeadCallStatus | null;
+  call_attempts_count: number;
+  last_call_outcome: LeadCallOutcome | null;
+}): string {
+  if (lead.call_status === 'dialing') return 'Calling…';
+  if (lead.call_status === 'failed') return 'Last call failed';
+  if (lead.last_call_outcome === 'missed') return 'Not answered';
+  const count = lead.call_attempts_count;
+  if (count === 0) return 'Not called yet';
+  return `Called ${count} time${count === 1 ? '' : 's'}`;
+}
+
+export type ScheduledCallStatus = 'pending' | 'dialing' | 'done' | 'failed' | 'cancelled';
+
+/** A call the dialer will place later (`GET /api/agents/:id/scheduled-calls`) — missed-call retries for now. */
+export interface ScheduledCall {
+  id: string;
+  lead_source: 'meta' | 'manual';
+  /** Meta `leadgen_id` or manual `lead_id` — what that lead's Call endpoint takes. */
+  lead_key: string;
+  lead_name: string;
+  phone_number: string;
+  reason: 'missed_retry' | string;
+  /** Retry number, 1-based. */
+  attempt: number;
+  due_at: string;
+  status: ScheduledCallStatus;
+  note: string | null;
+  updated_at: string;
+}
+
+export interface ScheduledCallsPage {
+  calls: ScheduledCall[];
+  total: number;
+  page: number;
+  limit: number;
+  /** The agent's IANA zone — due times are shown in it. */
+  timezone: string;
+  /** The agent's current missed-call retry limit, for "retry 2 of 4". */
+  max_retries: number;
 }

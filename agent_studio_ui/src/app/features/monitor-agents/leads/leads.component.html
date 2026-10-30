@@ -9,6 +9,9 @@
     <button type="button" class="leads-toggle-btn" [class.leads-toggle-active]="view() === 'manual'" (click)="setView('manual')">
       Manual Leads
     </button>
+    <button type="button" class="leads-toggle-btn" [class.leads-toggle-active]="view() === 'scheduled'" (click)="setView('scheduled')">
+      <i class="fa-regular fa-clock" aria-hidden="true"></i> Scheduled
+    </button>
   </div>
 
   @if (view() === 'agent') {
@@ -92,6 +95,8 @@
     }
   } @else if (view() === 'manual') {
     <app-manual-leads [agentId]="agentId" />
+  } @else if (view() === 'scheduled') {
+    <app-scheduled-calls [agentId]="agentId" />
   } @else {
     @if (pageLoading()) {
       <div class="lead-list">
@@ -129,13 +134,18 @@
             }
 
             <div class="lead-footer">
-              <span class="text-muted text-sm">Submitted {{ formatDateTime(lead.submitted_at) }}</span>
+              <span class="text-muted text-sm">
+                Submitted {{ formatDateTime(lead.submitted_at) }}
+                @if (nextTryLabel(lead); as nextTry) {
+                  · <span class="lead-next-try"><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> {{ nextTry }}</span>
+                }
+              </span>
               <div class="lead-call-actions">
                 <span
                   class="badge lead-call-attempts"
-                  [class.badge-active]="lead.call_attempts_count > 0 && lead.call_status !== 'failed'"
+                  [class.badge-active]="lead.call_attempts_count > 0 && lead.call_status !== 'failed' && lead.last_call_outcome !== 'missed'"
                   [class.badge-inactive]="lead.call_attempts_count === 0 && lead.call_status !== 'failed'"
-                  [class.lead-badge-drop]="lead.call_status === 'failed'"
+                  [class.lead-badge-drop]="lead.call_status === 'failed' || lead.last_call_outcome === 'missed'"
                   [title]="
                     lead.call_status === 'failed' && lead.last_call_error
                       ? lead.last_call_error

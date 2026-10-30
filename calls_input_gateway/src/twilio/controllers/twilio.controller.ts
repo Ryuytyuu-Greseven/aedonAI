@@ -3,6 +3,10 @@ import { ConfigService } from '@nestjs/config';
 import { TwilioService } from '../twilio.service';
 import { BusinessDirectoryService } from '../../common/services/business-directory.service';
 import { DEFAULT_BUSINESS } from '../../common/config/business-agents.registry';
+import { CallOutcomeNotifier } from '../../telephony/call-outcome.notifier';
+
+/** Twilio CallStatus values that mean the call is over. */
+const TERMINAL_STATUSES = new Set(['completed', 'busy', 'no-answer', 'failed', 'canceled']);
 
 /**
  * Twilio webhooks. Outbound calls are placed by OutboundCallsController
@@ -16,6 +20,7 @@ export class TwilioController {
     private readonly twilioService: TwilioService,
     private readonly configService: ConfigService,
     private readonly businessDirectoryService: BusinessDirectoryService,
+    private readonly callOutcomes: CallOutcomeNotifier,
   ) {}
 
   /**
@@ -91,7 +96,17 @@ export class TwilioController {
     this.logger.log(
       `[Status Callback] CallSid=${body.CallSid} Status=${body.CallStatus}`,
     );
-    // To-DO-2: Call ended or answered, we can log somehwere
+    // 'completed' = answered (voicemail included — no machine detection);
+    // busy / no-answer / failed / canceled = missed.
+    const status = String(body?.CallStatus ?? '').toLowerCase();
+    if (body?.CallSid && TERMINAL_STATUSES.has(status)) {
+      this.callOutcomes.notify(
+        'twilio',
+        body.CallSid,
+        status === 'completed' ? 'answered' : 'missed',
+        status,
+      );
+    }
     return { received: true };
   }
 

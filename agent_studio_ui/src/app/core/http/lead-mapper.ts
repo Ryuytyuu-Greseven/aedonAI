@@ -1,4 +1,13 @@
-import { AgentLead, LeadsPage, ManualLead, PageLead, PageLeadCallStatus } from '../models/lead.model';
+import {
+  AgentLead,
+  LeadCallOutcome,
+  LeadsPage,
+  ManualLead,
+  PageLead,
+  PageLeadCallStatus,
+  ScheduledCallStatus,
+  ScheduledCallsPage,
+} from '../models/lead.model';
 
 /** One entry in a Meta lead's `callAttempts` — one row per time the agent was triggered to call this lead. */
 export interface ApiCallAttempt {
@@ -27,6 +36,9 @@ export interface ApiMetaLead {
   callAttempts?: ApiCallAttempt[];
   callStatus?: PageLeadCallStatus;
   lastCallError?: string;
+  lastCallOutcome?: LeadCallOutcome;
+  /** Scheduled missed-call retry. */
+  nextCallAt?: string;
   /** Agent (agents._id) that last handled this lead. */
   agentId?: string;
 }
@@ -51,6 +63,8 @@ export function fromApiMetaLead(raw: ApiMetaLead): PageLead {
     call_attempts_count: raw.callAttempts?.length ?? 0,
     call_status: raw.callStatus ?? null,
     last_call_error: raw.lastCallError ?? null,
+    last_call_outcome: raw.lastCallOutcome ?? null,
+    next_call_at: raw.nextCallAt ?? null,
   };
 }
 
@@ -86,6 +100,9 @@ export interface ApiAgentLead {
   callAttempts?: ApiCallAttempt[];
   callStatus?: PageLeadCallStatus;
   lastCallError?: string;
+  lastCallOutcome?: LeadCallOutcome;
+  /** Scheduled missed-call retry. */
+  nextCallAt?: string;
 }
 
 /**
@@ -130,6 +147,8 @@ export function fromApiManualLead(raw: ApiAgentLead): ManualLead {
     call_attempts_count: raw.callAttempts?.length ?? 0,
     call_status: raw.callStatus ?? null,
     last_call_error: raw.lastCallError ?? null,
+    last_call_outcome: raw.lastCallOutcome ?? null,
+    next_call_at: raw.nextCallAt ?? null,
   };
 }
 
@@ -139,5 +158,50 @@ export function fromApiManualLeadsResponse(raw: ApiLeadsResponse<ApiAgentLead>):
     total: raw.total,
     page: raw.page,
     limit: raw.limit,
+  };
+}
+
+/** Wire shape of `GET /api/agents/:id/scheduled-calls`. */
+export interface ApiScheduledCallsResponse {
+  calls: {
+    id: string;
+    leadSource: 'meta' | 'manual';
+    leadKey: string;
+    leadName: string;
+    phoneNumber: string;
+    reason: string;
+    attempt: number;
+    dueAt: string;
+    status: ScheduledCallStatus;
+    note: string | null;
+    updatedAt: string;
+  }[];
+  total: number;
+  page: number;
+  limit: number;
+  timezone: string;
+  maxRetries: number;
+}
+
+export function fromApiScheduledCalls(raw: ApiScheduledCallsResponse): ScheduledCallsPage {
+  return {
+    calls: raw.calls.map((c) => ({
+      id: c.id,
+      lead_source: c.leadSource,
+      lead_key: c.leadKey,
+      lead_name: c.leadName ?? '',
+      phone_number: c.phoneNumber,
+      reason: c.reason,
+      attempt: c.attempt,
+      due_at: c.dueAt,
+      status: c.status,
+      note: c.note ?? null,
+      updated_at: c.updatedAt,
+    })),
+    total: raw.total,
+    page: raw.page,
+    limit: raw.limit,
+    timezone: raw.timezone,
+    max_retries: raw.maxRetries,
   };
 }

@@ -5,6 +5,10 @@ import {
   AgentHistorySchema,
 } from '../schemas/agent-history.schema';
 import { AgentLead, AgentLeadSchema } from '../schemas/agent-leads.schema';
+import {
+  ScheduledCall,
+  ScheduledCallSchema,
+} from '../schemas/scheduled-call.schema';
 import { Agent, AgentSchema } from '../schemas/agent.schema';
 import {
   AgentTemplate,
@@ -46,6 +50,7 @@ import {
 import { User, UserSchema } from '../schemas/user.schema';
 import { AgentHistoriesRepository } from './agent-histories.repository';
 import { AgentLeadsRepository } from './agent-leads.repository';
+import { ScheduledCallsRepository } from './scheduled-calls.repository';
 import { AgentTemplatesRepository } from './agent-templates.repository';
 import { AgentsRepository } from './agents.repository';
 import { CallRecordsRepository } from './call-records.repository';
@@ -80,6 +85,7 @@ import { UsersRepository } from './users.repository';
       { name: ConnectedPage.name, schema: ConnectedPageSchema },
       { name: MetaLead.name, schema: MetaLeadSchema },
       { name: AgentLead.name, schema: AgentLeadSchema },
+      { name: ScheduledCall.name, schema: ScheduledCallSchema },
       { name: SalesProperty.name, schema: SalesPropertySchema },
       { name: ProductEnquiry.name, schema: ProductEnquirySchema },
       {
@@ -108,6 +114,7 @@ import { UsersRepository } from './users.repository';
     ConnectedPagesRepository,
     MetaLeadsRepository,
     AgentLeadsRepository,
+    ScheduledCallsRepository,
     SalesPropertiesRepository,
     ProductEnquiriesRepository,
     CommandControlRepository,
@@ -128,6 +135,7 @@ import { UsersRepository } from './users.repository';
     ConnectedPagesRepository,
     MetaLeadsRepository,
     AgentLeadsRepository,
+    ScheduledCallsRepository,
     SalesPropertiesRepository,
     ProductEnquiriesRepository,
     CommandControlRepository,

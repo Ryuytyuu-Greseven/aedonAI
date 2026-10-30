@@ -93,10 +93,55 @@ export class AgentLeadsRepository {
       { leadId },
       {
         $set: { callStatus: 'initiated' },
-        $unset: { lastCallError: '' },
+        // A new call supersedes any scheduled retry (its job is dropped when due).
+        $unset: { lastCallError: '', nextCallAt: '' },
         $push: { callAttempts: { callId, attemptedAt: new Date(), agentId } },
       },
     );
+  }
+
+  /**
+   * Records how a call ended on the attempt with this call id, once: a
+   * repeated webhook finds the outcome already set and returns null, as does
+   * a call id that isn't one of these leads' calls.
+   */
+  async recordCallOutcome(
+    callId: string,
+    outcome: 'answered' | 'missed',
+    providerStatus: string,
+  ): Promise<AgentLead | null> {
+    return this.agentLeadModel.findOneAndUpdate(
+      { callAttempts: { $elemMatch: { callId, outcome: { $exists: false } } } },
+      {
+        $set: {
+          'callAttempts.$.outcome': outcome,
+          'callAttempts.$.providerStatus': providerStatus,
+          'callAttempts.$.endedAt': new Date(),
+          lastCallOutcome: outcome,
+        },
+      },
+      { new: true },
+    );
+  }
+
+  async setNextCallAt(leadId: string, nextCallAt: Date | null): Promise<void> {
+    await this.agentLeadModel.updateOne(
+      { leadId },
+      nextCallAt ? { $set: { nextCallAt } } : { $unset: { nextCallAt: '' } },
+    );
+  }
+
+  /** Claims a manual lead for a scheduled call: any state but in-flight or skipped. */
+  async claimForScheduledCall(leadId: string): Promise<AgentLead | null> {
+    return this.agentLeadModel.findOneAndUpdate(
+      { leadId, callStatus: { $nin: ['dialing', 'skipped'] }, phoneNumber: { $nin: [null, ''] } },
+      { $set: { callStatus: 'dialing' } },
+      { new: true },
+    );
+  }
+
+  async findByLeadId(leadId: string): Promise<AgentLead | null> {
+    return this.agentLeadModel.findOne({ leadId }).exec();
   }
 
   async recordCallFailed(leadId: string, error: string): Promise<void> {

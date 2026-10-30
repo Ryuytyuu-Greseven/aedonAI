@@ -11,9 +11,11 @@ import { ConfigService } from '@nestjs/config';
 
 import { AgentLeadsRepository } from '../repos/agent-leads.repository';
 import { AgentsRepository } from '../repos/agents.repository';
+import { ScheduledCallsRepository } from '../repos/scheduled-calls.repository';
 import { AgentDocument } from '../schemas/agent.schema';
 import { AgentLead } from '../schemas/agent-lead.schema';
 import { CallsGatewayClient } from './calls-gateway.client';
+import { callSettingsOf, isWithinCallingHours } from '../common/utils/calling-hours';
 import { DialManualLeadDto } from './dto/dial-manual-lead.dto';
 import { LeadCallRunResult } from './meta-lead-call.service';
 
@@ -38,6 +40,7 @@ export class ManualLeadCallService {
     private readonly agentsRepository: AgentsRepository,
     private readonly agentLeadsRepository: AgentLeadsRepository,
     private readonly callsGateway: CallsGatewayClient,
+    private readonly scheduledCallsRepository: ScheduledCallsRepository,
   ) { }
 
   async dispatchPendingCalls(): Promise<LeadCallRunResult> {
@@ -56,7 +59,8 @@ export class ManualLeadCallService {
     const agentsById = new Map<string, AgentDocument>();
     for (const agentId of await this.agentLeadsRepository.findAgentIdsWithPendingManualLeads(createdAfter)) {
       const agent = await this.resolveCallableAgent(agentId);
-      if (agent) agentsById.set(agentId, agent);
+      // Outside the agent's calling hours its new leads wait for the next opening.
+      if (agent && isWithinCallingHours(new Date(), callSettingsOf(agent))) agentsById.set(agentId, agent);
     }
     if (agentsById.size === 0) return result;
 
@@ -136,6 +140,8 @@ export class ManualLeadCallService {
       throw new BadGatewayException('The call could not be placed');
     });
     await this.agentLeadsRepository.recordCallInitiated(lead.leadId, callSid, lead.agentId);
+    // This call replaces any queued retry; its own outcome decides what's next.
+    await this.scheduledCallsRepository.cancelPendingForLead('manual', lead.leadId, 'Called manually');
     this.logger.log(`Manual call ${callSid} placed to lead ${lead.leadId} with agent "${agent.agent_name}"`);
     return { leadId: lead.leadId, callSid, agentId: lead.agentId, callStatus: 'initiated' };
   }

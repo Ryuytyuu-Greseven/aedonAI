@@ -265,6 +265,24 @@
           </form>
         }
 
+        @if (activeTab() === 'calling') {
+          <div class="pg-tab-panel">
+            @if (agentId()) {
+              <app-agent-call-settings
+                [agentId]="agentId()!"
+                [settings]="callSettings()"
+                (saved)="callSettings.set($event.call_settings)"
+              />
+            } @else {
+              <div class="card list-empty list-empty-compact">
+                <i class="fa-solid fa-floppy-disk list-empty-icon" aria-hidden="true"></i>
+                <h3>Save first</h3>
+                <p class="text-muted">Save this agent to set its calling hours and missed-call retries.</p>
+              </div>
+            }
+          </div>
+        }
+
         @if (activeTab() === 'integrations') {
           <div class="pg-tab-panel">
             <section class="card panel">

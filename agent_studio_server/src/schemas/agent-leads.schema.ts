@@ -60,6 +60,14 @@ export class AgentLead extends Document {
 
   @Prop()
   lastCallError?: string;
+
+  /** Outcome of the latest reported call. */
+  @Prop({ type: String, enum: ['answered', 'missed'] })
+  lastCallOutcome?: 'answered' | 'missed';
+
+  /** When meta-adapter will retry a missed call; unset when none is scheduled. */
+  @Prop()
+  nextCallAt?: Date;
 }
 
 export const AgentLeadSchema = SchemaFactory.createForClass(AgentLead);

@@ -50,6 +50,13 @@ export class AgentLead extends Document {
 
   @Prop()
   lastCallError?: string;
+
+  @Prop({ type: String, enum: ['answered', 'missed'] })
+  lastCallOutcome?: 'answered' | 'missed';
+
+  // When a missed-call retry is scheduled (scheduled_calls); unset otherwise.
+  @Prop()
+  nextCallAt?: Date;
 }
 
 export const AgentLeadSchema = SchemaFactory.createForClass(AgentLead);

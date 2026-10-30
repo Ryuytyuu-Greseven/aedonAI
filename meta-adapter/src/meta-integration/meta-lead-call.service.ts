@@ -12,9 +12,11 @@ import { ConfigService } from '@nestjs/config';
 import { AgentsRepository } from '../repos/agents.repository';
 import { ConnectedPagesRepository } from '../repos/connected-pages.repository';
 import { MetaLeadsRepository } from '../repos/meta-leads.repository';
+import { ScheduledCallsRepository } from '../repos/scheduled-calls.repository';
 import { AgentDocument } from '../schemas/agent.schema';
 import { MetaLead } from '../schemas/meta-lead.schema';
 import { CallsGatewayClient } from './calls-gateway.client';
+import { callSettingsOf, isWithinCallingHours } from '../common/utils/calling-hours';
 
 export interface LeadCallRunResult {
   initiated: number;
@@ -44,6 +46,7 @@ export class MetaLeadCallService {
     private readonly agentsRepository: AgentsRepository,
     private readonly metaLeadsRepository: MetaLeadsRepository,
     private readonly callsGateway: CallsGatewayClient,
+    private readonly scheduledCallsRepository: ScheduledCallsRepository,
   ) { }
 
   async dispatchPendingCalls(): Promise<LeadCallRunResult> {
@@ -63,6 +66,11 @@ export class MetaLeadCallService {
     const createdAfter = new Date(Date.now() - maxAgeHours * 60 * 60 * 1000);
 
     const agentsByPageId = await this.resolveAgentsByPageId();
+    // Outside an agent's calling hours its new leads wait for the next opening.
+    const now = new Date();
+    for (const [pageId, agent] of agentsByPageId) {
+      if (!isWithinCallingHours(now, callSettingsOf(agent))) agentsByPageId.delete(pageId);
+    }
     const pageIds = [...agentsByPageId.keys()];
     if (pageIds.length === 0) return result;
 
@@ -121,6 +129,8 @@ export class MetaLeadCallService {
       console.log('call details 2');
 
       await this.metaLeadsRepository.recordCallInitiated(leadgenId, callSid, agentId);
+      // This call replaces any queued retry; its own outcome decides what's next.
+      await this.scheduledCallsRepository.cancelPendingForLead('meta', leadgenId, 'Called manually');
       this.logger.log(`Manual call ${callSid} placed to lead ${leadgenId} with agent "${agent.agent_name}"`);
       return { leadgenId, callSid, agentId, callStatus: 'initiated' };
     } catch (error) {

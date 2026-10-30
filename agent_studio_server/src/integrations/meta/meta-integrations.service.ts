@@ -99,6 +99,19 @@ export class MetaIntegrationsService {
     );
   }
 
+  /** Cancels a queued call (scheduled_calls is owned by meta-adapter). */
+  async cancelScheduledCall(
+    scheduledCallId: string,
+    authorizationHeader: string,
+  ): Promise<unknown> {
+    return this.postToMetaAdapter(
+      `/scheduled-calls/${encodeURIComponent(scheduledCallId)}/cancel`,
+      {},
+      authorizationHeader,
+      'The scheduled call could not be cancelled',
+    );
+  }
+
   /**
    * Lists the caller's Meta leads for one agent (paginated, with optional
    * name/phone search and a date range). Resolves the agent's linked Page

@@ -19,11 +19,12 @@ import {
   ProductEnquiriesRepository,
   ProductStatsRow,
 } from '../repos/product-enquiries.repository';
+import { UpdateCallSettingsDto } from './dto/call-settings.dto';
 import { CreateAgentDto } from './dto/create-agent.dto';
 import { GoLiveDto } from './dto/go-live.dto';
 import { ListProductStatsQueryDto } from './dto/list-product-stats-query.dto';
 import { UpdateAgentDto } from './dto/update-agent.dto';
-import { Agent, AgentDocument } from '../schemas/agent.schema';
+import { Agent, AgentDocument, CallSettings } from '../schemas/agent.schema';
 import { AgentLead } from '../schemas/agent-leads.schema';
 import { LiveAgent, LiveAgentDocument } from '../schemas/live-agent.schema';
 import { PhoneNumber } from '../schemas/phone-number.schema';
@@ -195,6 +196,47 @@ export class AgentsService {
     return updated;
   }
 
+  /**
+   * Updates only the dialing rules (timezone, calling hours, missed-call
+   * retries). Unlike `update`, the status is left alone — these don't change
+   * what the agent says, so a live agent stays live.
+   */
+  async updateCallSettings(
+    id: string,
+    dto: UpdateCallSettingsDto,
+    companyId: string | null,
+  ): Promise<Agent> {
+    const agent = await this.findById(id, companyId);
+    const current = (agent.toObject().call_settings ?? {}) as Partial<CallSettings>;
+    const next: CallSettings = {
+      timezone: dto.timezone ?? current.timezone ?? 'Asia/Kolkata',
+      calling_hours_start:
+        dto.calling_hours_start ?? current.calling_hours_start ?? '09:00',
+      calling_hours_end:
+        dto.calling_hours_end ?? current.calling_hours_end ?? '18:00',
+      missed_call_retries:
+        dto.missed_call_retries ?? current.missed_call_retries ?? 0,
+      missed_call_retry_gap_minutes:
+        dto.missed_call_retry_gap_minutes ??
+        current.missed_call_retry_gap_minutes ??
+        360,
+    };
+    // `HH:mm` strings compare correctly as text.
+    if (next.calling_hours_start >= next.calling_hours_end) {
+      throw new BadRequestException(
+        'Calling hours must start before they end (overnight windows are not supported)',
+      );
+    }
+
+    const updated = await this.agentsRepository.update(id, {
+      call_settings: next,
+    });
+    if (!updated) {
+      throw new NotFoundException(`Agent ${id} not found`);
+    }
+    return updated;
+  }
+
   async delete(id: string, companyId: string | null): Promise<void> {
     await this.findById(id, companyId);
     const result = await this.agentsRepository.deleteById(id);
@@ -234,6 +276,7 @@ export class AgentsService {
           behavior_prompt: source.behavior_prompt,
           behavior_notes: source.behavior_notes,
           referral_bonus: source.referral_bonus,
+          call_settings: source.call_settings,
           knowledge_base_ids: source.knowledge_base_ids ?? [],
           mcp_servers: source.mcp_servers ?? [],
           preview_hash: null,

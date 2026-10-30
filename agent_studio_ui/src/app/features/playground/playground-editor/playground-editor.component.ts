@@ -11,6 +11,7 @@ import {
   AgentMode,
   AgentStatus,
   AgentVersion,
+  CallSettings,
   Currency,
   CURRENCIES,
   McpServer,
@@ -39,11 +40,12 @@ import { AgentHistoryPanelComponent } from '../agent-history-panel/agent-history
 import { AgentKnowledgeBasesComponent } from '../agent-knowledge-bases/agent-knowledge-bases.component';
 import { AgentPropertiesComponent } from '../agent-properties/agent-properties.component';
 import { PreviewPanelComponent } from '../preview-panel/preview-panel.component';
+import { AgentCallSettingsComponent } from '../agent-call-settings/agent-call-settings.component';
 import { ModalComponent } from '../../../shared/modal/modal.component';
 import { isSalesTemplate } from '../../../shared/constants/agent-templates.constant';
 
 type PlaygroundField = 'agent_name' | 'greeting' | 'prompt' | 'behavior';
-type EditorTab = 'build' | 'integrations' | 'mcp-servers' | 'preview';
+type EditorTab = 'build' | 'calling' | 'integrations' | 'mcp-servers' | 'preview';
 
 const AGENT_MODE_ICONS: Record<AgentMode, string> = {
   chatbot: 'fa-comment-dots',
@@ -66,6 +68,7 @@ const LIFECYCLE: AgentStatus[] = ['draft', 'staged', 'live'];
     AgentPropertiesComponent,
     PreviewPanelComponent,
     ModalComponent,
+    AgentCallSettingsComponent,
   ],
   templateUrl: './playground-editor.component.html',
   styleUrl: './playground-editor.component.css',
@@ -89,6 +92,7 @@ export class PlaygroundEditorComponent implements OnInit {
   readonly lifecycle = LIFECYCLE;
   readonly tabs: { id: EditorTab; label: string; icon: string }[] = [
     { id: 'build', label: 'Build', icon: 'fa-pen-ruler' },
+    { id: 'calling', label: 'Calling', icon: 'fa-clock' },
     { id: 'integrations', label: 'Integrations', icon: 'fa-share-nodes' },
     { id: 'mcp-servers', label: 'MCP Servers', icon: 'fa-server' },
     { id: 'preview', label: 'Preview', icon: 'fa-phone-volume' },
@@ -137,6 +141,8 @@ export class PlaygroundEditorComponent implements OnInit {
   readonly tools = signal<Tool[]>([]);
   readonly mcpServers = signal<McpServer[]>([]);
   readonly knowledgeBaseIds = signal<string[]>([]);
+  /** Edited in the Calling tab and saved on its own, so it never reverts the status. */
+  readonly callSettings = signal<CallSettings | undefined>(undefined);
   readonly loading = signal(true);
   readonly saving = signal(false);
   readonly stagingAgent = signal(false);
@@ -179,6 +185,7 @@ export class PlaygroundEditorComponent implements OnInit {
     this.tools.set([]);
     this.mcpServers.set([]);
     this.knowledgeBaseIds.set([]);
+    this.callSettings.set(undefined);
     this.previewPassed.set(false);
     this.activeTab.set('build');
     this.historyPanelOpen.set(false);
@@ -242,6 +249,7 @@ export class PlaygroundEditorComponent implements OnInit {
     this.tools.set(agent.tools);
     this.mcpServers.set(agent.mcp_servers);
     this.knowledgeBaseIds.set(agent.knowledge_base_ids);
+    this.callSettings.set(agent.call_settings);
     this.form.patchValue({
       agent_name: agent.agent_name,
       agent_mode: agent.agent_mode ?? 'both',

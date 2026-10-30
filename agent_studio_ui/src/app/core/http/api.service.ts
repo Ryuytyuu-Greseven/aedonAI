@@ -1,6 +1,6 @@
 import { Injectable } from '@angular/core';
 import { Observable, map } from 'rxjs';
-import { Agent } from '../models/agent.model';
+import { Agent, CallSettings } from '../models/agent.model';
 import { AgentTemplate } from '../models/agent-template.model';
 import { AgentCallStats, CallDetail, CallRecord } from '../models/call-record.model';
 import { AuthSession, ForgotPasswordRequest, LoginCredentials, MessageResponse, ResetPasswordRequest } from '../models/auth.model';
@@ -24,6 +24,7 @@ import {
   ManualLeadsUploadResult,
   PageLead,
   PageLeadCallResult,
+  ScheduledCallsPage,
 } from '../models/lead.model';
 import { CreatePropertyInput, Property, UpdatePropertyInput } from '../models/property.model';
 import { ProductStatsPage, ProductStatsQuery } from '../models/product-stats.model';
@@ -41,8 +42,10 @@ import {
   ApiAgentLead,
   ApiLeadsResponse,
   ApiMetaLead,
+  ApiScheduledCallsResponse,
   fromApiAgentLeadsResponse,
   fromApiManualLeadsResponse,
+  fromApiScheduledCalls,
   fromApiMetaLeadsResponse,
 } from './lead-mapper';
 import { ApiCallDetail, ApiCallRecord, fromApiCallDetail, fromApiCallRecord } from './call-record-mapper';
@@ -283,6 +286,16 @@ export class ApiService {
     return this.http.post<ManualLeadCallResult>(ApiEndpoints.agents.manualLeadDial(agentId), body);
   }
 
+  getScheduledCalls(agentId: string, view: 'upcoming' | 'past', page: number, limit: number): Observable<ScheduledCallsPage> {
+    return this.http
+      .get<ApiScheduledCallsResponse>(ApiEndpoints.agents.scheduledCalls(agentId), { params: { view, page, limit } })
+      .pipe(map(fromApiScheduledCalls));
+  }
+
+  cancelScheduledCall(agentId: string, callId: string): Observable<void> {
+    return this.http.post<unknown>(ApiEndpoints.agents.cancelScheduledCall(agentId, callId), null).pipe(map(() => undefined));
+  }
+
   getProductStats(agentId: string, query: ProductStatsQuery = {}): Observable<ProductStatsPage> {
     const params: Record<string, string | number> = {};
     if (query.page !== undefined) params['page'] = query.page;
@@ -413,6 +426,10 @@ export class ApiService {
   }
 
   /** `live` → `disabled`. */
+  updateAgentCallSettings(id: string, settings: Partial<CallSettings>): Observable<Agent> {
+    return this.http.patch<ApiAgent>(ApiEndpoints.agents.callSettings(id), settings).pipe(map(fromApiAgent));
+  }
+
   disableAgent(id: string): Observable<Agent> {
     return this.http.post<ApiAgent>(ApiEndpoints.agents.disable(id), null).pipe(map(fromApiAgent));
   }

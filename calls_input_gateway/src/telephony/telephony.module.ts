@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { AssistantModule } from '../assistant/assistant.module';
+import { CallOutcomeNotifier } from './call-outcome.notifier';
 import { CallSessionService } from './call-session.service';
 import { PendingCallsStore } from './pending-calls.store';
 import { LovebytRecordingService } from './recording/lovebyt-recording.service';
@@ -13,7 +14,12 @@ import { LovebytRecordingService } from './recording/lovebyt-recording.service';
   imports: [
     AssistantModule, // provides AssistantService and AudioDriverService
   ],
-  providers: [CallSessionService, PendingCallsStore, LovebytRecordingService],
-  exports: [CallSessionService, PendingCallsStore],
+  providers: [
+    CallSessionService,
+    PendingCallsStore,
+    LovebytRecordingService,
+    CallOutcomeNotifier,
+  ],
+  exports: [CallSessionService, PendingCallsStore, CallOutcomeNotifier],
 })
 export class TelephonyModule {}

@@ -1,0 +1,97 @@
+<button
+  type="button"
+  class="tz-trigger"
+  [id]="inputId()"
+  [class.tz-trigger-open]="open()"
+  [disabled]="disabled()"
+  aria-haspopup="listbox"
+  [attr.aria-expanded]="open()"
+  [attr.aria-controls]="listId()"
+  (click)="toggle()"
+  (keydown.arrowDown)="$event.preventDefault(); openPanel()"
+>
+  <i class="fa-solid fa-earth-asia tz-trigger-icon" aria-hidden="true"></i>
+  @if (selected(); as zone) {
+    <span class="tz-trigger-text">
+      <span class="tz-trigger-city">{{ zone.city }}@if (zone.region) {<span class="tz-muted">, {{ zone.region }}</span>}</span>
+      <span class="tz-trigger-meta">{{ zone.offset }}@if (zone.longName) { · {{ zone.longName }}}</span>
+    </span>
+  } @else {
+    <span class="tz-trigger-text tz-muted">Select a time zone</span>
+  }
+  <i class="fa-solid fa-chevron-down tz-chevron" aria-hidden="true"></i>
+</button>
+
+@if (open()) {
+  <div
+    class="tz-panel"
+    [style.left.px]="position()?.left"
+    [style.width.px]="position()?.width"
+    [style.top.px]="position()?.top"
+    [style.bottom.px]="position()?.bottom"
+  >
+    <div class="tz-search">
+      <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i>
+      <input
+        #search
+        type="text"
+        role="combobox"
+        autocomplete="off"
+        spellcheck="false"
+        placeholder="Search city, zone name or offset"
+        aria-label="Search time zones"
+        aria-autocomplete="list"
+        aria-expanded="true"
+        [attr.aria-controls]="listId()"
+        [attr.aria-activedescendant]="results().length ? optionId(activeIndex()) : null"
+        [value]="query()"
+        (input)="onQuery($any($event.target).value)"
+        (keydown)="onKeydown($event)"
+      />
+      @if (query()) {
+        <button type="button" class="tz-clear" aria-label="Clear search" (click)="onQuery(''); search.focus()">
+          <i class="fa-solid fa-circle-xmark" aria-hidden="true"></i>
+        </button>
+      }
+    </div>
+
+    <div class="tz-section">{{ searching() ? 'Best matches' : 'Suggested' }}</div>
+
+    <ul class="tz-list" role="listbox" [id]="listId()" aria-label="Time zones">
+      @for (zone of results(); track zone.id; let i = $index) {
+        <li
+          role="option"
+          class="tz-option"
+          [id]="optionId(i)"
+          [class.tz-option-active]="i === activeIndex()"
+          [class.tz-option-selected]="zone.id === value()"
+          [attr.aria-selected]="zone.id === value()"
+          (mousedown)="$event.preventDefault()"
+          (mouseenter)="activeIndex.set(i)"
+          (click)="pick(zone)"
+        >
+          <span class="tz-option-text">
+            <span class="tz-option-city"
+              >@for (part of highlight(zone.city); track $index) {<span [class.tz-hl]="part.match">{{ part.text }}</span>}@if (zone.region) {<span class="tz-muted"> · @for (part of highlight(zone.region); track $index) {<span [class.tz-hl]="part.match">{{ part.text }}</span>}</span>}</span
+            >
+            @if (zone.longName) {
+              <span class="tz-option-name">@for (part of highlight(zone.longName); track $index) {<span [class.tz-hl]="part.match">{{ part.text }}</span>}</span>
+            }
+          </span>
+          <span class="tz-offset">{{ zone.offset }}</span>
+        </li>
+      } @empty {
+        <li class="tz-empty" role="presentation">
+          <i class="fa-regular fa-face-meh" aria-hidden="true"></i>
+          No time zone matches “{{ query() }}”
+        </li>
+      }
+    </ul>
+
+    @if (searching() && matchCount() > results().length) {
+      <div class="tz-foot">{{ matchCount() - results().length }} more — keep typing to narrow</div>
+    } @else if (!searching()) {
+      <div class="tz-foot">Type to search all {{ totalZones() }} zones</div>
+    }
+  </div>
+}

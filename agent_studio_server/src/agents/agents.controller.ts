@@ -13,6 +13,7 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { UpdateCallSettingsDto } from './dto/call-settings.dto';
 import { ListLeadsQueryDto } from '../common/dto/list-leads-query.dto';
 import { AuthenticatedUser } from '../common/interfaces/user.interface';
 import { AgentsService } from './agents.service';
@@ -53,6 +54,16 @@ export class AgentsController {
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.agentsService.update(id, dto, user.companyId);
+  }
+
+  /** Dialing rules only — never moves the agent back to draft. */
+  @Patch(':id/call-settings')
+  updateCallSettings(
+    @Param('id') id: string,
+    @Body() dto: UpdateCallSettingsDto,
+    @CurrentUser() user: AuthenticatedUser,
+  ) {
+    return this.agentsService.updateCallSettings(id, dto, user.companyId);
   }
 
   @Post(':id/stage')

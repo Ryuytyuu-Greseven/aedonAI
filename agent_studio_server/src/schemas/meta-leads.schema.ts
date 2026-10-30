@@ -12,6 +12,17 @@ export class CallAttempt {
   /** Agent (agents._id) that placed this call; absent on older attempts. */
   @Prop()
   agentId?: string;
+
+  /** How it ended, reported by the carrier; anything not answered is 'missed'. */
+  @Prop({ type: String, enum: ['answered', 'missed'] })
+  outcome?: 'answered' | 'missed';
+
+  /** Carrier's raw final status, e.g. 'no-answer'. */
+  @Prop()
+  providerStatus?: string;
+
+  @Prop()
+  endedAt?: Date;
 }
 
 export const CallAttemptSchema = SchemaFactory.createForClass(CallAttempt);
@@ -67,6 +78,14 @@ export class MetaLead extends Document {
   /** Agent (agents._id) that last handled this lead. */
   @Prop()
   agentId?: string;
+
+  /** Outcome of the latest reported call. */
+  @Prop({ type: String, enum: ['answered', 'missed'] })
+  lastCallOutcome?: 'answered' | 'missed';
+
+  /** When meta-adapter will retry a missed call; unset when none is scheduled. */
+  @Prop()
+  nextCallAt?: Date;
 }
 
 export const MetaLeadSchema = SchemaFactory.createForClass(MetaLead);

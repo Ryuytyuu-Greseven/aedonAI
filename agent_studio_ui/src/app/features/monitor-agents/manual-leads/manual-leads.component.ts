@@ -1,6 +1,6 @@
 import { Component, ElementRef, Input, OnChanges, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ManualLead, ManualLeadInput } from '../../../core/models/lead.model';
+import { ManualLead, ManualLeadInput, leadCallStateLabel } from '../../../core/models/lead.model';
 import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
 import { LeadService } from '../../../core/services/lead.service';
 import { ToastService } from '../../../core/services/toast.service';
@@ -286,11 +286,12 @@ export class ManualLeadsComponent implements OnChanges {
   // ── Call a stored lead ──────────────────────────────────
 
   callAttemptsLabel(lead: ManualLead): string {
-    if (lead.call_status === 'dialing') return 'Calling…';
-    if (lead.call_status === 'failed') return 'Last call failed';
-    const count = lead.call_attempts_count;
-    if (count === 0) return 'Not called yet';
-    return `Called ${count} time${count === 1 ? '' : 's'}`;
+    return leadCallStateLabel(lead);
+  }
+
+  /** "Next try Oct 31, 9:00 AM" when a missed-call retry is scheduled. */
+  nextTryLabel(lead: ManualLead): string | null {
+    return lead.next_call_at ? `Next try ${this.formatDateTime(lead.next_call_at)}` : null;
   }
 
   /** Mirrors the backend's rules: needs a phone number, not mid-call, not excluded from calling. */

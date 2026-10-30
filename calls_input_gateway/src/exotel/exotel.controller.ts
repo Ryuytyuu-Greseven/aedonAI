@@ -1,4 +1,5 @@
 import { Body, Controller, Logger, Post } from '@nestjs/common';
+import { CallOutcomeNotifier } from '../telephony/call-outcome.notifier';
 import { PendingCallsStore } from '../telephony/pending-calls.store';
 
 /**
@@ -9,7 +10,10 @@ import { PendingCallsStore } from '../telephony/pending-calls.store';
 export class ExotelController {
   private readonly logger = new Logger(ExotelController.name);
 
-  constructor(private readonly pendingCalls: PendingCallsStore) {}
+  constructor(
+    private readonly pendingCalls: PendingCallsStore,
+    private readonly callOutcomes: CallOutcomeNotifier,
+  ) {}
 
   /**
    * Status callback for calls placed by ExotelService (StatusCallback with
@@ -23,6 +27,17 @@ export class ExotelController {
     );
     // A call that never connected won't stream, so its context is dead weight.
     if (callSid) this.pendingCalls.discard('exotel', callSid);
+    // Terminal events only: 'completed' was answered; busy / no-answer /
+    // failed / canceled all count as missed.
+    const status = String(body?.Status ?? '').toLowerCase();
+    if (callSid && status) {
+      this.callOutcomes.notify(
+        'exotel',
+        callSid,
+        status === 'completed' ? 'answered' : 'missed',
+        status,
+      );
+    }
     return { received: true };
   }
 }

@@ -1,0 +1,242 @@
+:host {
+  display: block;
+}
+
+.tz-muted {
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+/* ---------- Trigger (matches .select) ---------- */
+.tz-trigger {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 42px;
+  padding: 6px 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transition), box-shadow var(--transition);
+}
+
+.tz-trigger:hover {
+  border-color: var(--border-focus);
+}
+
+.tz-trigger:focus-visible,
+.tz-trigger-open {
+  outline: none;
+  border-color: var(--border-focus);
+  box-shadow: 0 0 0 4px var(--accent-muted);
+}
+
+.tz-trigger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.tz-trigger-icon {
+  color: var(--accent);
+}
+
+.tz-trigger-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.tz-trigger-city {
+  font-size: 14px;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tz-trigger-meta {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tz-chevron {
+  font-size: 11px;
+  color: var(--text-muted);
+  transition: transform var(--transition);
+}
+
+.tz-trigger-open .tz-chevron {
+  transform: rotate(180deg);
+}
+
+/* ---------- Panel (fixed; placed by the component so cards can't clip it) ---------- */
+.tz-panel {
+  position: fixed;
+  z-index: 1000;
+  padding: 8px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--bg-secondary);
+  box-shadow: var(--shadow-md);
+  animation: tz-in 0.12s ease-out;
+}
+
+@keyframes tz-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+}
+
+.tz-search {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 38px;
+  padding: 0 10px;
+  border: 1px solid var(--border-color);
+  border-radius: var(--radius-sm);
+  background: var(--bg-tertiary);
+  color: var(--text-muted);
+  font-size: 13px;
+  transition: border-color var(--transition);
+}
+
+.tz-search:focus-within {
+  border-color: var(--border-focus);
+}
+
+.tz-search input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  outline: none;
+}
+
+.tz-search input::placeholder {
+  color: var(--text-muted);
+}
+
+.tz-clear {
+  display: grid;
+  place-items: center;
+  padding: 0;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  cursor: pointer;
+}
+
+.tz-clear:hover {
+  color: var(--text-primary);
+}
+
+.tz-section {
+  padding: 10px 8px 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--text-muted);
+}
+
+.tz-list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tz-option {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+}
+
+.tz-option-active {
+  background: var(--bg-hover);
+}
+
+.tz-option-text {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  line-height: 1.3;
+}
+
+.tz-option-city {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tz-option-name {
+  font-size: 12px;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tz-offset {
+  flex-shrink: 0;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: var(--bg-tertiary);
+  color: var(--text-secondary);
+  font-size: 11px;
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.tz-option-selected .tz-option-city {
+  color: var(--accent);
+}
+
+.tz-option-selected .tz-offset {
+  background: var(--accent-muted);
+  color: var(--accent);
+}
+
+.tz-hl {
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.tz-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 18px 8px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.tz-foot {
+  margin-top: 6px;
+  padding: 8px 8px 2px;
+  border-top: 1px solid var(--border-color);
+  font-size: 11px;
+  color: var(--text-muted);
+}

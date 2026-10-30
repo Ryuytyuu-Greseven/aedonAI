@@ -19,6 +19,19 @@ export class CallAttempt {
   // Page's linked agent can change between retries. Absent on older attempts.
   @Prop()
   agentId?: string;
+
+  // How the call ended, reported by calls_input_gateway from the carrier's
+  // status webhook: anything not answered (busy, no-answer, canceled,
+  // failed) is 'missed'. Unset until reported.
+  @Prop({ type: String, enum: ['answered', 'missed'] })
+  outcome?: 'answered' | 'missed';
+
+  // Carrier's raw final status, e.g. 'no-answer'.
+  @Prop()
+  providerStatus?: string;
+
+  @Prop()
+  endedAt?: Date;
 }
 
 export const CallAttemptSchema = SchemaFactory.createForClass(CallAttempt);
@@ -75,6 +88,14 @@ export class MetaLead extends Document {
 
   @Prop()
   lastCallError?: string;
+
+  // Outcome of the latest reported call (see CallAttempt.outcome).
+  @Prop({ type: String, enum: ['answered', 'missed'] })
+  lastCallOutcome?: 'answered' | 'missed';
+
+  // When a missed-call retry is scheduled (scheduled_calls); unset otherwise.
+  @Prop()
+  nextCallAt?: Date;
 }
 
 export const MetaLeadSchema = SchemaFactory.createForClass(MetaLead);

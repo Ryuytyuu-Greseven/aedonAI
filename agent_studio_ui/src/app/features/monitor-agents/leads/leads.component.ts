@@ -1,14 +1,15 @@
 import { Component, EventEmitter, Input, OnChanges, Output, computed, inject, signal } from '@angular/core';
 import { CallRecord } from '../../../core/models/call-record.model';
-import { AgentLead, LeadQualification, PageLead } from '../../../core/models/lead.model';
+import { AgentLead, LeadQualification, PageLead, leadCallStateLabel } from '../../../core/models/lead.model';
 import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
 import { LeadService } from '../../../core/services/lead.service';
 import { MetaIntegrationService } from '../../../core/services/meta-integration.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { extractErrorMessage } from '../../../core/utils/http-error.util';
 import { ManualLeadsComponent } from '../manual-leads/manual-leads.component';
+import { ScheduledCallsComponent } from '../scheduled-calls/scheduled-calls.component';
 
-type LeadView = 'agent' | 'page' | 'manual';
+type LeadView = 'agent' | 'page' | 'manual' | 'scheduled';
 
 const AGENT_LEADS_LIMIT = 20;
 const META_LEADS_LIMIT = 20;
@@ -16,7 +17,7 @@ const META_LEADS_LIMIT = 20;
 @Component({
   selector: 'app-leads',
   standalone: true,
-  imports: [ManualLeadsComponent],
+  imports: [ManualLeadsComponent, ScheduledCallsComponent],
   templateUrl: './leads.component.html',
   styleUrl: './leads.component.css',
 })
@@ -120,11 +121,12 @@ export class LeadsComponent implements OnChanges {
   }
 
   callAttemptsLabel(lead: PageLead): string {
-    if (lead.call_status === 'dialing') return 'Calling…';
-    if (lead.call_status === 'failed') return 'Last call failed';
-    const count = lead.call_attempts_count;
-    if (count === 0) return 'Not called yet';
-    return `Called ${count} time${count === 1 ? '' : 's'}`;
+    return leadCallStateLabel(lead);
+  }
+
+  /** "Next try Oct 31, 9:00 AM" when a missed-call retry is scheduled. */
+  nextTryLabel(lead: PageLead): string | null {
+    return lead.next_call_at ? `Next try ${this.formatDateTime(lead.next_call_at)}` : null;
   }
 
   /** Mirrors the backend's rules: needs a phone number, not mid-call, not excluded from calling. */

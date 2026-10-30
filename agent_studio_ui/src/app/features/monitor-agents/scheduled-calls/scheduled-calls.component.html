@@ -1,0 +1,99 @@
+<div class="sched-toolbar">
+  <div class="sched-views" role="tablist" aria-label="Scheduled calls">
+    <button type="button" role="tab" class="sched-view-btn" [class.sched-view-on]="view() === 'upcoming'" [attr.aria-selected]="view() === 'upcoming'" (click)="setView('upcoming')">
+      Upcoming
+    </button>
+    <button type="button" role="tab" class="sched-view-btn" [class.sched-view-on]="view() === 'past'" [attr.aria-selected]="view() === 'past'" (click)="setView('past')">
+      Past
+    </button>
+  </div>
+  <span class="text-muted text-sm sched-zone">
+    <i class="fa-solid fa-earth-asia" aria-hidden="true"></i> Times in {{ timezone() }}
+  </span>
+  <button type="button" class="btn btn-secondary btn-sm" [disabled]="loading()" (click)="refresh()" title="Refresh">
+    <i class="fa-solid fa-arrows-rotate" [class.fa-spin]="loading()" aria-hidden="true"></i>
+  </button>
+</div>
+
+@if (loading() && calls().length === 0) {
+  <div class="lead-list">
+    @for (i of [1, 2]; track i) {
+      <div class="card lead-card">
+        <div class="skeleton skeleton-line short"></div>
+        <div class="skeleton skeleton-line"></div>
+      </div>
+    }
+  </div>
+} @else if (calls().length === 0) {
+  <div class="empty-state">
+    @if (view() === 'upcoming') {
+      <p>Nothing scheduled. When a lead misses a call and this agent has missed-call retries turned on (Playground → Calling), the retry shows up here.</p>
+    } @else {
+      <p>No past scheduled calls yet.</p>
+    }
+  </div>
+} @else {
+  <div class="lead-list">
+    @for (call of calls(); track call.id) {
+      <div class="card lead-card">
+        <div class="lead-header">
+          <div class="lead-who">
+            <strong>{{ call.lead_name || 'Unnamed lead' }}</strong>
+            <span class="text-muted text-sm">{{ call.phone_number }}</span>
+          </div>
+          <div class="sched-badges">
+            <span class="badge badge-inactive">{{ sourceLabel(call) }}</span>
+            @if (view() === 'past') {
+              <span
+                class="badge"
+                [class.badge-active]="call.status === 'done'"
+                [class.badge-inactive]="call.status === 'cancelled'"
+                [class.lead-badge-drop]="call.status === 'failed'"
+              >{{ statusLabel(call) }}</span>
+            }
+          </div>
+        </div>
+
+        <p class="lead-summary text-sm sched-reason">
+          <i class="fa-solid fa-phone-slash" aria-hidden="true"></i> {{ reasonLabel(call) }}
+          @if (view() === 'past' && call.note) {
+            <span class="text-muted"> · {{ call.note }}</span>
+          }
+        </p>
+
+        <div class="lead-footer">
+          <span class="text-sm sched-when">
+            <i class="fa-regular fa-clock" aria-hidden="true"></i>
+            {{ dueLabel(call.due_at) }}
+            @if (call.status === 'pending') {
+              <span class="sched-relative">{{ relativeLabel(call.due_at) }}</span>
+            } @else if (call.status === 'dialing') {
+              <span class="sched-relative">calling now</span>
+            }
+          </span>
+          @if (call.status === 'pending') {
+            <div class="lead-call-actions">
+              <button type="button" class="btn btn-secondary btn-sm" [disabled]="isBusy(call)" (click)="cancel(call)">Cancel</button>
+              <button type="button" class="btn btn-primary btn-sm" [disabled]="isBusy(call)" (click)="callNow(call)">
+                @if (isBusy(call)) {
+                  <i class="fa-solid fa-spinner fa-spin" aria-hidden="true"></i>
+                } @else {
+                  <i class="fa-solid fa-phone" aria-hidden="true"></i>
+                }
+                Call now
+              </button>
+            </div>
+          }
+        </div>
+      </div>
+    }
+  </div>
+
+  <div class="flex justify-between items-center leads-pagination">
+    <span class="text-muted text-sm">{{ total() }} call{{ total() === 1 ? '' : 's' }} · Page {{ page() }} of {{ totalPages() }}</span>
+    <div class="flex gap-sm">
+      <button type="button" class="btn btn-secondary btn-sm" [disabled]="page() === 1" (click)="prevPage()">Previous</button>
+      <button type="button" class="btn btn-secondary btn-sm" [disabled]="page() === totalPages()" (click)="nextPage()">Next</button>
+    </div>
+  </div>
+}

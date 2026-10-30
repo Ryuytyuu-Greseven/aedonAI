@@ -3,6 +3,7 @@ import { Observable, switchMap, throwError, map } from 'rxjs';
 import {
   Agent,
   AgentVersion,
+  CallSettings,
   toExportJson,
   AgentExportJson,
 } from '../models/agent.model';
@@ -71,6 +72,11 @@ export class AgentService {
   }
 
   /** `live` → `disabled`. */
+  /** Timezone, calling hours and missed-call retries; keeps the agent's status. */
+  updateCallSettings(id: string, settings: Partial<CallSettings>): Observable<Agent> {
+    return this.api.updateAgentCallSettings(id, settings);
+  }
+
   disableAgent(id: string): Observable<Agent> {
     return this.api.disableAgent(id);
   }

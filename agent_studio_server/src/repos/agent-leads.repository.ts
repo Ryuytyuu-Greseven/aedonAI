@@ -121,4 +121,20 @@ export class AgentLeadsRepository {
       return skipped;
     }
   }
+
+  /** Names of a company's agent leads, by leadId (for the scheduled calls list). */
+  async findNamesByLeadIds(
+    customerId: string,
+    leadIds: string[],
+  ): Promise<Map<string, string>> {
+    if (leadIds.length === 0) return new Map();
+    const leads = await this.agentLeadModel
+      .find(
+        { customerId, leadId: { $in: leadIds } },
+        { leadId: 1, fullName: 1 },
+      )
+      .lean()
+      .exec();
+    return new Map(leads.map((lead) => [lead.leadId, lead.fullName ?? '']));
+  }
 }

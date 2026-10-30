@@ -10,6 +10,7 @@ import {
   ManualLeadsUploadResult,
   PageLead,
   PageLeadCallResult,
+  ScheduledCallsPage,
 } from '../models/lead.model';
 import { ApiService } from '../http/api.service';
 
@@ -57,5 +58,14 @@ export class LeadService {
 
   dialManualLead(agentId: string, phoneNumber: string, fullName?: string): Observable<ManualLeadCallResult> {
     return this.api.dialManualLead(agentId, { phoneNumber, ...(fullName ? { fullName } : {}) });
+  }
+
+  /** Upcoming (pending / dialing) or past (done / failed / cancelled) queued calls for an agent. */
+  getScheduledCalls(agentId: string, view: 'upcoming' | 'past', page: number, limit: number): Observable<ScheduledCallsPage> {
+    return this.api.getScheduledCalls(agentId, view, page, limit);
+  }
+
+  cancelScheduledCall(agentId: string, callId: string): Observable<void> {
+    return this.api.cancelScheduledCall(agentId, callId);
   }
 }

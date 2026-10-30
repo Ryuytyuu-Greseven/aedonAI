@@ -56,6 +56,8 @@ export const ApiEndpoints = {
     stage: (id: string) => `/agents/${id}/stage`,
     live: (id: string) => `/agents/${id}/live`,
     disable: (id: string) => `/agents/${id}/disable`,
+    /** Dialing rules only — never moves the agent back to draft. */
+    callSettings: (id: string) => `/agents/${id}/call-settings`,
     enable: (id: string) => `/agents/${id}/enable`,
     history: (id: string) => `/agents/${id}/history`,
     historyByAgentId: (agentId: string) => `/agents/by-agent-id/${agentId}/history`,
@@ -65,6 +67,9 @@ export const ApiEndpoints = {
     manualLeads: (id: string) => `/agents/${id}/leads/manual`,
     manualLeadDial: (id: string) => `/agents/${id}/leads/manual/dial`,
     manualLeadCall: (id: string, leadId: string) => `/agents/${id}/leads/manual/${encodeURIComponent(leadId)}/call`,
+    /** Calls the dialer has queued (missed-call retries). */
+    scheduledCalls: (id: string) => `/agents/${id}/scheduled-calls`,
+    cancelScheduledCall: (id: string, callId: string) => `/agents/${id}/scheduled-calls/${encodeURIComponent(callId)}/cancel`,
     /** Per-product enquiry stats for sales agents — see agent_studio_server change add-product-enquiry-stats. */
     productStats: (id: string) => `/agents/${id}/product-stats`,
   },

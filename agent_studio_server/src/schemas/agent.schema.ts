@@ -112,6 +112,36 @@ export class ReferralBonus {
 }
 export const ReferralBonusSchema = SchemaFactory.createForClass(ReferralBonus);
 
+/** Missed calls a lead can be retried after; 0 = never retried. */
+export const MAX_MISSED_CALL_RETRIES = 4;
+
+/**
+ * When the outbound dialer may call for this agent. Read by meta-adapter's
+ * call cron; edited on its own (PATCH /agents/:id/call-settings) so a live
+ * agent can change it without going back to draft.
+ */
+@Schema({ _id: false })
+export class CallSettings {
+  /** IANA zone the calling hours (and callback times) are in — not tied to the phone number's country. */
+  @Prop({ required: true, default: 'Asia/Kolkata' })
+  timezone: string;
+
+  /** `HH:mm`, local to `timezone`. Automatic calls only start inside [start, end). */
+  @Prop({ required: true, default: '09:00' })
+  calling_hours_start: string;
+
+  @Prop({ required: true, default: '18:00' })
+  calling_hours_end: string;
+
+  /** 0–MAX_MISSED_CALL_RETRIES. */
+  @Prop({ required: true, default: 0 })
+  missed_call_retries: number;
+
+  @Prop({ required: true, default: 360 })
+  missed_call_retry_gap_minutes: number;
+}
+export const CallSettingsSchema = SchemaFactory.createForClass(CallSettings);
+
 @Schema({ _id: false })
 export class McpServer {
   @Prop({ required: true, trim: true })
@@ -183,6 +213,9 @@ export class Agent {
 
   @Prop({ type: ReferralBonusSchema })
   referral_bonus?: ReferralBonus;
+
+  @Prop({ type: CallSettingsSchema, default: () => ({}) })
+  call_settings: CallSettings;
 
   /** Knowledge bases this agent can access (canonical link ownership). */
   @Prop({ type: [String], default: [] })
