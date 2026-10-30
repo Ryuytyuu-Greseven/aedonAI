@@ -14,7 +14,17 @@ import {
 } from '../models/phone-number.model';
 import { ApiUser, UserProfileResponse } from '../models/profile.model';
 import { MetaPage } from '../models/meta-integration.model';
-import { AgentLead, LeadsPage, LeadsQuery, PageLead, PageLeadCallResult } from '../models/lead.model';
+import {
+  AgentLead,
+  LeadsPage,
+  LeadsQuery,
+  ManualLead,
+  ManualLeadCallResult,
+  ManualLeadInput,
+  ManualLeadsUploadResult,
+  PageLead,
+  PageLeadCallResult,
+} from '../models/lead.model';
 import { CreatePropertyInput, Property, UpdatePropertyInput } from '../models/property.model';
 import { ProductStatsPage, ProductStatsQuery } from '../models/product-stats.model';
 import { ApiEndpoints } from './api-config';
@@ -32,6 +42,7 @@ import {
   ApiLeadsResponse,
   ApiMetaLead,
   fromApiAgentLeadsResponse,
+  fromApiManualLeadsResponse,
   fromApiMetaLeadsResponse,
 } from './lead-mapper';
 import { ApiCallDetail, ApiCallRecord, fromApiCallDetail, fromApiCallRecord } from './call-record-mapper';
@@ -244,6 +255,32 @@ export class ApiService {
     return this.http
       .get<ApiLeadsResponse<ApiAgentLead>>(ApiEndpoints.agents.leads(agentId), { params })
       .pipe(map(fromApiAgentLeadsResponse));
+  }
+
+  getManualLeads(agentId: string, query: LeadsQuery = {}): Observable<LeadsPage<ManualLead>> {
+    const params: Record<string, string | number> = { source: 'manual' };
+    if (query.page !== undefined) params['page'] = query.page;
+    if (query.limit !== undefined) params['limit'] = query.limit;
+    if (query.search) params['search'] = query.search;
+    if (query.fromDate) params['fromDate'] = query.fromDate;
+    if (query.toDate) params['toDate'] = query.toDate;
+
+    return this.http
+      .get<ApiLeadsResponse<ApiAgentLead>>(ApiEndpoints.agents.leads(agentId), { params })
+      .pipe(map(fromApiManualLeadsResponse));
+  }
+
+  uploadManualLeads(agentId: string, leads: ManualLeadInput[]): Observable<ManualLeadsUploadResult> {
+    return this.http.post<ManualLeadsUploadResult>(ApiEndpoints.agents.manualLeads(agentId), { leads });
+  }
+
+  callManualLead(agentId: string, leadId: string): Observable<ManualLeadCallResult> {
+    return this.http.post<ManualLeadCallResult>(ApiEndpoints.agents.manualLeadCall(agentId, leadId), null);
+  }
+
+  /** Calls a typed-in number; the server stores it as a manual lead (or reuses today's). */
+  dialManualLead(agentId: string, body: { phoneNumber: string; fullName?: string }): Observable<ManualLeadCallResult> {
+    return this.http.post<ManualLeadCallResult>(ApiEndpoints.agents.manualLeadDial(agentId), body);
   }
 
   getProductStats(agentId: string, query: ProductStatsQuery = {}): Observable<ProductStatsPage> {

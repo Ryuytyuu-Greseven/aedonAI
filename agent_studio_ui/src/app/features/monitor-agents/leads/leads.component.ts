@@ -6,8 +6,9 @@ import { LeadService } from '../../../core/services/lead.service';
 import { MetaIntegrationService } from '../../../core/services/meta-integration.service';
 import { ToastService } from '../../../core/services/toast.service';
 import { extractErrorMessage } from '../../../core/utils/http-error.util';
+import { ManualLeadsComponent } from '../manual-leads/manual-leads.component';
 
-type LeadView = 'agent' | 'page';
+type LeadView = 'agent' | 'page' | 'manual';
 
 const AGENT_LEADS_LIMIT = 20;
 const META_LEADS_LIMIT = 20;
@@ -15,6 +16,7 @@ const META_LEADS_LIMIT = 20;
 @Component({
   selector: 'app-leads',
   standalone: true,
+  imports: [ManualLeadsComponent],
   templateUrl: './leads.component.html',
   styleUrl: './leads.component.css',
 })

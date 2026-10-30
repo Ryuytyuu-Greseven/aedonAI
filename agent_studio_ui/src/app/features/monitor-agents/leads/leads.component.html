@@ -6,6 +6,9 @@
     <button type="button" class="leads-toggle-btn" [class.leads-toggle-active]="view() === 'page'" (click)="setView('page')">
       Page Leads
     </button>
+    <button type="button" class="leads-toggle-btn" [class.leads-toggle-active]="view() === 'manual'" (click)="setView('manual')">
+      Manual Leads
+    </button>
   </div>
 
   @if (view() === 'agent') {
@@ -87,6 +90,8 @@
         </div>
       </div>
     }
+  } @else if (view() === 'manual') {
+    <app-manual-leads [agentId]="agentId" />
   } @else {
     @if (pageLoading()) {
       <div class="lead-list">

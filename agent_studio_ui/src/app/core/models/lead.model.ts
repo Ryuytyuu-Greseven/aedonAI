@@ -74,3 +74,46 @@ export interface AgentLead {
   follow_up_action: string | null;
   outcome: LeadOutcome | null;
 }
+
+/**
+ * A lead the customer added by hand — uploaded from a sheet or typed into "Call a number"
+ * (`GET /api/agents/:id/leads?source=manual`). meta-adapter's call cron dials each one once within
+ * a week of being added, exactly like Page leads; after that it's a manual call.
+ */
+export interface ManualLead {
+  id: string;
+  /** What `POST /api/agents/:id/leads/manual/:leadId/call` takes. */
+  lead_id: string;
+  full_name: string;
+  phone_number: string;
+  email: string;
+  created_at: string;
+  call_attempts_count: number;
+  call_status: PageLeadCallStatus | null;
+  last_call_error: string | null;
+}
+
+/** One row of `POST /api/agents/:id/leads/manual`. */
+export interface ManualLeadInput {
+  fullName: string;
+  /** E.164. */
+  phoneNumber: string;
+  email: string;
+}
+
+/** Per-row outcome of an upload; `index` is the row's position in the submitted list. */
+export interface ManualLeadsUploadResult {
+  inserted: number;
+  /** Already added to this agent today — accepted but not added again. */
+  duplicates: { index: number; phoneNumber: string }[];
+  /** Failed the server's checks — not added; fix and resubmit just these. */
+  rejected: { index: number; lead: ManualLeadInput; errors: string[] }[];
+}
+
+/** Response of the manual lead call / dial endpoints. */
+export interface ManualLeadCallResult {
+  leadId: string;
+  callSid: string;
+  agentId: string;
+  callStatus: 'initiated';
+}
