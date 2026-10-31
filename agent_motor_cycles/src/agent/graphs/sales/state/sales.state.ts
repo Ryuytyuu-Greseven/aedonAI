@@ -107,22 +107,45 @@ export const SalesStateAnnotation = Annotation.Root({
     default: () => null,
   }),
 
+  // Motorcycle-specific qualification (captured via Discovery_Node)
+  ridingUsage: Annotation<string | null>({
+    reducer: (left, right) => right !== undefined ? right : left,
+    default: () => null,
+  }),
+  hasExchangeBike: Annotation<boolean | null>({
+    reducer: (left, right) => right !== undefined ? right : left,
+    default: () => null,
+  }),
+  exchangeBikeDetails: Annotation<string | null>({
+    reducer: (left, right) => right !== undefined ? right : left,
+    default: () => null,
+  }),
+  interestedInFinance: Annotation<boolean | null>({
+    reducer: (left, right) => right !== undefined ? right : left,
+    default: () => null,
+  }),
+  testRideInterested: Annotation<boolean | null>({
+    reducer: (left, right) => right !== undefined ? right : left,
+    default: () => null,
+  }),
+  testRidePreferredDate: Annotation<string | null>({
+    reducer: (left, right) => right !== undefined ? right : left,
+    default: () => null,
+  }),
+
   // Customer's residential/mailing address (captured via Discovery_Node)
   customerAddress: Annotation<string | null>({
     reducer: (left, right) => right !== undefined ? right : left,
     default: () => null,
   }),
 
-  // Whether the customer is open to visiting the site in the coming days
-  // (captured via Discovery_Node)
+  // Whether the customer is open to visiting the site/showroom in the coming days
   siteVisitInterested: Annotation<boolean | null>({
     reducer: (left, right) => right !== undefined ? right : left,
     default: () => null,
   }),
 
-  // Specific day/time the customer wants to visit — captured either during
-  // Discovery_Node (if volunteered early) or as a fallback question inside
-  // Closing_Node before the service request ticket is raised.
+  // Specific day/time the customer wants to visit or take a test ride
   siteVisitPreferredDate: Annotation<string | null>({
     reducer: (left, right) => right !== undefined ? right : left,
     default: () => null,

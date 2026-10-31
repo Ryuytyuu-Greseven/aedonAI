@@ -3,19 +3,33 @@ import { SalesState } from '../state/sales.state';
 import { llmInstance } from './../../../llms/google.llm';
 import * as Prompts from '../prompt/sales.prompts';
 import { formatPrice } from '../tool/sales.tools';
-import { findPropertiesByAgentId } from '../tool/sales-property.repository';
+import { findPropertiesByAgentId, SalesPropertyRecord } from '../tool/sales-property.repository';
+import * as fs from 'fs/promises';
+import * as path from 'path';
 
 // Model Listing — fetches every motorcycle model linked to this agent
-// (stored in sales_properties, src/schema/sales-properties.schema.ts: just a
-// name + free-text description, e.g. "155cc, ABS ... starting from 1.4
-// lakhs") and hands the whole list to the LLM. There's no structured
-// price/engine/segment to filter on in code, so budget/preference matching is
-// entirely the LLM's judgment call — e.g. a "starting from 1.4L" model can
-// still fit a 1.6L budget since most models have several variants.
+// (stored in sales_properties, or falling back to the rich sample catalog in properties.json).
 export async function Model_Listing_Node(state: SalesState) {
   const agentId = state.agentDetails?.id ?? state.agentDetails?.agent_id ?? '';
   const companyId = state.agentDetails?.companyId ?? null;
-  const properties = await findPropertiesByAgentId(agentId, companyId);
+  let properties: SalesPropertyRecord[] = await findPropertiesByAgentId(agentId, companyId);
+
+  if (properties.length === 0) {
+    try {
+      const fallbackPath = path.join(process.cwd(), 'src', 'config', 'properties.json');
+      const raw = await fs.readFile(fallbackPath, 'utf-8');
+      const catalog = JSON.parse(raw);
+      properties = catalog.map((c: any) => ({
+        id: c.id,
+        companyId: null,
+        agentId,
+        name: c.name,
+        description: `${c.shortPitch} Starting ex-showroom ₹${c.price.toLocaleString('en-IN')} (approx on-road ₹${(c.onRoadPrice ?? c.price * 1.15).toLocaleString('en-IN')}). Fuel economy: ${c.mileageKmpl} km/l. Highlights: ${c.highlights?.join(', ')}. EMI: ${c.sampleEmi ?? 'Low down payment schemes available'}.`,
+      }));
+    } catch (e) {
+      // Ignore if fallback file cannot be read
+    }
+  }
 
   if (properties.length === 0) {
     const response = await llmInstance.invoke([
@@ -32,7 +46,7 @@ export async function Model_Listing_Node(state: SalesState) {
 
   const promptText = await Prompts.getPrompt('model_listing', state.currentLanguage);
   const propertyList = properties
-    .map((p, i) => `Model ${i + 1}: ${p.name}. ${p.description ?? 'No further details on file.'}`)
+    .map((p: SalesPropertyRecord, i: number) => `Model ${i + 1}: ${p.name}. ${p.description ?? 'No further details on file.'}`)
     .join('\n');
 
   const customerContext = [
