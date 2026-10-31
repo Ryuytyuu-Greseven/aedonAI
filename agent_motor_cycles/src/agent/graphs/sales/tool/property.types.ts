@@ -4,7 +4,7 @@ export interface PropertyAmenity {
 }
 
 export interface NearbyFacility {
-  category: 'school' | 'hospital' | 'park' | 'restaurant' | 'mall' | 'metro' | 'other';
+  category: 'showroom' | 'service_center' | 'charging_station' | 'school' | 'hospital' | 'park' | 'restaurant' | 'mall' | 'metro' | 'other';
   name: string;
   distance: string;
 }
@@ -14,15 +14,26 @@ export interface Property {
   name: string;
   location: string;
   price: number;
+  onRoadPrice?: number;
   type: string;
-  bedrooms: number;
-  bathrooms: number;
-  sqft: number;
+  engineCc?: number;
+  mileageKmpl?: number;
+  powerBhp?: number;
+  torqueNm?: number;
+  fuelCapacityLiters?: number;
+  seatHeightMm?: number;
+  kerbWeightKg?: number;
+  sampleEmi?: string;
   highlights: string[];
+  availableColors?: string[];
   shortPitch: string;
   fullDescription: string;
   amenities: PropertyAmenity[];
   nearbyFacilities: NearbyFacility[];
+  // Backwards compatibility fields for legacy callers
+  bedrooms?: number;
+  bathrooms?: number;
+  sqft?: number;
 }
 
 // The Mongo-stored shape carries the embedding vector; app code otherwise
