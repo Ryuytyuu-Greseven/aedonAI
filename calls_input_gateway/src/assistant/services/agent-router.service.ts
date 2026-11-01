@@ -16,6 +16,7 @@ interface SessionCacheEntry {
 @Injectable()
 export class AgentRouterService {
   private readonly logger = new Logger(AgentRouterService.name);
+  private readonly sessionSockets = new Map<string, WebSocket>();
 
   constructor(
     private readonly callLogService: CallLogService,
@@ -24,9 +25,65 @@ export class AgentRouterService {
   ) {}
 
   /**
+   * Retrieves an existing open WebSocket for this session, or creates a new
+   * persistent connection to the domain agent. The connection remains open
+   * across conversational turns for the duration of the call.
+   */
+  public async getOrCreateSocket(sessionId: string, url: string): Promise<WebSocket> {
+    const existing = this.sessionSockets.get(sessionId);
+    if (existing && existing.readyState === WebSocket.OPEN) {
+      return existing;
+    }
+    if (existing) {
+      this.sessionSockets.delete(sessionId);
+      if (existing.readyState === WebSocket.CONNECTING) {
+        existing.close();
+      }
+    }
+
+    const ws = new WebSocket(url);
+    await new Promise<void>((resolve, reject) => {
+      ws.once('open', resolve);
+      ws.once('error', reject);
+    });
+
+    this.sessionSockets.set(sessionId, ws);
+
+    ws.on('close', () => {
+      if (this.sessionSockets.get(sessionId) === ws) {
+        this.sessionSockets.delete(sessionId);
+      }
+    });
+
+    ws.on('error', (err) => {
+      this.logger.error(`[Router] Persistent WS error for session ${sessionId}:`, err.message);
+      if (this.sessionSockets.get(sessionId) === ws) {
+        this.sessionSockets.delete(sessionId);
+      }
+    });
+
+    return ws;
+  }
+
+  /**
+   * Closes the persistent domain agent WebSocket connection for this session.
+   * Called on call termination, graceful end_call, or session cleanup.
+   */
+  public closeSession(sessionId: string): void {
+    const ws = this.sessionSockets.get(sessionId);
+    if (ws) {
+      this.sessionSockets.delete(sessionId);
+      if (ws.readyState === WebSocket.OPEN || ws.readyState === WebSocket.CONNECTING) {
+        ws.close();
+      }
+    }
+  }
+
+  /**
    * Connects to the appropriate domain agent server, sends the user text,
    * and yields response tokens one-by-one as the agent streams them back.
-   * Drop-in replacement for AgentService.runAgent() — same yield shape.
+   * Reuses the persistent session WebSocket to avoid per-turn reconnection latency,
+   * preserve filler memory, and accumulate call transcripts.
    */
   public async *streamFromAgent(
     text: string,
@@ -51,12 +108,7 @@ export class AgentRouterService {
       });
     }
 
-    const ws = new WebSocket(url);
-
-    await new Promise<void>((resolve, reject) => {
-      ws.once('open', resolve);
-      ws.once('error', reject);
-    });
+    const ws = await this.getOrCreateSocket(sessionId, url);
 
     // agentDetails (with its currentLanguage) is resolved once, up front, by
     // AssistantService.initiateAgentState — before any turn/greeting runs —
@@ -105,7 +157,7 @@ export class AgentRouterService {
 
     const queue: Array<{ type: string; text?: string; message?: string }> = [];
     let notify: (() => void) | null = null;
-    let closed = false;
+    let closed = ws.readyState !== WebSocket.OPEN;
 
     const wake = () => {
       if (notify) {
@@ -114,25 +166,30 @@ export class AgentRouterService {
       }
     };
 
-    ws.on('message', (data: Buffer) => {
+    const onMessage = (data: Buffer) => {
       try {
         queue.push(JSON.parse(data.toString()));
         wake();
       } catch {
         /* ignore malformed */
       }
-    });
-    ws.on('close', () => {
+    };
+    const onClose = () => {
       closed = true;
       wake();
-    });
-    ws.on('error', (err) => {
+    };
+    const onError = (err: any) => {
       this.logger.error('[Router] WS error:', err.message);
       closed = true;
       wake();
-    });
+    };
+
+    ws.on('message', onMessage);
+    ws.on('close', onClose);
+    ws.on('error', onError);
 
     let agentResponse = '';
+    let callEnded = false;
 
     try {
       while (true) {
@@ -156,10 +213,12 @@ export class AgentRouterService {
           agentResponse += item.text;
           yield { text: item.text };
         } else if (item.type === 'end_call') {
+          callEnded = true;
           yield { text: '', endCall: true };
           break;
         } else if (item.type === 'done') {
           if ((item as any).endCall) {
+            callEnded = true;
             yield { text: '', endCall: true };
           }
           break;
@@ -168,13 +227,20 @@ export class AgentRouterService {
         }
       }
     } finally {
+      ws.removeListener('message', onMessage);
+      ws.removeListener('close', onClose);
+      ws.removeListener('error', onError);
+
       if (agentResponse.trim()) {
         void this.callLogService.logMessage(callId, {
           message: agentResponse,
           speaker: 'ai_agent',
         });
       }
-      if (ws.readyState === WebSocket.OPEN) ws.close();
+
+      if (callEnded) {
+        this.closeSession(sessionId);
+      }
     }
   }
 }

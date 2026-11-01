@@ -4,6 +4,7 @@ import { LlmUsageService } from '../common/llm-usage/index.js';
 import { salesGraph } from './graphs/sales/graph/sales.graph.js';
 import { IAgent } from '../common/interface/agent.interface.js';
 import { warmUpKnowledgeBaseRetrieval } from './graphs/sales/tool/knowledge-base.store.js';
+import { findRecentLeadByPhone } from './graphs/sales/tool/agent-lead.store.js';
 
 interface AgentMessage {
   text: string;
@@ -54,6 +55,21 @@ export class AgentService implements OnModuleInit {
 
     try {
       console.log('Query from User: \t', msg.text, 'Agent Details:\n', msg.agentDetails);
+
+      // On initial call start, look up previous lead history by phone number to recognize returning customers
+      let returningLead: any = null;
+      if (msg.text === 'SYSTEM_START_CONVERSATION' && msg.customerPhNo) {
+        returningLead = await findRecentLeadByPhone(
+          msg.customerPhNo,
+          msg.agentDetails?.id || (msg.agentDetails as any)?.agent_id,
+        );
+        if (returningLead?.fullName) {
+          this.logger.log(
+            `[sales] Returning caller recognized: "${returningLead.fullName}" (phone: ${msg.customerPhNo})`,
+          );
+        }
+      }
+
       const result = await salesGraph.stream(
         {
           messages: [new HumanMessage(msg.text)],
@@ -74,6 +90,18 @@ export class AgentService implements OnModuleInit {
           currentLanguage: msg.agentDetails?.currentLanguage || msg.agentDetails?.language,
           agentPreferedLanguage: msg.agentDetails?.language,
           agentName: msg.agentDetails?.agent_name,
+          ...(returningLead
+            ? {
+                customerName: returningLead.fullName ?? undefined,
+                customerEmail: returningLead.email ?? undefined,
+                preferredLocation: returningLead.preferredLocation ?? undefined,
+                preferredType: returningLead.preferredType ?? undefined,
+                budgetMin: returningLead.budgetMin ?? undefined,
+                budgetMax: returningLead.budgetMax ?? undefined,
+                buyerType: returningLead.buyerType ?? undefined,
+                moveInTimeline: returningLead.purchaseTimeline ?? undefined,
+              }
+            : {}),
         },
         { configurable: { thread_id: msg.threadId }, callbacks: [tracker] },
       );

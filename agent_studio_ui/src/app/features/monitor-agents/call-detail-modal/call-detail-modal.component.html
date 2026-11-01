@@ -1,5 +1,5 @@
-<div class="modal-overlay" (click)="close()">
-  <div class="modal card call-detail-modal" role="dialog" aria-labelledby="call-detail-title" (click)="$event.stopPropagation()">
+<div class="modal-overlay" role="presentation">
+  <div class="modal card call-detail-modal" role="dialog" aria-labelledby="call-detail-title">
     <div class="flex justify-between items-center call-detail-header">
       <div>
         <h3 id="call-detail-title">{{ record.customer_name ?? record.phone_number ?? 'Web call' }}</h3>

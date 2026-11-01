@@ -125,8 +125,8 @@
   </div>
 
   @if (showExport()) {
-    <div class="modal-overlay" (click)="closeExport()" role="presentation">
-      <div class="modal card" (click)="$event.stopPropagation()">
+    <div class="modal-overlay" role="presentation">
+      <div class="modal card">
         <div class="card-header flex justify-between items-center">
           <span>View JSON</span>
           <button type="button" class="btn btn-ghost btn-sm" (click)="closeExport()">✕</button>

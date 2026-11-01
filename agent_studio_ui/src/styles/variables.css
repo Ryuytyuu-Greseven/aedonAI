@@ -63,8 +63,8 @@
   --bp-md: 1200px;
   --bp-lg: 1400px;
   --z-header: 100;
-  --z-modal: 200;
-  --z-toast: 1000;
+  --z-modal: 9000;
+  --z-toast: 10000;
 
   color-scheme: dark;
 }

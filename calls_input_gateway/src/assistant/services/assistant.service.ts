@@ -86,6 +86,7 @@ export class AssistantService {
     this.logger.log('Client disconnected — cleaning up session');
     const session = this.sessions.get(client);
     if (session) {
+      this.agentRouter.closeSession(session.sessionId);
       if (session.config.callId) {
         void this.callLogService.endCallLog(session.config.callId);
       }

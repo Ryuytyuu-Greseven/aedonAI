@@ -191,7 +191,7 @@ export function customerProfileContext(state: SalesState): string {
   }
 
   if (state.customerPhNo) {
-    known.push(`Phone: ${state.customerPhNo}`);
+    known.push(`Phone: ${state.customerPhNo} (Verified from Caller ID — NEVER ask customer to repeat it; offer to send visit pass/details to this number on WhatsApp)`);
   } else {
     missing.push('Phone Number (Collect only when arranging callback or site visit)');
   }
@@ -255,6 +255,7 @@ export function customerProfileContext(state: SalesState): string {
     `CRITICAL INSTRUCTION: If Name is known, personalize warmly (e.g. "Nice to meet you, ${state.customerName || 'Customer'}!"). ` +
     `If Name is missing and customer requirements or budget are now understood, ask naturally for their name: ` +
     `"Got it! I'll focus on [type] options around [location] within your budget. By the way, may I know your name so I can personalize our conversation?" ` +
+    `If Phone is already known (${state.customerPhNo ? `verified as ${state.customerPhNo}` : 'not known'}), NEVER ask the caller to share their phone number again; say: "Since I have your number from this call, may I send your visit pass and details directly on WhatsApp?". ` +
     `Do NOT ask for phone/email unless the customer specifically requests a callback, site visit, or brochure.\n` +
     `---------------------------------`
   );

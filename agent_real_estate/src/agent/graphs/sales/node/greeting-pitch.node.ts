@@ -12,9 +12,13 @@ export async function Greeting_Pitch_Node(state: SalesState) {
 
   // If the agent has a configured initial greeting and the call is starting,
   // deliver the configured greeting directly (preserves user configuration and eliminates LLM latency).
+  // If the caller is a returning customer whose name is known, personalize warmly.
   if (configuredGreeting && isSystemStart) {
+    const greetingText = state.customerName
+      ? `Welcome back, ${state.customerName}! ${configuredGreeting}`
+      : configuredGreeting;
     return {
-      messages: [new AIMessage(configuredGreeting)],
+      messages: [new AIMessage(greetingText)],
       currentNode: 'Greeting_Pitch_Node',
     };
   }
@@ -22,7 +26,11 @@ export async function Greeting_Pitch_Node(state: SalesState) {
   const promptText = await Prompts.getPrompt('greeting', state.currentLanguage);
 
   const messages = [
-    new SystemMessage(promptText + Prompts.identityContext(state)),
+    new SystemMessage(
+      promptText +
+      Prompts.customerProfileContext(state) +
+      Prompts.identityContext(state),
+    ),
     ...state.messages,
   ];
   const response = await llmInstance.invoke(messages);

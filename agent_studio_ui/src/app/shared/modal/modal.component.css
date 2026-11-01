@@ -1,3 +1,41 @@
+:host {
+  display: contents;
+}
+
+.modal-dialog {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  max-width: 100vw;
+  max-height: 100vh;
+  margin: 0;
+  padding: 24px;
+  border: none;
+  background: transparent;
+  display: grid;
+  place-items: center;
+  overflow-y: auto;
+  box-sizing: border-box;
+  z-index: var(--z-modal);
+}
+
+.modal-dialog:not([open]) {
+  display: none;
+}
+
+.modal-dialog[open] {
+  display: grid;
+}
+
+.modal-dialog::backdrop {
+  background: rgba(4, 5, 12, 0.55);
+  backdrop-filter: blur(8px) saturate(120%);
+  -webkit-backdrop-filter: blur(8px) saturate(120%);
+  animation: modal-fade 0.25s var(--ease);
+}
+
+/* Fallback for non-dialog rendering */
 .modal-backdrop {
   position: fixed;
   inset: 0;
@@ -142,6 +180,7 @@
 }
 
 @media (max-width: 520px) {
+  .modal-dialog,
   .modal-backdrop {
     align-items: end;
     padding: 0;

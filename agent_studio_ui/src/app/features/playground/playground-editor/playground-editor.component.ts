@@ -124,6 +124,7 @@ export class PlaygroundEditorComponent implements OnInit {
   readonly productionPhoneNumberId = signal<string>('');
   /** Production number this agent is already live on, if any — preselected at go-live. */
   readonly currentLiveNumberId = signal<string | null>(null);
+  readonly stageModalOpen = signal(false);
   readonly goLiveModalOpen = signal(false);
 
   readonly template = signal<AgentTemplate | null>(null);
@@ -194,6 +195,7 @@ export class PlaygroundEditorComponent implements OnInit {
     this.productionPhoneNumbers.set([]);
     this.productionPhoneNumberId.set('');
     this.currentLiveNumberId.set(null);
+    this.stageModalOpen.set(false);
     this.goLiveModalOpen.set(false);
     this.form.reset({
       agent_name: '',
@@ -674,6 +676,19 @@ export class PlaygroundEditorComponent implements OnInit {
   }
 
   moveToStaging(): void {
+    this.openStageModal();
+  }
+
+  openStageModal(): void {
+    if (!this.agentId() || this.status() !== 'draft') return;
+    this.stageModalOpen.set(true);
+  }
+
+  cancelStageModal(): void {
+    this.stageModalOpen.set(false);
+  }
+
+  confirmMoveToStaging(): void {
     const id = this.agentId();
     if (!id || this.status() !== 'draft') return;
 
@@ -681,6 +696,7 @@ export class PlaygroundEditorComponent implements OnInit {
     this.agentService.stageAgent(id).subscribe({
       next: (updated) => {
         this.stagingAgent.set(false);
+        this.stageModalOpen.set(false);
         this.status.set(updated.status);
         this.currentStageVersion.set(updated.current_stage_version);
         this.toast.success('Agent moved to staging');
@@ -708,7 +724,7 @@ export class PlaygroundEditorComponent implements OnInit {
 
     const selectedPhone = this.productionPhoneNumbers().find((n) => n.id === this.productionPhoneNumberId());
     if (!selectedPhone) {
-      this.toast.error('Select a production phone number before going live');
+      this.toast.error('Select a production phone number before moving to production');
       return;
     }
     this.goingLive.set(true);
@@ -719,12 +735,12 @@ export class PlaygroundEditorComponent implements OnInit {
         this.goLiveModalOpen.set(false);
         this.status.set(updated.status);
         this.currentStageVersion.set(updated.current_stage_version);
-        this.toast.success('Agent is now live');
+        this.toast.success('Agent moved to production');
       },
       error: (err) => {
         this.goingLive.set(false);
         this.previewPassed.set(false);
-        this.toast.error(extractErrorMessage(err, 'Failed to go live'));
+        this.toast.error(extractErrorMessage(err, 'Failed to move agent to production'));
       },
     });
   }
