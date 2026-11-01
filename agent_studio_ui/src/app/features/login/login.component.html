@@ -1,6 +1,10 @@
 <app-auth-layout>
   <h1 class="login-heading">Welcome back</h1>
   <p class="text-muted login-subtitle">Sign in to your account to continue</p>
+  <p class="caption text-muted">
+    <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+    Demo login is prefilled — refresh the page to restore it.
+  </p>
 
   <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="login-form">
     <div class="form-group">

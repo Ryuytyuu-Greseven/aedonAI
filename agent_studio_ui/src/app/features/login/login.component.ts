@@ -15,9 +15,10 @@ export class LoginComponent {
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
 
+  // Prefilled with the demo account so judges/visitors can sign in in one click.
   readonly form = this.fb.nonNullable.group({
-    email: ['', [Validators.required, Validators.email]],
-    password: ['', Validators.required],
+    email: ['clara@lyreai.com', [Validators.required, Validators.email]],
+    password: ['admin123', Validators.required],
   });
 
   readonly loading = signal(false);

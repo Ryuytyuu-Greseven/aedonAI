@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Lyre AI Pitch</title>
+<style>
+  :root {
+    --ink: #111;
+    --muted: #555;
+    --line: #e4e4e4;
+    --accent: #ff5a1f;
+    --paper: #fff;
+    --stage: #1b1b1b;
+    --todo-bg: #fff3b0;
+    --todo-ink: #6b5400;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html, body { height: 100%; background: var(--stage); }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Helvetica Neue", Arial, "Noto Sans", sans-serif;
+    color: var(--ink);
+    overflow: hidden;
+  }
+
+  /* Each slide is authored at 1600×900 and scaled to fit the window. */
+  .deck { position: fixed; inset: 0; display: grid; place-items: center; }
+  .slide {
+    position: absolute;
+    width: 1600px; height: 900px;
+    background: var(--paper);
+    padding: 96px 120px;
+    display: none;
+    flex-direction: column;
+    transform-origin: center center;
+  }
+  .slide.active { display: flex; }
+
+  .kicker {
+    font-size: 26px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase;
+    color: var(--accent); margin-bottom: 28px;
+  }
+  h1 { font-size: 76px; line-height: 1.08; font-weight: 800; letter-spacing: -.02em; }
+  h2 { font-size: 64px; line-height: 1.1; font-weight: 800; letter-spacing: -.02em; max-width: 1360px; }
+  .sub { font-size: 36px; line-height: 1.35; color: var(--muted); margin-top: 32px; max-width: 1240px; }
+  .body { margin-top: auto; }
+
+  ul.points { list-style: none; display: grid; gap: 30px; }
+  ul.points li { font-size: 38px; line-height: 1.3; padding-left: 48px; position: relative; }
+  ul.points li::before {
+    content: ""; position: absolute; left: 0; top: 18px;
+    width: 18px; height: 18px; background: var(--accent); border-radius: 50%;
+  }
+
+  .steps { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+  .steps.four { grid-template-columns: repeat(4, 1fr); gap: 32px; }
+  .step { border-top: 6px solid var(--ink); padding-top: 28px; }
+  .step .n { font-size: 26px; font-weight: 800; color: var(--accent); }
+  .step .t { font-size: 38px; font-weight: 800; margin-top: 10px; line-height: 1.15; }
+  .step .d { font-size: 28px; color: var(--muted); margin-top: 14px; line-height: 1.35; }
+
+  .stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+  .stat .v { font-size: 96px; font-weight: 800; letter-spacing: -.03em; line-height: 1; }
+  .stat .l { font-size: 28px; color: var(--muted); margin-top: 14px; line-height: 1.3; }
+
+  .plans { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; }
+  .plan { border: 3px solid var(--line); border-radius: 16px; padding: 36px; }
+  .plan.hi { border-color: var(--ink); }
+  .plan .name { font-size: 30px; font-weight: 700; }
+  .plan .price { font-size: 72px; font-weight: 800; margin-top: 8px; letter-spacing: -.02em; }
+  .plan .price small { font-size: 30px; font-weight: 600; color: var(--muted); }
+  .plan .inc { font-size: 28px; color: var(--muted); margin-top: 10px; }
+
+  .eq { display: flex; align-items: stretch; gap: 20px; font-size: 44px; font-weight: 800; }
+  .eq .box { flex: 1; border: 3px solid var(--ink); border-radius: 16px; padding: 28px 20px; text-align: center; }
+  .eq .box .num { font-size: 56px; font-weight: 800; letter-spacing: -.02em; }
+  .eq .box .lbl { display: block; font-size: 24px; font-weight: 600; color: var(--muted); margin-top: 10px; line-height: 1.3; }
+  .eq .op { color: var(--accent); align-self: center; }
+
+  .team { display: grid; grid-template-columns: repeat(2, 1fr); gap: 56px; }
+  .person .name { font-size: 44px; font-weight: 800; }
+  .person .role { font-size: 30px; color: var(--accent); font-weight: 700; margin-top: 6px; }
+  .person .bio { font-size: 30px; color: var(--muted); margin-top: 16px; line-height: 1.35; }
+
+  .title-slide { justify-content: center; }
+  .title-slide .logo { font-size: 44px; font-weight: 800; display: flex; align-items: center; gap: 18px; margin-bottom: 56px; }
+  .title-slide .logo i { width: 56px; height: 56px; border-radius: 14px; background: var(--accent); display: inline-block; }
+  .title-slide h1 { font-size: 88px; max-width: 1360px; }
+
+  .foot {
+    position: absolute; left: 120px; right: 120px; bottom: 40px;
+    display: flex; justify-content: space-between; font-size: 20px; color: #aaa;
+  }
+
+  /* Placeholders: anything still to be filled in by the founders. */
+  .todo {
+    background: var(--todo-bg); color: var(--todo-ink);
+    border-radius: 8px; padding: 0 .25em;
+    box-decoration-break: clone; -webkit-box-decoration-break: clone;
+  }
+  body.clean .todo { background: none; color: inherit; padding: 0; }
+
+  .notes {
+    display: none; position: fixed; left: 0; right: 0; bottom: 0; max-height: 40vh; overflow: auto;
+    background: #000; color: #eee; font-size: 16px; line-height: 1.5; padding: 16px 24px; z-index: 5;
+  }
+  body.show-notes .notes { display: block; }
+  .slide aside { display: none; }
+
+  .hint {
+    position: fixed; right: 16px; bottom: 12px; color: #888; font-size: 13px; z-index: 4;
+  }
+  body.show-notes .hint { display: none; }
+
+  @media print {
+    @page { size: 1600px 900px; margin: 0; }
+    html, body { background: #fff; overflow: visible; height: auto; }
+    .deck { position: static; display: block; }
+    .slide { position: relative; display: flex !important; transform: none !important; page-break-after: always; break-after: page; }
+    .hint, .notes { display: none !important; }
+  }
+</style>
+</head>
+<body>
+<div class="deck">
+
+  <!-- 1. Title -->
+  <section class="slide title-slide">
+    <div class="logo"><i></i>Lyre AI</div>
+    <h1>AI voice agents that call every sales lead within minutes, in the customer's own language.</h1>
+    <!-- <p class="sub"><span class="todo">Lyre AI</span> · <span class="todo">[Team name]</span></p> -->
+    <aside>Say the one-liner, then stop. Pass the email test: a smart friend should get it without follow-up questions.</aside>
+  </section>
+
+  <!-- 2. Problem -->
+  <section class="slide">
+    <div class="kicker">Problem</div>
+    <h2>Indian businesses pay for sales leads, then call them back too late, in the wrong language.</h2>
+    <div class="body">
+      <ul class="points">
+        <li>A buyer fills a Meta ad form at 9pm. The callback comes the next afternoon. By then they've spoken to a competitor.</li>
+        <li>Sales teams can't cover nights, weekends or a spike of 500 leads after a campaign.</li>
+        <li>Customers switch between Hindi, Telugu and English mid-sentence. Most voice bots handle only one language.</li>
+      </ul>
+    </div>
+    <aside>Tell this as a story about one buyer. If anyone on the team has seen it happen (a family member buying a flat, a friend's showroom), use that.</aside>
+  </section>
+
+  <!-- 3. Solution -->
+  <section class="slide">
+    <div class="kicker">Solution</div>
+    <h2>Lyre calls every lead within minutes, qualifies them, and hands your team the hot ones.</h2>
+    <div class="body steps">
+      <div class="step">
+        <div class="n">01</div>
+        <div class="t">A lead comes in</div>
+        <div class="d">From a Meta ad, your CRM, or an inbound call to your number.</div>
+      </div>
+      <div class="step">
+        <div class="n">02</div>
+        <div class="t">Lyre calls and talks like your best salesperson</div>
+        <div class="d">In Hindi, Telugu, Tamil, Kannada or English, answering from your brochures and price lists.</div>
+      </div>
+      <div class="step">
+        <div class="n">03</div>
+        <div class="t">Your team gets a qualified lead</div>
+        <div class="d">Budget, need and timeline, plus the booked visit, sent to your CRM or WhatsApp.</div>
+      </div>
+    </div>
+    <aside>Keep this short. The demo on the next slide does the convincing.</aside>
+  </section>
+
+  <!-- 4. Demo -->
+  <section class="slide">
+    <div class="kicker">Live demo</div>
+    <h2>Watch Lyre call a real phone and sell a flat, switching between Telugu and English.</h2>
+    <div class="body">
+      <ul class="points">
+        <li>The caller switches language mid-sentence. The agent follows.</li>
+        <li>The caller asks about price and amenities. The agent answers from the uploaded brochure.</li>
+        <li>The call ends. A qualified lead with a booked site visit appears on the dashboard.</li>
+      </ul>
+    </div>
+    <aside>Call a teammate's phone on speaker from the studio. Tell judges these three things to watch for before you dial. Have a recorded backup call ready in case the venue network or phone signal fails. Keep the call under 90 seconds.</aside>
+  </section>
+
+  <!-- 5. How it works -->
+  <section class="slide">
+    <div class="kicker">How it works</div>
+    <h2>A real phone call, turned into speech, reasoning and a spoken reply in real time.</h2>
+    <div class="body steps four">
+      <div class="step">
+        <div class="n">01 · Phone</div>
+        <div class="t">Twilio &amp; Exotel</div>
+        <div class="d">Indian numbers through Exotel, international through Twilio, streamed live.</div>
+      </div>
+      <div class="step">
+        <div class="n">02 · Listen</div>
+        <div class="t">Deepgram &amp; Sarvam</div>
+        <div class="d">Speech-to-text tuned for Indian languages and code-switching.</div>
+      </div>
+      <div class="step">
+        <div class="n">03 · Think</div>
+        <div class="t">Gemini + LangGraph</div>
+        <div class="d">An industry conversation graph, searching your brochures in Pinecone.</div>
+      </div>
+      <div class="step">
+        <div class="n">04 · Speak</div>
+        <div class="t">Natural voice reply</div>
+        <div class="d">Callers can interrupt any time, like a real conversation.</div>
+      </div>
+    </div>
+    <aside>Judges score technical depth. Name the hard parts: latency on a phone line, detecting a language switch mid-sentence, and searching documents written in English with questions asked in Telugu.</aside>
+  </section>
+
+  <!-- 6. What we built -->
+  <section class="slide">
+    <div class="kicker">What we built</div>
+    <h2>Working end to end: real phone calls, 3 industries, 5 Indian languages.</h2>
+    <div class="body">
+      <ul class="points">
+        <li>Sales agents for real estate, two-wheelers and home appliances</li>
+        <li>A studio where a business sets up its agent, uploads brochures and gets a phone number</li>
+        <li>Meta lead ads trigger a call automatically; every call ends with a scored lead and transcript</li>
+      </ul>
+    </div>
+    <aside>If the judges ask what was built during the hackathon and what existed before, answer honestly and precisely. Add "[N] hours / [N] people" to the headline if it helps.</aside>
+  </section>
+
+  <!-- 7. Why it's different -->
+  <section class="slide">
+    <div class="kicker">Why it's different</div>
+    <h2>Indian buyers don't speak one language per call. Our agents switch languages when the caller does.</h2>
+    <div class="body">
+      <ul class="points">
+        <li>Each industry gets its own conversation flow (pitch, objections, booking), not one generic prompt.</li>
+        <li>We rebuilt product search for Indian languages after off-the-shelf models failed on Hindi and Telugu questions.</li>
+      </ul>
+    </div>
+    <aside>The search story is a real finding: the first embedding model scored about 0.31 similarity on Hindi and Telugu questions, so the team moved to gemini-embedding-001. Tell it if a judge asks about the hardest problem.</aside>
+  </section>
+
+  <!-- 8. Business model -->
+  <section class="slide">
+    <div class="kicker">Business model</div>
+    <h2>Businesses pay a monthly plan that includes call minutes, plus a per-minute rate above that.</h2>
+    <div class="body plans">
+      <div class="plan">
+        <div class="name">Starter</div>
+        <div class="price">$99<small> / mo</small></div>
+        <div class="inc">1,000 minutes · $0.12 / extra min</div>
+      </div>
+      <div class="plan hi">
+        <div class="name">Growth</div>
+        <div class="price">$399<small> / mo</small></div>
+        <div class="inc">5,000 minutes · $0.09 / extra min</div>
+      </div>
+      <div class="plan">
+        <div class="name">Enterprise</div>
+        <div class="price">Custom</div>
+        <div class="inc">Volume pricing for large sales teams</div>
+      </div>
+    </div>
+    <aside>One sentence is enough here. The comparison judges understand: a telecaller costs a monthly salary and covers one shift in one or two languages.</aside>
+  </section>
+
+  <!-- 9. Team -->
+  <section class="slide">
+    <div class="kicker">Team</div>
+    <h2>Lyre AI: the people who built it.</h2>
+    <div class="body team">
+      <div class="person">
+        <div class="name">Rukmesh</div>
+        <!-- <div class="bio"><span class="todo">[One line: what you built in this project]</span></div> -->
+      </div>
+      <div class="person">
+        <div class="name">Raghu</div>
+        <!-- <div class="role"><span class="todo">[Role]</span></div>
+        <div class="bio"><span class="todo">[One line: what you built in this project]</span></div> -->
+      </div>
+      <div class="person">
+        <div class="name">Suresh</div>
+        <!-- <div class="role"><span class="todo">[Role]</span></div>
+        <div class="bio"><span class="todo">[One line: what you built in this project]</span></div> -->
+      </div>
+      <div class="person">
+        <div class="name">Dinesh</div>
+        <!-- <div class="role"><span class="todo">[Role]</span></div>
+        <div class="bio"><span class="todo">[One line: what you built in this project]</span></div> -->
+      </div>
+    </div>
+    <aside>Add or remove people as needed. Each line should say what that person built, not their job title.</aside>
+  </section>
+
+  <!-- 10. What's next -->
+  <section class="slide">
+    <div class="kicker">What's next</div>
+    <h2>Next: put Lyre in front of real estate developers with live leads.</h2>
+    <div class="body">
+      <ul class="points">
+        <li>Run free pilots with 2–3 businesses on their real Meta leads</li>
+        <li>Measure what matters: leads reached, site visits and test rides booked</li>
+        <li>Add more Indian languages and industries</li>
+      </ul>
+    </div>
+    <aside>End on the one-liner from the title slide, then thank the judges and take questions.</aside>
+  </section>
+
+</div>
+
+<div class="notes" id="notes"></div>
+<div class="hint">← → to navigate · N notes · C hide placeholders · P print</div>
+
+<script>
+  const slides = [...document.querySelectorAll('.slide')];
+  const notes = document.getElementById('notes');
+  let i = 0;
+
+  slides.forEach((s, n) => {
+    const foot = document.createElement('div');
+    foot.className = 'foot';
+    foot.innerHTML = `<span>Lyre AI</span><span>${n + 1} / ${slides.length}</span>`;
+    s.appendChild(foot);
+  });
+
+  function fit() {
+    const scale = Math.min(innerWidth / 1600, innerHeight / 900);
+    slides.forEach(s => { s.style.transform = `scale(${scale})`; });
+  }
+
+  function show(n) {
+    i = Math.max(0, Math.min(slides.length - 1, n));
+    slides.forEach((s, k) => s.classList.toggle('active', k === i));
+    const aside = slides[i].querySelector('aside');
+    notes.textContent = aside ? aside.textContent : '';
+    history.replaceState(null, '', '#' + (i + 1));
+  }
+
+  addEventListener('keydown', e => {
+    if (['ArrowRight', 'PageDown', ' '].includes(e.key)) show(i + 1);
+    else if (['ArrowLeft', 'PageUp'].includes(e.key)) show(i - 1);
+    else if (e.key === 'Home') show(0);
+    else if (e.key === 'End') show(slides.length - 1);
+    else if (e.key === 'n' || e.key === 'N') document.body.classList.toggle('show-notes');
+    else if (e.key === 'c' || e.key === 'C') document.body.classList.toggle('clean');
+    else if (e.key === 'p' || e.key === 'P') print();
+  });
+  document.querySelector('.deck').addEventListener('click', e => show(e.clientX > innerWidth / 2 ? i + 1 : i - 1));
+  addEventListener('resize', fit);
+
+  fit();
+  show((parseInt(location.hash.slice(1), 10) || 1) - 1);
+</script>
+</body>
+</html>
