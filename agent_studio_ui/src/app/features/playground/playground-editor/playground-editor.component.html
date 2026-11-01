@@ -72,9 +72,14 @@
             </button>
           }
           @if (agentId() && status() === 'draft') {
-            <button type="button" class="btn btn-primary btn-sm" [disabled]="stagingAgent()" (click)="moveToStaging()">
+            <button type="button" class="btn btn-primary btn-sm" [disabled]="stagingAgent()" (click)="openStageModal()">
               @if (stagingAgent()) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Staging… }
               @else { <i class="fa-solid fa-flask" aria-hidden="true"></i> Move to staging }
+            </button>
+          }
+          @if (agentId() && status() === 'staged') {
+            <button type="button" class="btn btn-primary btn-sm pg-golive" (click)="openGoLiveModal()">
+              <i class="fa-solid fa-rocket" aria-hidden="true"></i> Move to production
             </button>
           }
           <!-- <button type="button" class="btn btn-secondary btn-sm" (click)="resetAll()">
@@ -335,7 +340,7 @@
                 @else { <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save }
               </button>
               <button type="button" class="btn btn-primary pg-golive" (click)="openGoLiveModal()">
-                <i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i> Go live
+                <i class="fa-solid fa-rocket" aria-hidden="true"></i> Move to production
               </button>
             </div>
           </div>
@@ -380,37 +385,70 @@
   }
 </div>
 
+@if (stageModalOpen()) {
+  <app-modal
+    title="Move to staging?"
+    subtitle="Stage this agent to create a version snapshot and enable testing."
+    icon="fa-flask"
+    tone="brand"
+    [width]="480"
+    (closed)="cancelStageModal()"
+  >
+    <div class="pg-confirm-modal-body">
+      <p>
+        Are you sure you want to move <strong>{{ form.get('agent_name')?.value || 'this agent' }}</strong> to staging?
+      </p>
+      <div class="note-box">
+        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+        Moving to staging freezes the current draft into a new version snapshot. You will be able to test and preview this version before publishing it to production.
+      </div>
+    </div>
+    <ng-container ngProjectAs="[modal-footer]">
+      <button type="button" class="btn btn-ghost" (click)="cancelStageModal()">Cancel</button>
+      <button type="button" class="btn btn-primary" [disabled]="stagingAgent()" (click)="confirmMoveToStaging()">
+        @if (stagingAgent()) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Moving to staging… }
+        @else { <i class="fa-solid fa-flask" aria-hidden="true"></i> Move to staging }
+      </button>
+    </ng-container>
+  </app-modal>
+}
+
 @if (goLiveModalOpen()) {
   <app-modal
-    title="Go live?"
-    subtitle="The agent becomes live and starts taking calls on the number you choose."
-    icon="fa-tower-broadcast"
+    title="Move to production?"
+    subtitle="Deploy this agent to production to start taking live customer calls."
+    icon="fa-rocket"
     tone="success"
-    [width]="460"
+    [width]="480"
     (closed)="cancelGoLive()"
   >
-    <div class="form-group">
-      <label class="label" for="production_phone_number">Production phone number</label>
-      <div class="icon-field">
-        <i class="fa-solid fa-phone" aria-hidden="true"></i>
-        <select id="production_phone_number" class="select input" [value]="productionPhoneNumberId()" (change)="onProductionPhoneNumberChange($event)">
-          <option value="">Select a number</option>
-          @for (number of productionPhoneNumbers(); track number.id) {
-            <option [value]="number.id">{{ phoneNumberDisplayLabel(number) }}{{ number.id === currentLiveNumberId() ? ' · Current live number' : '' }}</option>
-          }
-        </select>
-      </div>
-      @if (productionPhoneNumbers().length === 0) {
-        <div class="note-box pg-golive-note">
-          <i class="fa-solid fa-circle-info" aria-hidden="true"></i> No free production numbers for this agent's country. An admin can buy one from Phone Numbers.
+    <div class="pg-confirm-modal-body">
+      <p>
+        Are you sure you want to move <strong>{{ form.get('agent_name')?.value || 'this agent' }}</strong> to production?
+      </p>
+      <div class="form-group">
+        <label class="label" for="production_phone_number">Production phone number</label>
+        <div class="icon-field">
+          <i class="fa-solid fa-phone" aria-hidden="true"></i>
+          <select id="production_phone_number" class="select input" [value]="productionPhoneNumberId()" (change)="onProductionPhoneNumberChange($event)">
+            <option value="">Select a number</option>
+            @for (number of productionPhoneNumbers(); track number.id) {
+              <option [value]="number.id">{{ phoneNumberDisplayLabel(number) }}{{ number.id === currentLiveNumberId() ? ' · Current live number' : '' }}</option>
+            }
+          </select>
         </div>
-      }
+        @if (productionPhoneNumbers().length === 0) {
+          <div class="note-box pg-golive-note">
+            <i class="fa-solid fa-circle-info" aria-hidden="true"></i> No free production numbers for this agent's country. An admin can buy one from Phone Numbers.
+          </div>
+        }
+      </div>
     </div>
     <ng-container ngProjectAs="[modal-footer]">
       <button type="button" class="btn btn-ghost" (click)="cancelGoLive()">Cancel</button>
-      <button type="button" class="btn btn-primary" [disabled]="goingLive() || !productionPhoneNumberId()" (click)="confirmGoLive()">
-        @if (goingLive()) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Going live… }
-        @else { <i class="fa-solid fa-tower-broadcast" aria-hidden="true"></i> Go live }
+      <button type="button" class="btn btn-primary pg-golive" [disabled]="goingLive() || !productionPhoneNumberId()" (click)="confirmGoLive()">
+        @if (goingLive()) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Moving to production… }
+        @else { <i class="fa-solid fa-rocket" aria-hidden="true"></i> Move to production }
       </button>
     </ng-container>
   </app-modal>

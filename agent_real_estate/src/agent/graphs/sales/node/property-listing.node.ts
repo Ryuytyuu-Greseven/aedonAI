@@ -3,19 +3,64 @@ import { z } from 'zod';
 import { SalesState } from '../state/sales.state';
 import { llmInstance } from './../../../llms/google.llm';
 import * as Prompts from '../prompt/sales.prompts';
-import { formatPrice } from '../tool/sales.tools';
-import { findPropertiesByAgentId } from '../tool/sales-property.repository';
+import { formatPrice } from '../tool/sales.tools.js';
+import { findPropertiesByAgentId, SalesPropertyRecord } from '../tool/sales-property.repository.js';
+import { findAllProperties } from '../tool/property.store.js';
 
-// Property Listing — fetches every property linked to this agent
-// and hands the listings to the LLM to present matching options, while
-// extracting any newly introduced customer profile fields (name, timeline, etc.).
+function docToRecord(doc: any): SalesPropertyRecord {
+  return {
+    id: doc.id || String(doc._id),
+    companyId: null,
+    agentId: '',
+    name: doc.name,
+    description: `${doc.shortPitch || doc.fullDescription || ''} Price: ${formatPrice(doc.price)}, Location: ${doc.location}, Type: ${doc.type}, Bedrooms: ${doc.bedrooms}, Sqft: ${doc.sqft}.`,
+  };
+}
+
+function scorePropertyMatch(p: SalesPropertyRecord, state: SalesState): number {
+  let score = 0;
+  const text = `${p.name} ${p.description ?? ''}`.toLowerCase();
+
+  if (state.preferredType) {
+    const typeNorm = state.preferredType.toLowerCase().replace(/[\s-]/g, '');
+    if (text.replace(/[\s-]/g, '').includes(typeNorm)) score += 3;
+  }
+  if (state.preferredLocation) {
+    const locNorm = state.preferredLocation.toLowerCase();
+    if (text.includes(locNorm)) score += 3;
+  }
+  if (state.moveInTimeline) {
+    const timeNorm = state.moveInTimeline.toLowerCase();
+    if (text.includes(timeNorm)) score += 1;
+  }
+  return score;
+}
+
+// Property Listing — fetches properties linked to this agent (with fallback to catalog),
+// prioritizes listings matching customer preferences (BHK, location, budget),
+// and presents top options to user while extracting any newly introduced customer profile fields.
 export async function Property_Listing_Node(state: SalesState) {
   const agentId = state.agentDetails?.id ?? state.agentDetails?.agent_id ?? '';
   const companyId = state.agentDetails?.companyId ?? null;
-  const properties =
+
+  let rawProperties: SalesPropertyRecord[] =
     state.properties && state.properties.length > 0
       ? state.properties
-      : await findPropertiesByAgentId(agentId, companyId);
+      : await findPropertiesByAgentId(agentId, companyId).catch(() => []);
+
+  if (rawProperties.length === 0) {
+    try {
+      const fallbackDocs = await findAllProperties();
+      rawProperties = fallbackDocs.map(docToRecord);
+    } catch {
+      rawProperties = [];
+    }
+  }
+
+  // Prioritize properties matching customer requirements at the top of the list
+  const properties = [...rawProperties].sort(
+    (a, b) => scorePropertyMatch(b, state) - scorePropertyMatch(a, state),
+  );
 
   const extractorLlm = llmInstance.withStructuredOutput(
     z.object({

@@ -89,6 +89,29 @@ async function runTests() {
     assert(firstReply === configuredGreeting, 'Configured initial greeting was used directly without LLM hallucination');
   }
 
+  // Test 1d: Returning Customer Recognized
+  console.log('\n[Test 1d] Returning Customer Recognized');
+  {
+    const configuredGreeting = "Hi, thanks for reaching out about our MVV Builders listings. I'm here to help you find the right property.";
+    const state: Partial<SalesState> = {
+      messages: [new HumanMessage('SYSTEM_START_CONVERSATION')],
+      userQuery: 'SYSTEM_START_CONVERSATION',
+      currentNode: '',
+      routeDestination: 'Greeting_Pitch_Node',
+      customerName: 'Rahul',
+      agentDetails: {
+        agent_name: 'Clara',
+        greeting: configuredGreeting,
+      } as any,
+    };
+
+    const result = await salesGraph.invoke(state, { configurable: { thread_id: 'flow_test_1d' } });
+    assert(result.currentNode === 'Greeting_Pitch_Node', 'Graph navigated to Greeting_Pitch_Node');
+    const firstReply = String(result.messages[result.messages.length - 1].content);
+    assert(firstReply.includes('Welcome back, Rahul!'), 'Returning customer greeted warmly by name');
+    assert(firstReply.includes(configuredGreeting), 'Configured greeting preserved after personalized welcome');
+  }
+
   // Test 2: Consultative Discovery -> Budget Discovery
   console.log('\n[Test 2] Consultative Discovery Flow');
   {

@@ -488,6 +488,20 @@
   margin: 12px 0 0;
 }
 
+.pg-confirm-modal-body p {
+  margin: 0 0 14px;
+  font-size: 14px;
+  color: var(--text-primary);
+  line-height: 1.5;
+}
+
+.pg-confirm-modal-body .note-box {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  margin: 12px 0 0;
+}
+
 /* ---------- Skeletons ---------- */
 .pg-skeleton-icon {
   width: 64px;

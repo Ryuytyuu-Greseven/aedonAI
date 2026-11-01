@@ -37,8 +37,9 @@ const FAQ_ITEMS: FaqItem[] = [
   {
     keywords: ['stamp duty', 'stamp', 'duty', 'registration charges', 'registration cost'],
     answer:
-      'Stamp duty in Karnataka is typically 5% of the property value, plus 1% registration charges. ' +
-      'Some of our current projects have a zero stamp duty offer — I can confirm which ones apply for you.',
+      'Stamp duty and registration charges typically range from 5 to 7.5 percent depending on the state and property value. ' +
+      'Some of our current projects also feature special zero stamp duty or registration concessions. ' +
+      'I can confirm the exact applicable charges and offers for whichever property you have in mind.',
   },
   {
     keywords: ['possession', 'ready', 'move in', 'handover', 'delivery', 'completion'],
@@ -74,9 +75,8 @@ const FAQ_ITEMS: FaqItem[] = [
   {
     keywords: ['investment', 'rental', 'yield', 'return', 'appreciation', 'roi'],
     answer:
-      'Bangalore real estate has seen consistent 8 to 12 percent annual appreciation in prime corridors. ' +
-      'Rental yields range from 3 to 5.5 percent depending on location and property type. ' +
-      'Studio and compact apartments in Koramangala and Whitefield tend to offer the highest rental returns.',
+      'Prime residential corridors consistently see 8 to 12 percent annual capital appreciation, with rental yields typically ranging from 3 to 5.5 percent depending on location and property configuration. ' +
+      'I would be happy to share projected rental returns and appreciation trends for any specific property you are considering.',
   },
   {
     keywords: ['gst', 'tax', 'tds', 'income tax'],

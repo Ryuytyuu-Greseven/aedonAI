@@ -1,11 +1,15 @@
-<div class="modal-backdrop" (click)="close()" role="presentation">
+<dialog
+  #dialogEl
+  class="modal-dialog"
+  (cancel)="onCancel($event)"
+  aria-modal="true"
+  [attr.aria-labelledby]="titleId"
+>
   <div
     class="modal-panel"
     [style.max-width.px]="width()"
     (click)="$event.stopPropagation()"
-    role="dialog"
-    aria-modal="true"
-    [attr.aria-labelledby]="titleId"
+    role="document"
   >
     <header class="modal-head">
       @if (icon(); as icon) {
@@ -30,4 +34,4 @@
       <ng-content select="[modal-footer]" />
     </footer>
   </div>
-</div>
+</dialog>

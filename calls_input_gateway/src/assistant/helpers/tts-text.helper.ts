@@ -79,6 +79,12 @@ export function sanitizeTextForSpeech(text: string): string {
   s = s.replace(/\?{2,}/g, '?');
   s = s.replace(/,\s*,/g, ',');
   s = s.replace(/([.,?])\s*\./g, '$1');
+  // Real Estate phonetic expansions for smooth speech synthesis
+  s = s.replace(/\b(\d+)\s*(?:sq\.?\s*ft\.?|sqft)\b/gi, '$1 square feet');
+  s = s.replace(/\b(?:sq\.?\s*ft\.?|sqft)\b/gi, 'square feet');
+  s = s.replace(/\b(\d+)\s*bhk\b/gi, '$1 B H K');
+  s = s.replace(/\b(\d+(?:\.\d+)?)\s*cr\.?\b/gi, '$1 crore');
+
   // Lowercase shouty all-caps words unless they are domain acronyms (e.g. BHK, EMI, CRM)
   s = s.replace(/\b[A-Z]{2,}\b/g, (w) =>
     PRESERVED_ACRONYMS.has(w) ? w : w.toLowerCase(),

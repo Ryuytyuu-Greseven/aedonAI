@@ -130,8 +130,8 @@
 </div>
 
 @if (deleteTarget; as tool) {
-  <div class="modal-overlay" (click)="cancelDelete()">
-    <div class="modal card" (click)="$event.stopPropagation()">
+  <div class="modal-overlay" role="presentation">
+    <div class="modal card">
       <div class="card-header">Delete tool?</div>
       <div class="card-body">
         @if (nodesUsing(tool.id).length > 0) {

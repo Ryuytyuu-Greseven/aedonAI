@@ -60,3 +60,38 @@ export async function upsertAgentLead(lead: AgentLeadUpsertInput): Promise<void>
   );
 }
 
+/**
+ * Searches for a previous lead record by phone number (matching the last 10 digits),
+ * scoped to this agentId when available. Returns the most recent record to recognize returning callers.
+ */
+export async function findRecentLeadByPhone(
+  phoneNumber: string,
+  agentId?: string,
+): Promise<Partial<AgentLead> | null> {
+  if (!phoneNumber || phoneNumber.trim().length < 7) return null;
+
+  try {
+    const model = await getAgentLeadModel();
+    const cleanDigits = phoneNumber.replace(/\D/g, '');
+    const last10 = cleanDigits.slice(-10);
+
+    const query: Record<string, any> = {
+      phoneNumber: { $regex: new RegExp(`${last10}$`) },
+    };
+    if (agentId) {
+      query.agentId = agentId;
+    }
+
+    const doc = await model
+      .findOne(query)
+      .sort({ updatedAt: -1 })
+      .lean<AgentLead>()
+      .exec();
+
+    return doc;
+  } catch (err: any) {
+    console.warn('[CRM] Failed to lookup returning lead by phone:', err?.message || err);
+    return null;
+  }
+}
+

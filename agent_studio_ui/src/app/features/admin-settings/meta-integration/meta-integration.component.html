@@ -84,8 +84,8 @@
 </div>
 
 @if (assignModalPage(); as page) {
-  <div class="modal-overlay" (click)="closeAssignModal()" role="presentation">
-    <div class="modal card" (click)="$event.stopPropagation()" role="dialog" aria-labelledby="assign-agent-title">
+  <div class="modal-overlay" role="presentation">
+    <div class="modal card" role="dialog" aria-labelledby="assign-agent-title">
       <div class="card-header" id="assign-agent-title">
         <i class="fa-solid fa-user-tag" aria-hidden="true"></i> Assign Agent
       </div>

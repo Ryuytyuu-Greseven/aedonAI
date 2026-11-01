@@ -10,37 +10,12 @@ function routeFromRouter(state: SalesState) {
   return state.routeDestination as any;
 }
 
-// After Budget_Discovery_Node: if customer name is missing, wait for their answer so they can share it;
-// if budget and customer name are known, chain directly into property listing
-function checkBudgetDiscovery(state: SalesState) {
-  if (!state.customerName) {
-    return '__end__';
-  }
-  if (state.budgetMin !== null || state.budgetMax !== null) {
-    return 'Property_Listing_Node';
-  }
-  return '__end__';
-}
-
-// After Discovery_Node: if customer name is missing, wait for customer response;
-// if budget and customer name are already known, go straight to listing
-function checkDiscoveryComplete(state: SalesState) {
-  if (!state.customerName) {
-    return '__end__';
-  }
-  if (state.budgetMin !== null || state.budgetMax !== null) {
-    return 'Property_Listing_Node';
-  }
-  return '__end__';
-}
-
-// After Presentation_Node: price accepted → move to closing confirmation
-function checkPresentationIntent(state: SalesState) {
-  if (state.purchaseIntentPropertyId) {
-    return 'Closing_Node';
-  }
-  return '__end__';
-}
+// Single-Turn Voice Invariant:
+// In a voice call, every conversational turn must produce exactly ONE spoken response
+// and wait for the customer to speak. Nodes must not automatically cascade into a
+// subsequent node in the same turn (e.g. Discovery -> Property Listing), which would
+// stream two consecutive messages without letting the customer respond.
+// Future turns are routed naturally by Semantic_Router_Node based on conversation state.
 
 // After Closing_Node: previously chained into Human_Handoff_Node once a
 // service request ticket was raised. Human_Handoff_Node (and the
@@ -92,17 +67,17 @@ const workflow = new StateGraph(SalesStateAnnotation)
   // Intro pitch: say what we'd like to share, wait for a yes/no on interest
   .addEdge('Intro_Pitch_Node', '__end__')
 
-  // Budget Discovery: if budget captured, chain directly into property listing
-  .addConditionalEdges('Budget_Discovery_Node', checkBudgetDiscovery)
+  // Budget Discovery: answer/ask and wait for customer response
+  .addEdge('Budget_Discovery_Node', '__end__')
 
-  // Discovery: if budget is known, chain into property listing; otherwise wait
-  .addConditionalEdges('Discovery_Node', checkDiscoveryComplete)
+  // Discovery: answer/ask and wait for customer response
+  .addEdge('Discovery_Node', '__end__')
 
   // Property listing: present options, wait for customer to pick one
   .addEdge('Property_Listing_Node', '__end__')
 
-  // Presentation: price accepted → closing confirmation; otherwise wait
-  .addConditionalEdges('Presentation_Node', checkPresentationIntent)
+  // Presentation: explain details/answer questions and wait for customer response
+  .addEdge('Presentation_Node', '__end__')
 
   // Amenities / Nearby Facilities: answer and wait for next turn
   .addEdge('Amenities_Node', '__end__')
