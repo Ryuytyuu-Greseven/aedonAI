@@ -10,16 +10,24 @@ function routeFromRouter(state: SalesState) {
   return state.routeDestination as any;
 }
 
-// After Budget_Discovery_Node: if budget captured, chain directly into property listing
+// After Budget_Discovery_Node: if customer name is missing, wait for their answer so they can share it;
+// if budget and customer name are known, chain directly into property listing
 function checkBudgetDiscovery(state: SalesState) {
+  if (!state.customerName) {
+    return '__end__';
+  }
   if (state.budgetMin !== null || state.budgetMax !== null) {
     return 'Property_Listing_Node';
   }
   return '__end__';
 }
 
-// After Discovery_Node: if budget is already known, go straight to listing
+// After Discovery_Node: if customer name is missing, wait for customer response;
+// if budget and customer name are already known, go straight to listing
 function checkDiscoveryComplete(state: SalesState) {
+  if (!state.customerName) {
+    return '__end__';
+  }
   if (state.budgetMin !== null || state.budgetMax !== null) {
     return 'Property_Listing_Node';
   }

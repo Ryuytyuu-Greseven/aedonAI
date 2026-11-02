@@ -1,0 +1,92 @@
+<form [formGroup]="form" (ngSubmit)="save()">
+  <section class="card panel">
+    <header class="panel-head">
+      <span class="panel-icon"><i class="fa-solid fa-clock" aria-hidden="true"></i></span>
+      <div>
+        <h2>Calling hours</h2>
+        <p>Automatic calls to new leads and missed-call retries only start inside these hours.</p>
+      </div>
+    </header>
+    <div class="panel-body">
+      <div class="cs-grid">
+        <div class="form-group">
+          <label class="label" for="cs-timezone">Time zone</label>
+          <app-timezone-picker inputId="cs-timezone" formControlName="timezone" />
+          <span class="cs-hint">Independent of the phone number's country.</span>
+        </div>
+        <div class="form-group">
+          <label class="label" for="cs-start">From</label>
+          <input id="cs-start" type="time" class="input" formControlName="calling_hours_start" />
+        </div>
+        <div class="form-group">
+          <label class="label" for="cs-end">Until</label>
+          <input id="cs-end" type="time" class="input" formControlName="calling_hours_end" />
+        </div>
+      </div>
+      <p class="cs-note">
+        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+        Calls you start yourself (Call buttons, "Call a number") aren't limited to these hours.
+      </p>
+    </div>
+  </section>
+
+  <section class="card panel">
+    <header class="panel-head">
+      <span class="panel-icon"><i class="fa-solid fa-phone-slash" aria-hidden="true"></i></span>
+      <div>
+        <h2>Missed calls</h2>
+        <p>When a lead doesn't pick up (no answer, busy, declined or failed), try again.</p>
+      </div>
+    </header>
+    <div class="panel-body">
+      <div class="cs-grid">
+        <div class="form-group">
+          <label class="label" for="cs-retries">Retries</label>
+          <select id="cs-retries" class="select" formControlName="missed_call_retries">
+            @for (count of retryOptions; track count) {
+              <option [ngValue]="count">{{ count === 0 ? "Don't retry" : count + (count === 1 ? ' retry' : ' retries') }}</option>
+            }
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="label" for="cs-gap">Wait between retries</label>
+          <div class="cs-gap">
+            <input
+              id="cs-gap"
+              type="number"
+              min="1"
+              class="input"
+              formControlName="gap_value"
+              [attr.aria-disabled]="!retriesEnabled"
+            />
+            <select class="select" formControlName="gap_unit" aria-label="Wait unit">
+              @for (unit of gapUnits; track unit) {
+                <option [value]="unit">{{ unit }}</option>
+              }
+            </select>
+          </div>
+        </div>
+      </div>
+      <p class="cs-note">
+        <i class="fa-solid fa-circle-info" aria-hidden="true"></i>
+        @if (retriesEnabled) {
+          Retries stop once the lead answers. A retry that falls outside calling hours waits for the next opening.
+        } @else {
+          A lead who misses the call isn't called again automatically.
+        }
+      </p>
+    </div>
+  </section>
+
+  @if (error()) {
+    <div class="alert-box" role="alert"><i class="fa-solid fa-circle-exclamation" aria-hidden="true"></i> {{ error() }}</div>
+  }
+
+  <div class="cs-actions">
+    <span class="cs-hint">Saving these keeps the agent's current status — a live agent stays live.</span>
+    <button type="submit" class="btn btn-primary" [disabled]="saving() || form.pristine">
+      @if (saving()) { <i class="fa-solid fa-circle-notch fa-spin" aria-hidden="true"></i> Saving… }
+      @else { <i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save calling settings }
+    </button>
+  </div>
+</form>

@@ -265,6 +265,24 @@
           </form>
         }
 
+        @if (activeTab() === 'calling') {
+          <div class="pg-tab-panel">
+            @if (agentId()) {
+              <app-agent-call-settings
+                [agentId]="agentId()!"
+                [settings]="callSettings()"
+                (saved)="callSettings.set($event.call_settings)"
+              />
+            } @else {
+              <div class="card list-empty list-empty-compact">
+                <i class="fa-solid fa-floppy-disk list-empty-icon" aria-hidden="true"></i>
+                <h3>Save first</h3>
+                <p class="text-muted">Save this agent to set its calling hours and missed-call retries.</p>
+              </div>
+            }
+          </div>
+        }
+
         @if (activeTab() === 'integrations') {
           <div class="pg-tab-panel">
             <section class="card panel">
@@ -396,13 +414,13 @@
         <select id="production_phone_number" class="select input" [value]="productionPhoneNumberId()" (change)="onProductionPhoneNumberChange($event)">
           <option value="">Select a number</option>
           @for (number of productionPhoneNumbers(); track number.id) {
-            <option [value]="number.id">{{ phoneNumberDisplayLabel(number) }}</option>
+            <option [value]="number.id">{{ phoneNumberDisplayLabel(number) }}{{ number.id === currentLiveNumberId() ? ' · Current live number' : '' }}</option>
           }
         </select>
       </div>
       @if (productionPhoneNumbers().length === 0) {
         <div class="note-box pg-golive-note">
-          <i class="fa-solid fa-circle-info" aria-hidden="true"></i> No production numbers found for this agent's country. Request one from Phone Numbers.
+          <i class="fa-solid fa-circle-info" aria-hidden="true"></i> No free production numbers for this agent's country. An admin can buy one from Phone Numbers.
         </div>
       }
     </div>

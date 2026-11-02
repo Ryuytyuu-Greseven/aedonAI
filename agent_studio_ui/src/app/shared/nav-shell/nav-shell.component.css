@@ -9,6 +9,7 @@
   --topbar-height: var(--header-height);
   --topbar-gap: 14px;
   --spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+  --ease-smooth: cubic-bezier(0.2, 0.8, 0.2, 1);
   --glass: color-mix(in srgb, var(--bg-secondary) 78%, transparent);
 }
 
@@ -23,7 +24,7 @@
   pointer-events: none;
 }
 
-/* ================= Scrim (rail pinned open) ================= */
+/* ================= Scrim ================= */
 .nav-scrim {
   position: fixed;
   inset: 0;
@@ -36,9 +37,19 @@
   transition: opacity 0.35s var(--ease);
 }
 
-.nav-scrim-visible {
-  opacity: 1;
-  pointer-events: auto;
+/* Scrim is only used on mobile/tablet viewports (< 1024px) when the drawer is open.
+   On desktop, the sidebar docks cleanly and shifts screen contents without blocking them. */
+@media (max-width: 1023px) {
+  .nav-scrim-visible {
+    opacity: 1;
+    pointer-events: auto;
+  }
+}
+
+@media (min-width: 1024px) {
+  .nav-scrim {
+    display: none !important;
+  }
 }
 
 /* ================= Side rail (left edge, opens rightwards) ================= */
@@ -59,9 +70,9 @@
   border-radius: 22px;
   box-shadow: var(--shadow-sm);
   transition:
-    width 0.45s var(--ease),
-    box-shadow 0.45s var(--ease),
-    border-color 0.45s var(--ease);
+    width 0.35s var(--ease-smooth),
+    box-shadow 0.35s var(--ease-smooth),
+    border-color 0.35s var(--ease-smooth);
 }
 
 /* Faint brand wash that brightens as the rail opens */
@@ -73,11 +84,12 @@
   background:
     radial-gradient(220px 160px at 0% 0%, rgba(124, 108, 255, 0.18), transparent 70%),
     radial-gradient(200px 160px at 0% 100%, rgba(34, 211, 197, 0.12), transparent 70%);
-  transition: opacity 0.45s var(--ease);
+  transition: opacity 0.35s var(--ease-smooth);
 }
 
-/* Open state: pinned by click/tap, keyboard focus, or hover on desktop.
+/* Sticky / Pinned Open state: pinned by handle click or keyboard focus.
    --open (0/1) drives every label/divider transition below. */
+:host(.nav-expanded) .nav-rail,
 .nav-rail-expanded,
 .nav-rail:has(:focus-visible) {
   --open: 1;
@@ -86,11 +98,12 @@
   border-color: var(--border-strong);
 }
 
-@media (hover: hover) and (min-width: 768px) {
-  .nav-rail:hover {
+/* Hover preview when collapsed on desktop */
+@media (hover: hover) and (min-width: 1024px) {
+  :host(:not(.nav-expanded)) .nav-rail:hover {
     --open: 1;
     width: var(--dock-expanded);
-    box-shadow: var(--shadow-md);
+    box-shadow: 0 16px 36px -4px rgba(0, 0, 0, 0.16), var(--shadow-md);
     border-color: var(--border-strong);
   }
 }
@@ -109,10 +122,13 @@
 }
 
 .nav-rail-top {
-  height: 64px;
+  height: 56px;
   padding: 0 10px;
   flex-shrink: 0;
+  display: flex;
+  align-items: center;
   gap: 10px;
+  border-bottom: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
 }
 
 .nav-rail-handle {
@@ -121,20 +137,29 @@
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  border: none;
+  border: 1px solid transparent;
   border-radius: 12px;
   background: transparent;
   color: var(--text-secondary);
   cursor: pointer;
-  transition: background var(--transition), color var(--transition);
+  transition:
+    background var(--transition),
+    color var(--transition),
+    border-color var(--transition),
+    transform 0.2s var(--ease);
 }
 
 .nav-rail-handle:hover {
   background: var(--bg-hover);
   color: var(--text-primary);
+  border-color: var(--border-color);
 }
 
-/* Burger → X morph */
+.nav-rail-handle:active {
+  transform: scale(0.96);
+}
+
+/* Burger → Left Chevron Morph */
 .nav-burger {
   position: relative;
   width: 18px;
@@ -147,36 +172,72 @@
   height: 2px;
   border-radius: 2px;
   background: currentColor;
-  transition: transform 0.35s var(--spring), width 0.35s var(--ease), opacity 0.2s, top 0.35s var(--ease);
+  transition:
+    transform 0.35s var(--spring),
+    width 0.35s var(--ease),
+    opacity 0.2s var(--ease),
+    top 0.35s var(--ease),
+    left 0.35s var(--ease);
 }
 
-.nav-burger i:nth-child(1) { top: 0; width: 18px; }
-.nav-burger i:nth-child(2) { top: 6px; width: 12px; }
-.nav-burger i:nth-child(3) { top: 12px; width: 15px; }
+.nav-burger i:nth-child(1) { top: 1px; width: 18px; }
+.nav-burger i:nth-child(2) { top: 6px; width: 13px; }
+.nav-burger i:nth-child(3) { top: 11px; width: 16px; }
 
-.nav-burger-open i:nth-child(1) { top: 6px; width: 18px; transform: rotate(45deg); }
-.nav-burger-open i:nth-child(2) { opacity: 0; width: 0; }
-.nav-burger-open i:nth-child(3) { top: 6px; width: 18px; transform: rotate(-45deg); }
+/* In open/expanded state, morph into a sleek left chevron ❮ indicating collapse */
+.nav-burger-open i:nth-child(1) {
+  top: 3.5px;
+  left: 4px;
+  width: 9px;
+  transform: rotate(-45deg);
+}
+.nav-burger-open i:nth-child(2) {
+  opacity: 0;
+  width: 0;
+  transform: translateX(-6px);
+}
+.nav-burger-open i:nth-child(3) {
+  top: 9px;
+  left: 4px;
+  width: 9px;
+  transform: rotate(45deg);
+}
 
-.nav-rail-title {
+/* Workspace name beside top icon */
+.nav-rail-workspace {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+  flex: 1;
+  opacity: calc(var(--open, 0));
+  transform: translateX(calc((1 - var(--open, 0)) * -10px));
+  transition:
+    opacity 0.22s var(--ease),
+    transform 0.32s var(--ease);
+  overflow: hidden;
+}
+
+.nav-rail-workspace-name {
   font-family: var(--font-display);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
-  letter-spacing: 0.02em;
-  color: var(--text-secondary);
+  letter-spacing: -0.01em;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* Labels: hidden while collapsed, slide in from the left with a stagger when open */
-.nav-rail-title,
 .nav-rail-label,
 .nav-rail-group-label {
   white-space: nowrap;
   opacity: calc(var(--open, 0));
-  transform: translateX(calc((1 - var(--open, 0)) * -12px));
+  transform: translateX(calc((1 - var(--open, 0)) * -10px));
   transition:
-    opacity 0.2s var(--ease),
-    transform 0.35s var(--ease);
-  transition-delay: calc(var(--open, 0) * (80ms + var(--i, 0) * 28ms));
+    opacity 0.22s var(--ease),
+    transform 0.32s var(--ease);
+  transition-delay: calc(var(--open, 0) * (60ms + var(--i, 0) * 24ms));
 }
 
 .nav-rail-items {
@@ -184,8 +245,8 @@
   min-height: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  padding: 4px 0 12px;
+  gap: 3px;
+  padding: 8px 0 12px;
   overflow-y: auto;
   overflow-x: hidden;
   scrollbar-width: none;
@@ -193,40 +254,50 @@
 
 .nav-rail-group {
   position: relative;
-  height: 26px;
-  margin: 6px 10px 0;
+  height: 22px;
+  margin: 10px 10px 2px;
   padding-left: 14px;
 }
 
 .nav-rail-group-label {
-  font-size: 10.5px;
-  font-weight: 600;
+  font-size: 10px;
+  font-weight: 700;
   letter-spacing: 0.1em;
   text-transform: uppercase;
   color: var(--text-muted);
+  opacity: 0.75;
 }
 
-/* Collapsed rails show a short divider instead of the group label */
+/* Collapsed rails show a centered short divider */
 .nav-rail-divider {
   position: absolute;
-  left: 12px;
+  left: 50%;
   top: 50%;
-  width: 20px;
+  width: 22px;
   height: 1px;
-  background: var(--border-strong);
+  margin-left: -11px;
+  background: var(--border-color);
   opacity: calc(1 - var(--open, 0));
   transition: opacity 0.2s var(--ease);
 }
 
 .nav-rail-item {
   position: relative;
-  height: 44px;
-  margin: 0 10px;
+  height: 40px;
+  margin: 2px 10px;
+  padding: 0 6px;
+  display: flex;
+  align-items: center;
   gap: 10px;
-  border-radius: 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
   color: var(--text-secondary);
   text-decoration: none;
-  transition: background var(--transition), color var(--transition);
+  transition:
+    background var(--transition),
+    color var(--transition),
+    border-color var(--transition),
+    box-shadow var(--transition);
 }
 
 .nav-rail-item:hover {
@@ -236,79 +307,60 @@
 }
 
 .nav-rail-icon {
-  width: 44px;
-  height: 44px;
+  width: 30px;
+  height: 30px;
   flex-shrink: 0;
   display: grid;
   place-items: center;
-  border-radius: 12px;
-  font-size: 15px;
-  transition: background 0.3s var(--ease), color 0.3s var(--ease), box-shadow 0.3s var(--ease), transform 0.3s var(--spring);
+  border-radius: 8px;
+  font-size: 13.5px;
+  color: var(--text-muted);
+  transition:
+    background 0.25s var(--ease),
+    color 0.25s var(--ease),
+    box-shadow 0.25s var(--ease),
+    transform 0.25s var(--spring);
 }
 
 .nav-rail-item:hover .nav-rail-icon {
+  color: var(--text-primary);
   transform: scale(1.08);
 }
 
 .nav-rail-label {
   flex: 1;
   text-align: left;
-  font-size: 14px;
+  font-size: 13.5px;
   font-weight: 500;
+  letter-spacing: -0.01em;
+  color: inherit;
 }
 
-.nav-rail-arrow {
-  padding-right: 10px;
-  font-size: 10px;
-  opacity: 0;
-  transform: translateX(-6px);
-  transition: opacity 0.2s var(--ease), transform 0.3s var(--ease);
-}
-
-.nav-rail-item:hover .nav-rail-arrow {
-  opacity: calc(var(--open, 0) * 0.6);
-  transform: none;
-}
-
-/* Active: gradient icon tile + glowing edge marker on the screen side */
+/* Selected tab / Active Item: Sleek, unified modern pill */
 .nav-rail-item-active {
   color: var(--text-primary);
-  background: var(--accent-muted);
+  background: color-mix(in srgb, var(--brand-1) 12%, transparent);
+  border-color: color-mix(in srgb, var(--brand-1) 24%, transparent);
+  box-shadow: 0 2px 8px -2px rgba(124, 108, 255, 0.16);
 }
 
 .nav-rail-item-active .nav-rail-icon {
-  color: #fff;
+  color: #ffffff;
   background: var(--gradient-brand);
-  box-shadow: 0 6px 18px -6px var(--glow);
-}
-
-.nav-rail-item-active::after {
-  content: '';
-  position: absolute;
-  left: -10px;
-  top: 50%;
-  width: 3px;
-  height: 22px;
-  margin-top: -11px;
-  border-radius: 0 3px 3px 0;
-  background: linear-gradient(to bottom, var(--brand-1), var(--brand-2));
-  box-shadow: 0 0 10px var(--brand-2);
-  animation: nav-marker-in 0.4s var(--spring);
-}
-
-@keyframes nav-marker-in {
-  from { transform: scaleY(0); }
+  box-shadow: 0 3px 10px -2px var(--glow);
+  transform: none;
 }
 
 .nav-rail-item-active .nav-rail-label {
   font-weight: 600;
+  color: var(--text-primary);
 }
 
 .nav-rail-footer {
   flex-shrink: 0;
-  height: 56px;
+  height: 52px;
   padding: 0 10px;
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid color-mix(in srgb, var(--border-color) 60%, transparent);
 }
 
 .nav-rail-studio {
@@ -316,22 +368,38 @@
   align-items: center;
   gap: 10px;
   width: 100%;
-  font-size: 12px;
+  font-size: 12.5px;
   font-weight: 600;
   color: var(--text-muted);
+  transition: color 0.2s var(--ease);
+}
+
+.nav-rail:hover .nav-rail-studio {
+  color: var(--text-secondary);
 }
 
 .nav-rail-studio-mark {
   width: 44px;
+  height: 44px;
   flex-shrink: 0;
   display: grid;
   place-items: center;
+  transition: transform 0.3s var(--spring);
+}
+
+.nav-rail-studio:hover .nav-rail-studio-mark {
+  transform: scale(1.08);
 }
 
 .nav-rail-studio-mark img {
   width: 20px;
   height: 20px;
-  opacity: 0.8;
+  opacity: 0.85;
+  transition: opacity 0.2s;
+}
+
+.nav-rail-studio:hover .nav-rail-studio-mark img {
+  opacity: 1;
 }
 
 /* ================= Top bar ================= */
@@ -353,6 +421,16 @@
   border: 1px solid var(--border-color);
   border-radius: 18px;
   box-shadow: var(--shadow-sm);
+  transition:
+    left 0.35s var(--ease-smooth),
+    border-color 0.35s var(--ease-smooth);
+}
+
+/* On desktop, when the sticky rail is expanded, the topbar slides right to reveal brand & logo */
+@media (min-width: 1024px) {
+  :host(.nav-expanded) .nav-topbar {
+    left: calc(var(--dock-inset) + var(--dock-expanded) + var(--dock-gap));
+  }
 }
 
 .nav-topbar-left {
@@ -434,9 +512,42 @@
   min-height: 100vh;
   margin-left: calc(var(--dock-inset) + var(--dock-collapsed) + var(--dock-gap));
   padding-top: calc(var(--topbar-inset) + var(--topbar-height) + var(--topbar-gap));
+  padding-right: var(--topbar-inset);
+  padding-bottom: 32px;
+  transition: margin-left 0.35s var(--ease-smooth);
+}
+
+/* On desktop, when the sticky rail is expanded, the content area seamlessly reflows rightwards */
+@media (min-width: 1024px) {
+  :host(.nav-expanded) .nav-shell-main {
+    margin-left: calc(var(--dock-inset) + var(--dock-expanded) + var(--dock-gap));
+  }
 }
 
 /* ================= Responsive / motion ================= */
+@media (max-width: 1023px) {
+  :host {
+    --dock-inset: 8px;
+    --dock-collapsed: 54px;
+    --dock-expanded: min(280px, 85vw);
+    --dock-gap: 8px;
+    --topbar-inset: 8px;
+  }
+
+  .nav-rail {
+    border-radius: 18px;
+  }
+
+  .nav-topbar {
+    border-radius: 16px;
+    left: calc(var(--dock-inset) + var(--dock-collapsed) + var(--dock-gap));
+  }
+
+  .nav-shell-main {
+    margin-left: calc(var(--dock-inset) + var(--dock-collapsed) + var(--dock-gap));
+  }
+}
+
 @media (max-width: 640px) {
   .nav-topbar-sep,
   .nav-topbar-section {

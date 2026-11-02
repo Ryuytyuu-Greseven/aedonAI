@@ -1,4 +1,4 @@
-import { Agent, AgentVersion, McpServer, createEmptyAgent } from '../models/agent.model';
+import { Agent, AgentVersion, DEFAULT_CALL_SETTINGS, McpServer, createEmptyAgent } from '../models/agent.model';
 import {
   ApiAgent,
   ApiAgentHistory,
@@ -66,6 +66,7 @@ export function fromApiAgent(raw: ApiAgent): Agent {
     prompt: raw.behavior_prompt ?? raw.prompt,
     behavior: raw.behavior_notes ?? raw.behavior,
     referral_bonus: raw.referral_bonus,
+    call_settings: { ...DEFAULT_CALL_SETTINGS, ...withoutNulls(raw.call_settings) },
     preview_hash: raw.preview_hash ?? undefined,
     current_stage_version: raw.current_stage_version ?? 0,
   };
@@ -209,4 +210,8 @@ export function toUpdateAgentRequest(
   if (data.mcp_servers !== undefined) body.mcp_servers = toApiMcpServers(data.mcp_servers);
 
   return body;
+}
+
+function withoutNulls<T extends object>(value: T | null | undefined): Partial<T> {
+  return Object.fromEntries(Object.entries(value ?? {}).filter(([, v]) => v !== null && v !== undefined)) as Partial<T>;
 }

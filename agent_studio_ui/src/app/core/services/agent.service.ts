@@ -3,6 +3,7 @@ import { Observable, switchMap, throwError, map } from 'rxjs';
 import {
   Agent,
   AgentVersion,
+  CallSettings,
   toExportJson,
   AgentExportJson,
 } from '../models/agent.model';
@@ -63,14 +64,19 @@ export class AgentService {
   }
 
   /**
-   * Re-validate the preview hash on the server, then `staged` → `live`. `phoneNumber`
+   * Re-validate the preview hash on the server, then `staged` → `live`. `phoneNumberId`
    * is the production number selected for the live-agents clone (not the staging number).
    */
-  goLive(id: string, phoneNumber: string): Observable<Agent> {
-    return this.api.previewAgent(id).pipe(switchMap(() => this.api.liveAgent(id, phoneNumber)));
+  goLive(id: string, phoneNumberId: string): Observable<Agent> {
+    return this.api.previewAgent(id).pipe(switchMap(() => this.api.liveAgent(id, phoneNumberId)));
   }
 
   /** `live` → `disabled`. */
+  /** Timezone, calling hours and missed-call retries; keeps the agent's status. */
+  updateCallSettings(id: string, settings: Partial<CallSettings>): Observable<Agent> {
+    return this.api.updateAgentCallSettings(id, settings);
+  }
+
   disableAgent(id: string): Observable<Agent> {
     return this.api.disableAgent(id);
   }

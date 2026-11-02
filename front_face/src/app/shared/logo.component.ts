@@ -5,7 +5,7 @@ import { RouterLink } from '@angular/router';
   selector: 'app-logo',
   imports: [RouterLink],
   template: `
-    <a routerLink="/" class="logo" aria-label="Aedon AI home">
+    <a routerLink="/" class="logo" aria-label="Lyre AI home">
       <svg viewBox="0 0 64 64" aria-hidden="true">
         <defs>
           <linearGradient id="logo-g" x1="0" y1="0" x2="1" y2="1">
@@ -21,7 +21,7 @@ import { RouterLink } from '@angular/router';
           <rect x="54" y="26" width="5" height="12" rx="2.5" />
         </g>
       </svg>
-      <span>Aedon<b>AI</b></span>
+      <span>Lyre<b>AI</b></span>
     </a>
   `,
   styles: `

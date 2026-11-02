@@ -1,21 +1,32 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { initializeApp, getApps, applicationDefault, App } from 'firebase-admin/app';
 import { getFirestore, Firestore, FieldValue } from 'firebase-admin/firestore';
+import { GoogleAuth } from 'google-auth-library';
 
 @Injectable()
 export class FirebaseService implements OnModuleInit {
   private readonly logger = new Logger(FirebaseService.name);
-  private db: Firestore;
+  private db: Firestore | null = null;
 
-  onModuleInit(): void {
-    let app: App;
-    if (getApps().length === 0) {
-      app = initializeApp({ credential: applicationDefault() });
-    } else {
-      app = getApps()[0];
+  async onModuleInit(): Promise<void> {
+    try {
+      const auth = new GoogleAuth();
+      await auth.getApplicationDefault();
+
+      let app: App;
+      if (getApps().length === 0) {
+        app = initializeApp({ credential: applicationDefault() });
+      } else {
+        app = getApps()[0];
+      }
+      this.db = getFirestore(app);
+      this.logger.log('Firebase Admin SDK initialized');
+    } catch (err: any) {
+      this.logger.warn(
+        `Firebase Admin SDK not initialized (missing Google credentials): ${err.message}. Message persistence to Firestore will be skipped.`,
+      );
+      this.db = null;
     }
-    this.db = getFirestore(app);
-    this.logger.log('Firebase Admin SDK initialized');
   }
 
   /**
@@ -36,7 +47,7 @@ export class FirebaseService implements OnModuleInit {
     text: string,
     business: string,
   ): Promise<void> {
-    if (!text?.trim()) return;
+    if (!text?.trim() || !this.db) return;
 
     try {
       const sessionRef = this.db.collection('conversations').doc(sessionId);
@@ -52,7 +63,7 @@ export class FirebaseService implements OnModuleInit {
         timestamp: FieldValue.serverTimestamp(),
       });
     } catch (err: any) {
-      // this.logger.error(`Failed to save message [${role}]: ${err.message}`);
+      this.logger.warn(`Failed to save message [${role}]: ${err.message}`);
     }
   }
 }

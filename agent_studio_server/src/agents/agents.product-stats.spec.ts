@@ -16,6 +16,7 @@ describe('AgentsService.productStats', () => {
     {} as any,
     productEnquiriesRepository as any,
     {} as any,
+    {} as any,
   );
 
   beforeEach(() => {

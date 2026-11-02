@@ -59,7 +59,7 @@ export const PLATFORM_FEATURES: Feature[] = [
   {
     icon: 'fa-user-check',
     title: 'Automatic lead intelligence',
-    description: 'After every call, Aedon extracts structured lead data, interest level, next steps and action items — no manual notes.',
+    description: 'After every call, Lyre extracts structured lead data, interest level, next steps and action items — no manual notes.',
   },
   {
     icon: 'fa-paper-plane',
@@ -140,7 +140,7 @@ export const PRICING_PLANS: PricingPlan[] = [
 export const FAQS: Faq[] = [
   {
     question: 'Does it really sound human?',
-    answer: 'Yes. Aedon streams speech in both directions, responds in well under a second and lets callers interrupt naturally. Most customers can’t tell they’re talking to an AI until they’re told.',
+    answer: 'Yes. Lyre streams speech in both directions, responds in well under a second and lets callers interrupt naturally. Most customers can’t tell they’re talking to an AI until they’re told.',
   },
   {
     question: 'Which languages are supported?',
@@ -152,7 +152,7 @@ export const FAQS: Faq[] = [
   },
   {
     question: 'How does the agent know about my products?',
-    answer: 'Upload brochures, price lists, FAQs or a product catalogue. Aedon indexes them for semantic search and pulls exact answers during the call.',
+    answer: 'Upload brochures, price lists, FAQs or a product catalogue. Lyre indexes them for semantic search and pulls exact answers during the call.',
   },
   {
     question: 'Where does call data go?',

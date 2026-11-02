@@ -32,7 +32,7 @@ const describeError = (err: unknown): string =>
   err instanceof Error ? (err.stack ?? err.message) : String(err);
 
 // Matches the rest of the pipeline: the browser plays 24 kHz PCM and
-// convertTtsForTwilio downsamples 24 kHz → 8 kHz μ-law.
+// the phone adapters resample 24 kHz to their carrier format (TTS_SAMPLE_RATE).
 const OUTPUT_SAMPLE_RATE = 24000;
 
 // Upper bound on waiting for the last sentence's audio after the reply text
@@ -71,9 +71,14 @@ export class SarvamTtsService {
     // `voice` is the agent's provider-neutral voice code (female_1, …).
     const speaker = resolveVoice('sarvam', voice);
     const pace = Number(this.configService.get<string>('SARVAM_TTS_PACE')) || 1;
+    const temperatureRaw = this.configService.get<string>('SARVAM_TTS_TEMPERATURE');
+    const temperature =
+      temperatureRaw !== undefined && !isNaN(Number(temperatureRaw))
+        ? Number(temperatureRaw)
+        : 0.2;
     const languageCode = toSarvamTtsLanguage(session.language);
     this.logger.log(
-      `[SarvamTTS] ${model}/${speaker} in ${languageCode} (agent voice "${voice}")`,
+      `[SarvamTTS] ${model}/${speaker} in ${languageCode} (agent voice "${voice}", pace=${pace}, temp=${temperature})`,
     );
 
     let socket: TtsSocket | null = null;
@@ -144,7 +149,9 @@ export class SarvamTtsService {
           language_code: languageCode,
           speaker,
           pace,
+          temperature,
           speech_sample_rate: OUTPUT_SAMPLE_RATE,
+          enable_preprocessing: true,
           output_audio_codec: 'linear16',
         } as never,
       });

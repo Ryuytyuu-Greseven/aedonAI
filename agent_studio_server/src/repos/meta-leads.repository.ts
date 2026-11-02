@@ -41,4 +41,20 @@ export class MetaLeadsRepository {
 
     return { items, total };
   }
+
+  /** Names of a company's Meta leads, by leadgenId (for the scheduled calls list). */
+  async findNamesByLeadgenIds(
+    customerId: string,
+    leadgenIds: string[],
+  ): Promise<Map<string, string>> {
+    if (leadgenIds.length === 0) return new Map();
+    const leads = await this.metaLeadModel
+      .find(
+        { customerId, leadgenId: { $in: leadgenIds } },
+        { leadgenId: 1, fullName: 1 },
+      )
+      .lean()
+      .exec();
+    return new Map(leads.map((lead) => [lead.leadgenId, lead.fullName ?? '']));
+  }
 }

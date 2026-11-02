@@ -223,8 +223,11 @@ export class AssistantService {
       ? {
           ...agentPlain,
           currentLanguage: agentPlain.language || session.language,
+          greeting: agentPlain.greeting || session.config.greeting,
         }
-      : null;
+      : session.config.greeting
+        ? ({ greeting: session.config.greeting, currentLanguage: session.language } as any)
+        : null;
 
     session.agentMongoId = agentPlain?._id ? String(agentPlain._id) : undefined;
     // Telephony setups carry no agentId of their own — adopt the resolved
@@ -378,6 +381,10 @@ export class AssistantService {
   public handleBargeIn(client: any, transcript?: string): void {
     const session = this.sessions.get(client);
     if (!session || !session.isGenerating) return;
+    if (session.endCallTriggered) {
+      this.logger.log('[Barge-in] Ignored during final farewell / end call.');
+      return;
+    }
 
     if (
       session.fillerOnly &&
@@ -487,18 +494,28 @@ export class AssistantService {
             () => session.isGenerating,
             session.language,
           );
+          let endCallOnComplete = false;
           const { stream: responseStream, getText } = this.captureTextStream(
             rawStream,
             (chunk) => {
               // Filler-only until the first piece of the real reply.
               session.fillerOnly = !!chunk.filler && getText() === '';
+              if (chunk.endCall) {
+                endCallOnComplete = true;
+              }
             },
           );
 
+          let turnAudioBytes = 0;
           await this.sharedAiService.textToSpeech(
             responseStream,
             session.config.voice,
-            (base64Audio, text) => this.onAudioChunk(base64Audio, text, client),
+            (base64Audio, text) => {
+              if (base64Audio) {
+                turnAudioBytes += Math.floor((base64Audio.length * 3) / 4);
+              }
+              this.onAudioChunk(base64Audio, text, client);
+            },
             session,
             client,
           );
@@ -514,7 +531,33 @@ export class AssistantService {
           }
 
           if (!session.turnInterrupted) {
-            this.sendServerContent(client, { turnComplete: true });
+            this.sendServerContent(client, { turnComplete: true, endCall: endCallOnComplete });
+          }
+
+          if (endCallOnComplete && !session.turnInterrupted) {
+            session.endCallTriggered = true;
+            this.logger.log(`[Assistant] Graceful endCall triggered for session ${session.sessionId}`);
+            const wordCount = aiText ? aiText.trim().split(/\s+/).length : 6;
+            const bytesDurationMs = turnAudioBytes > 0 ? Math.round((turnAudioBytes / 48000) * 1000) : 0;
+            const textEstimatedMs = Math.round(wordCount * 360);
+            const audioDurationMs = Math.max(bytesDurationMs, textEstimatedMs, 2500);
+
+            if (typeof client.hangup === 'function') {
+              // Carrier telephony (Twilio/Exotel): wait until carrier audio playout completes, then hangup
+              setTimeout(() => {
+                Promise.resolve(client.hangup()).catch((e) =>
+                  this.logger.error('[Assistant] Error executing client.hangup():', e),
+                );
+              }, audioDurationMs + 2000);
+            } else {
+              // Browser WebRTC: client manages playback via PcmPlaybackService and calls endCall on finish.
+              // Keep connection alive with a safety fallback timeout so the audio is never cut off.
+              setTimeout(() => {
+                if (client.readyState === WebSocket.OPEN) {
+                  client.close();
+                }
+              }, audioDurationMs + 10000);
+            }
           }
         } catch (err: any) {
           this.logger.error('Error in LLM/TTS pipeline:', err);

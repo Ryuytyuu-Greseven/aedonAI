@@ -25,8 +25,12 @@ interface NavGroup {
   imports: [RouterLink, RouterLinkActive, FormsModule, ThemeSwitchComponent, AccountMenuComponent],
   templateUrl: './nav-shell.component.html',
   styleUrl: './nav-shell.component.css',
+  host: {
+    '[class.nav-expanded]': 'railExpanded()',
+  },
 })
 export class NavShellComponent {
+  private static readonly STORAGE_KEY = 'aedon_nav_sticky';
   readonly currencyService = inject(CurrencyService);
   private readonly authService = inject(AuthService);
   private readonly router = inject(Router);
@@ -56,7 +60,11 @@ export class NavShellComponent {
       : [{ label: 'Workspace', items: this.baseNavItems }],
   );
 
-  readonly railExpanded = signal(false);
+  readonly railExpanded = signal<boolean>(
+    typeof window !== 'undefined' && window.innerWidth >= 1024
+      ? localStorage.getItem(NavShellComponent.STORAGE_KEY) === 'true'
+      : false,
+  );
 
   private readonly url = signal(this.router.url);
 
@@ -78,17 +86,32 @@ export class NavShellComponent {
       )
       .subscribe((url) => {
         this.url.set(url);
-        this.railExpanded.set(false);
+        // Only close sidebar automatically on mobile/tablet drawer viewports
+        if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+          this.railExpanded.set(false);
+        }
       });
   }
 
   @HostListener('document:keydown.escape')
   closeRail(): void {
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      this.railExpanded.set(false);
+    }
+  }
+
+  closeRailMobile(): void {
     this.railExpanded.set(false);
   }
 
   toggleRail(): void {
-    this.railExpanded.update((v) => !v);
+    this.railExpanded.update((v) => {
+      const next = !v;
+      if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+        localStorage.setItem(NavShellComponent.STORAGE_KEY, String(next));
+      }
+      return next;
+    });
   }
 
   setCurrency(currency: CurrencyCode): void {

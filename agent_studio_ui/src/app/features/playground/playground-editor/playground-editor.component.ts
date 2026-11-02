@@ -11,6 +11,7 @@ import {
   AgentMode,
   AgentStatus,
   AgentVersion,
+  CallSettings,
   Currency,
   CURRENCIES,
   McpServer,
@@ -39,11 +40,12 @@ import { AgentHistoryPanelComponent } from '../agent-history-panel/agent-history
 import { AgentKnowledgeBasesComponent } from '../agent-knowledge-bases/agent-knowledge-bases.component';
 import { AgentPropertiesComponent } from '../agent-properties/agent-properties.component';
 import { PreviewPanelComponent } from '../preview-panel/preview-panel.component';
+import { AgentCallSettingsComponent } from '../agent-call-settings/agent-call-settings.component';
 import { ModalComponent } from '../../../shared/modal/modal.component';
 import { isSalesTemplate } from '../../../shared/constants/agent-templates.constant';
 
 type PlaygroundField = 'agent_name' | 'greeting' | 'prompt' | 'behavior';
-type EditorTab = 'build' | 'integrations' | 'mcp-servers' | 'preview';
+type EditorTab = 'build' | 'calling' | 'integrations' | 'mcp-servers' | 'preview';
 
 const AGENT_MODE_ICONS: Record<AgentMode, string> = {
   chatbot: 'fa-comment-dots',
@@ -66,6 +68,7 @@ const LIFECYCLE: AgentStatus[] = ['draft', 'staged', 'live'];
     AgentPropertiesComponent,
     PreviewPanelComponent,
     ModalComponent,
+    AgentCallSettingsComponent,
   ],
   templateUrl: './playground-editor.component.html',
   styleUrl: './playground-editor.component.css',
@@ -89,6 +92,7 @@ export class PlaygroundEditorComponent implements OnInit {
   readonly lifecycle = LIFECYCLE;
   readonly tabs: { id: EditorTab; label: string; icon: string }[] = [
     { id: 'build', label: 'Build', icon: 'fa-pen-ruler' },
+    { id: 'calling', label: 'Calling', icon: 'fa-clock' },
     { id: 'integrations', label: 'Integrations', icon: 'fa-share-nodes' },
     { id: 'mcp-servers', label: 'MCP Servers', icon: 'fa-server' },
     { id: 'preview', label: 'Preview', icon: 'fa-phone-volume' },
@@ -118,6 +122,8 @@ export class PlaygroundEditorComponent implements OnInit {
   /** Production number picked at go-live time — separate from the staging `phone_number_id` above. */
   readonly productionPhoneNumbers = signal<PhoneNumber[]>([]);
   readonly productionPhoneNumberId = signal<string>('');
+  /** Production number this agent is already live on, if any — preselected at go-live. */
+  readonly currentLiveNumberId = signal<string | null>(null);
   readonly goLiveModalOpen = signal(false);
 
   readonly template = signal<AgentTemplate | null>(null);
@@ -135,6 +141,8 @@ export class PlaygroundEditorComponent implements OnInit {
   readonly tools = signal<Tool[]>([]);
   readonly mcpServers = signal<McpServer[]>([]);
   readonly knowledgeBaseIds = signal<string[]>([]);
+  /** Edited in the Calling tab and saved on its own, so it never reverts the status. */
+  readonly callSettings = signal<CallSettings | undefined>(undefined);
   readonly loading = signal(true);
   readonly saving = signal(false);
   readonly stagingAgent = signal(false);
@@ -177,6 +185,7 @@ export class PlaygroundEditorComponent implements OnInit {
     this.tools.set([]);
     this.mcpServers.set([]);
     this.knowledgeBaseIds.set([]);
+    this.callSettings.set(undefined);
     this.previewPassed.set(false);
     this.activeTab.set('build');
     this.historyPanelOpen.set(false);
@@ -184,6 +193,7 @@ export class PlaygroundEditorComponent implements OnInit {
     this.loadedPhoneNumberId.set(undefined);
     this.productionPhoneNumbers.set([]);
     this.productionPhoneNumberId.set('');
+    this.currentLiveNumberId.set(null);
     this.goLiveModalOpen.set(false);
     this.form.reset({
       agent_name: '',
@@ -239,6 +249,7 @@ export class PlaygroundEditorComponent implements OnInit {
     this.tools.set(agent.tools);
     this.mcpServers.set(agent.mcp_servers);
     this.knowledgeBaseIds.set(agent.knowledge_base_ids);
+    this.callSettings.set(agent.call_settings);
     this.form.patchValue({
       agent_name: agent.agent_name,
       agent_mode: agent.agent_mode ?? 'both',
@@ -311,9 +322,9 @@ export class PlaygroundEditorComponent implements OnInit {
   }
 
   /**
-   * All numbers for the agent's already-set country, unfiltered by availability status —
-   * for now the user picks the production number directly, regardless of what's assigned
-   * elsewhere (including the staging number).
+   * Production numbers for the agent's country that are Available and either unassigned or
+   * already this agent's (so re-publishing can keep its current live number). The server
+   * enforces the same rules on go-live. The agent's current live number is preselected.
    */
   private loadProductionPhoneNumbers(): void {
     const countryName = this.form.controls.agent_country.value;
@@ -323,11 +334,23 @@ export class PlaygroundEditorComponent implements OnInit {
       return;
     }
     this.phoneNumberService.getPhoneNumbers().subscribe((numbers) => {
-      const filtered = numbers.filter((n) => n.country_code === country.code);
+      const agentId = this.agentId();
+      const filtered = numbers.filter(
+        (n) =>
+          n.country_code === country.code &&
+          n.environmentType === 'production' &&
+          n.status === 'Available' &&
+          (n.assigned_agent == null || n.assigned_agent === agentId),
+      );
       this.productionPhoneNumbers.set(filtered);
+
+      // Stage numbers are staging-only, so a production number on this agent is its live one.
+      const liveNumber = filtered.find((n) => n.assigned_agent === agentId);
+      this.currentLiveNumberId.set(liveNumber?.id ?? null);
+
       const currentId = this.productionPhoneNumberId();
-      if (currentId && !filtered.some((n) => n.id === currentId)) {
-        this.productionPhoneNumberId.set('');
+      if (!currentId || !filtered.some((n) => n.id === currentId)) {
+        this.productionPhoneNumberId.set(liveNumber?.id ?? '');
       }
     });
   }
@@ -688,11 +711,9 @@ export class PlaygroundEditorComponent implements OnInit {
       this.toast.error('Select a production phone number before going live');
       return;
     }
-    const productionPhoneNumber = phoneNumberE164(selectedPhone);
-
     this.goingLive.set(true);
     // Server re-validates the preview hash; a stale preview (edited since last Preview) 409s.
-    this.agentService.goLive(id, productionPhoneNumber).subscribe({
+    this.agentService.goLive(id, selectedPhone.id).subscribe({
       next: (updated) => {
         this.goingLive.set(false);
         this.goLiveModalOpen.set(false);

@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
   HttpCode,
   HttpStatus,
@@ -12,24 +13,49 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Roles } from '../common/decorators/roles.decorator';
+import { RolesGuard } from '../common/guards/roles.guard';
 import { AuthenticatedUser } from '../common/interfaces/user.interface';
 import { AssignAgentDto } from './dto/assign-agent.dto';
-import { CreatePhoneNumberDto } from './dto/create-phone-number.dto';
 import { ListPhoneNumbersDto } from './dto/list-phone-numbers.dto';
+import { PurchasePhoneNumberDto } from './dto/purchase-phone-number.dto';
+import { SearchAvailableNumbersDto } from './dto/search-available-numbers.dto';
 import { PhoneNumbersService } from './phone-numbers.service';
 
-@UseGuards(JwtAuthGuard)
+// RolesGuard only enforces routes that carry @Roles; the rest stay open to
+// any authenticated user of the company.
+@UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('phone-numbers')
 export class PhoneNumbersController {
   constructor(private readonly phoneNumbersService: PhoneNumbersService) {}
 
-  @Post()
+  /** Live Twilio (US) / Exotel (IN) inventory search. Declared before `:id`. */
+  @Get('available')
+  @Roles('admin')
+  searchAvailable(@Query() query: SearchAvailableNumbersDto) {
+    return this.phoneNumbersService.searchAvailable(query);
+  }
+
+  /** Buys a number from the provider — billed to the platform account. */
+  @Post('purchase')
+  @Roles('admin')
   @HttpCode(HttpStatus.CREATED)
-  create(
-    @Body() dto: CreatePhoneNumberDto,
+  purchase(
+    @Body() dto: PurchasePhoneNumberDto,
     @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.phoneNumbersService.create(dto, user.companyId);
+    return this.phoneNumbersService.purchase(dto, user);
+  }
+
+  /**
+   * Settles purchases stuck in Provisioning against the provider account:
+   * owned numbers become Available, the rest are dropped.
+   */
+  @Post('reconcile')
+  @Roles('admin')
+  @HttpCode(HttpStatus.OK)
+  reconcile(@CurrentUser() user: AuthenticatedUser) {
+    return this.phoneNumbersService.reconcileProvisioning(user.companyId);
   }
 
   @Get()
@@ -43,6 +69,13 @@ export class PhoneNumbersController {
   @Get(':id')
   findOne(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
     return this.phoneNumbersService.findById(id, user.companyId);
+  }
+
+  /** Releases the number back to the provider (stops billing). */
+  @Delete(':id')
+  @Roles('admin')
+  release(@Param('id') id: string, @CurrentUser() user: AuthenticatedUser) {
+    return this.phoneNumbersService.release(id, user.companyId);
   }
 
   @Patch(':id/assign-agent')

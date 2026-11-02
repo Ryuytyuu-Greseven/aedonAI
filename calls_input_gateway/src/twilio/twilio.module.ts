@@ -1,22 +1,15 @@
 import { Module } from '@nestjs/common';
-import { AssistantModule } from '../assistant/assistant.module';
+import { TelephonyModule } from '../telephony/telephony.module';
 import { TwilioService } from './twilio.service';
 import { TwilioController } from './controllers/twilio.controller';
 import { TwilioGateway } from './gateways/twilio.gateway';
-import { LovebytRecordingService } from './gateways/lovebyt-recording.service';
-import { ExotelService } from '../exotel/exotel.service';
 
 @Module({
   imports: [
-    AssistantModule, // provides AssistantService and AudioDriverService
+    TelephonyModule, // provides CallSessionService
   ],
   controllers: [TwilioController],
-  providers: [
-    TwilioService,
-    TwilioGateway,
-    LovebytRecordingService,
-    ExotelService,
-  ],
+  providers: [TwilioService, TwilioGateway],
   exports: [TwilioService],
 })
 export class TwilioModule {}

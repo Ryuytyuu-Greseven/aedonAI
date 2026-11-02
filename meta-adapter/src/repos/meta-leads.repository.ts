@@ -72,7 +72,8 @@ export class MetaLeadsRepository {
       { leadgenId },
       {
         $set: { callStatus: 'initiated', agentId },
-        $unset: { lastCallError: '' },
+        // A new call supersedes any scheduled retry (its job is dropped when due).
+        $unset: { lastCallError: '', nextCallAt: '' },
         $push: { callAttempts: { callId, attemptedAt: new Date(), agentId } },
       },
     );
@@ -82,6 +83,46 @@ export class MetaLeadsRepository {
     await this.metaLeadModel.updateOne(
       { leadgenId },
       { $set: { callStatus: 'failed', lastCallError: error, agentId } },
+    );
+  }
+
+  /**
+   * Records how a call ended on the attempt with this call id, once: a
+   * repeated webhook finds the outcome already set and returns null, as does
+   * a call id that isn't one of these leads' calls.
+   */
+  async recordCallOutcome(
+    callId: string,
+    outcome: 'answered' | 'missed',
+    providerStatus: string,
+  ): Promise<MetaLead | null> {
+    return this.metaLeadModel.findOneAndUpdate(
+      { callAttempts: { $elemMatch: { callId, outcome: { $exists: false } } } },
+      {
+        $set: {
+          'callAttempts.$.outcome': outcome,
+          'callAttempts.$.providerStatus': providerStatus,
+          'callAttempts.$.endedAt': new Date(),
+          lastCallOutcome: outcome,
+        },
+      },
+      { new: true },
+    );
+  }
+
+  async setNextCallAt(leadgenId: string, nextCallAt: Date | null): Promise<void> {
+    await this.metaLeadModel.updateOne(
+      { leadgenId },
+      nextCallAt ? { $set: { nextCallAt } } : { $unset: { nextCallAt: '' } },
+    );
+  }
+
+  /** Claims a lead for a scheduled call: any state but in-flight or skipped. */
+  async claimForScheduledCall(leadgenId: string): Promise<MetaLead | null> {
+    return this.metaLeadModel.findOneAndUpdate(
+      { leadgenId, callStatus: { $nin: ['dialing', 'skipped'] }, phoneNumber: { $nin: [null, ''] } },
+      { $set: { callStatus: 'dialing' } },
+      { new: true },
     );
   }
 

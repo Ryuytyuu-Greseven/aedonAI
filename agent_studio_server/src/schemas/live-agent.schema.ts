@@ -32,6 +32,10 @@ export class LiveAgent {
   @Prop({ type: String, default: null, trim: true })
   phone_number: string | null;
 
+  /** `phone_numbers` id of the production number; null for agents that went live before numbers were linked. */
+  @Prop({ type: String, default: null })
+  phone_number_id: string | null;
+
   @Prop({ required: true, default: true })
   enable_voice: boolean;
 

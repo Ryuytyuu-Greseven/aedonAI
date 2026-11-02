@@ -1,4 +1,4 @@
-import { Agent, Currency, ReferralBonus } from '../models/agent.model';
+import { Agent, CallSettings, Currency, ReferralBonus } from '../models/agent.model';
 import { AgentTemplate } from '../models/agent-template.model';
 import { AgentCallStats, CallRecord } from '../models/call-record.model';
 import { ReportFrequency, ReportPeriod } from '../models/report.model';
@@ -88,6 +88,8 @@ export interface ApiAgent {
   prompt?: string;
   behavior?: string;
   referral_bonus?: ReferralBonus;
+  /** Absent on agents saved before call settings existed. */
+  call_settings?: Partial<CallSettings> | null;
   preview_hash?: string | null;
   agent_mode?: Agent['agent_mode'];
   language?: string;
@@ -110,7 +112,8 @@ export interface TwilioCallRequest {
 
 /** Body for `POST /agents/:id/live` — production number, distinct from the staging `phone_number`. */
 export interface GoLiveRequest {
-  phone_number: string;
+  /** `phone_numbers` id of the production number — the server assigns it to the agent. */
+  phone_number_id: string;
 }
 
 /**

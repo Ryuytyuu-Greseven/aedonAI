@@ -3,6 +3,15 @@ import { HydratedDocument } from 'mongoose';
 
 export type AgentDocument = HydratedDocument<Agent>;
 
+/** The agent's dialing rules (`agents.call_settings`); see callSettingsOf() for defaults. */
+export interface AgentCallSettings {
+  timezone: string;
+  calling_hours_start: string;
+  calling_hours_end: string;
+  missed_call_retries: number;
+  missed_call_retry_gap_minutes: number;
+}
+
 /**
  * Read-only mirror of the `agents` collection owned by lyreai_agent_builder_server.
  * meta-adapter only reads the fields it needs to place a lead's outbound call
@@ -29,6 +38,10 @@ export class Agent {
 
   @Prop()
   status: string;
+
+  /** Absent on agents saved before call settings existed. */
+  @Prop({ type: Object })
+  call_settings?: Partial<AgentCallSettings> | null;
 }
 
 export const AgentSchema = SchemaFactory.createForClass(Agent);

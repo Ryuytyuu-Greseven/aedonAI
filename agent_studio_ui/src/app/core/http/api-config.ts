@@ -56,11 +56,20 @@ export const ApiEndpoints = {
     stage: (id: string) => `/agents/${id}/stage`,
     live: (id: string) => `/agents/${id}/live`,
     disable: (id: string) => `/agents/${id}/disable`,
+    /** Dialing rules only — never moves the agent back to draft. */
+    callSettings: (id: string) => `/agents/${id}/call-settings`,
     enable: (id: string) => `/agents/${id}/enable`,
     history: (id: string) => `/agents/${id}/history`,
     historyByAgentId: (agentId: string) => `/agents/by-agent-id/${agentId}/history`,
     /** Real, thin shape — no qualification/intent/follow-up/call linkage. See backend-openspec/specs/leads/spec.md. */
     leads: (id: string) => `/agents/${id}/leads`,
+    /** Manual leads: POST a reviewed sheet; list with `GET leads?source=manual`. */
+    manualLeads: (id: string) => `/agents/${id}/leads/manual`,
+    manualLeadDial: (id: string) => `/agents/${id}/leads/manual/dial`,
+    manualLeadCall: (id: string, leadId: string) => `/agents/${id}/leads/manual/${encodeURIComponent(leadId)}/call`,
+    /** Calls the dialer has queued (missed-call retries). */
+    scheduledCalls: (id: string) => `/agents/${id}/scheduled-calls`,
+    cancelScheduledCall: (id: string, callId: string) => `/agents/${id}/scheduled-calls/${encodeURIComponent(callId)}/cancel`,
     /** Per-product enquiry stats for sales agents — see agent_studio_server change add-product-enquiry-stats. */
     productStats: (id: string) => `/agents/${id}/product-stats`,
   },
@@ -83,6 +92,9 @@ export const ApiEndpoints = {
 
   phoneNumbers: {
     list: '/phone-numbers',
+    available: '/phone-numbers/available',
+    purchase: '/phone-numbers/purchase',
+    reconcile: '/phone-numbers/reconcile',
     byId: (id: string) => `/phone-numbers/${id}`,
     assignAgent: (id: string) => `/phone-numbers/${id}/assign-agent`,
     disable: (id: string) => `/phone-numbers/${id}/disable`,

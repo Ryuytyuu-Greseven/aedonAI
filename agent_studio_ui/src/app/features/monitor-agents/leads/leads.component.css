@@ -137,3 +137,8 @@
   gap: 8px;
   flex-wrap: wrap;
 }
+
+.lead-next-try {
+  color: var(--accent);
+  font-weight: 600;
+}

@@ -4,7 +4,7 @@
     <div>
       <span class="page-eyebrow"><i class="fa-solid fa-user-shield" aria-hidden="true"></i> Admin · Sales team</span>
       <h1>Sales agents</h1>
-      <p class="text-muted">Create and manage the logins your sales team uses to sign in to Aedon AI.</p>
+      <p class="text-muted">Create and manage the logins your sales team uses to sign in to Lyre AI.</p>
     </div>
     <button type="button" class="btn btn-primary page-cta" (click)="openCreateForm()">
       <i class="fa-solid fa-user-plus" aria-hidden="true"></i> Add sales agent
@@ -102,7 +102,7 @@
             <span><i class="fa-solid fa-user"></i></span>
           </div>
           <h3>No sales agents yet</h3>
-          <p class="text-muted">Give each member of your sales team their own login to Aedon AI.</p>
+          <p class="text-muted">Give each member of your sales team their own login to Lyre AI.</p>
           <button type="button" class="btn btn-primary" (click)="openCreateForm()">
             <i class="fa-solid fa-user-plus" aria-hidden="true"></i> Add your first sales agent
           </button>
@@ -180,7 +180,7 @@
 @if (showCreateForm) {
   <app-modal
     title="Add sales agent"
-    subtitle="They'll use these details to sign in to Aedon AI."
+    subtitle="They'll use these details to sign in to Lyre AI."
     icon="fa-user-plus"
     (closed)="cancelCreate()"
   >

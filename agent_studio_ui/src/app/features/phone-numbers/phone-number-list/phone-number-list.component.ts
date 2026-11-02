@@ -1,20 +1,28 @@
-import { Component, OnInit, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { HttpErrorResponse } from '@angular/common/http';
-import { forkJoin } from 'rxjs';
+import { Subscription, filter, forkJoin, switchMap } from 'rxjs';
 import {
+  AvailablePhoneNumber,
+  BUY_COUNTRIES,
+  BuyCountry,
   PhoneNumber,
   PhoneNumberEnvironmentType,
+  PhoneNumberType,
   PHONE_NUMBER_ENVIRONMENT_TYPES,
-  RequestPhoneNumberInput,
+  formatMonthlyPrice,
   phoneNumberE164,
   phoneNumberCountryName,
   phoneNumberEnvironmentLabel,
   phoneNumberMatchesSearch,
+  phoneNumberTypeLabel,
 } from '../../../core/models/phone-number.model';
 import { PhoneNumberService } from '../../../core/services/phone-number.service';
 import { AgentService } from '../../../core/services/agent.service';
+import { AuthService } from '../../../core/services/auth.service';
+import { ConfirmDialogService } from '../../../core/services/confirm-dialog.service';
 import { ToastService } from '../../../core/services/toast.service';
+import { extractErrorMessage } from '../../../core/utils/http-error.util';
 import { COUNTRY_CODES, CountryCode } from '../../../shared/constants/countries.constant';
 import { ModalComponent } from '../../../shared/modal/modal.component';
 
@@ -22,6 +30,7 @@ const PAGE_SIZE = 10;
 
 type CountryFilter = 'all' | string;
 type EnvironmentFilter = 'all' | PhoneNumberEnvironmentType;
+type BuyStep = 'search' | 'confirm';
 
 @Component({
   selector: 'app-phone-number-list',
@@ -33,7 +42,17 @@ type EnvironmentFilter = 'all' | PhoneNumberEnvironmentType;
 export class PhoneNumberListComponent implements OnInit {
   private readonly phoneNumberService = inject(PhoneNumberService);
   private readonly agentService = inject(AgentService);
+  private readonly authService = inject(AuthService);
+  private readonly confirmDialog = inject(ConfirmDialogService);
   private readonly toast = inject(ToastService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  /** Buying and releasing numbers bills the platform account, so only admins can. */
+  readonly isAdmin = computed(() => this.authService.role() === 'admin');
+
+  readonly buyCountries = BUY_COUNTRIES;
+  readonly phoneNumberTypeLabel = phoneNumberTypeLabel;
+  readonly formatMonthlyPrice = formatMonthlyPrice;
 
   readonly countries = Array.from(new Map(COUNTRY_CODES.map((c) => [c.name, c])).values());
   readonly environmentTypes = PHONE_NUMBER_ENVIRONMENT_TYPES;
@@ -51,14 +70,30 @@ export class PhoneNumberListComponent implements OnInit {
   readonly environmentFilter = signal<EnvironmentFilter>('all');
   readonly page = signal(1);
 
-  showRequestForm = false;
-  requestCountryCode = '';
-  requestNumber = '';
-  requestLabel = '';
-  requestNotes = '';
-  requestEnvironmentType: PhoneNumberEnvironmentType | '' = '';
-  requestError = '';
-  requesting = false;
+  readonly releasingId = signal<string | null>(null);
+  readonly reconciling = signal(false);
+
+  /** Purchases still in flight or stuck — what Reconcile settles. */
+  readonly provisioningCount = computed(() => this.numbers().filter((n) => n.status === 'Provisioning').length);
+
+  // Buy-number dialog
+  showBuyForm = false;
+  readonly buyStep = signal<BuyStep>('search');
+  readonly buyCountry = signal<BuyCountry>(BUY_COUNTRIES[0]);
+  buyType: PhoneNumberType = BUY_COUNTRIES[0].numberTypes[0];
+  buyAreaCode = '';
+  buyRegion = '';
+  buyContains = '';
+  readonly searching = signal(false);
+  readonly searchResults = signal<AvailablePhoneNumber[]>([]);
+  readonly searchError = signal('');
+  readonly selectedNumber = signal<AvailablePhoneNumber | null>(null);
+  buyLabel = '';
+  buyNotes = '';
+  buyEnvironmentType: PhoneNumberEnvironmentType | '' = '';
+  buyError = '';
+  purchasing = false;
+  private searchSub: Subscription | null = null;
 
   readonly filtered = computed(() => {
     let list = this.numbers();
@@ -79,7 +114,7 @@ export class PhoneNumberListComponent implements OnInit {
   });
 
   readonly stats = computed(() => {
-    const list = this.numbers();
+    const list = this.numbers().filter((n) => n.status !== 'Released');
     return {
       total: list.length,
       available: list.filter((n) => n.status === 'Available').length,
@@ -110,6 +145,7 @@ export class PhoneNumberListComponent implements OnInit {
 
   ngOnInit(): void {
     this.load();
+    this.destroyRef.onDestroy(() => this.searchSub?.unsubscribe());
   }
 
   private load(): void {
@@ -165,60 +201,221 @@ export class PhoneNumberListComponent implements OnInit {
     this.page.update((p) => Math.min(this.totalPages(), p + 1));
   }
 
-  openRequestForm(): void {
-    this.showRequestForm = true;
-    this.requestCountryCode = '';
-    this.requestNumber = '';
-    this.requestLabel = '';
-    this.requestNotes = '';
-    this.requestEnvironmentType = '';
-    this.requestError = '';
+  // ── Buy number ──────────────────────────────────────────
+
+  openBuyForm(): void {
+    if (!this.isAdmin()) return;
+    this.showBuyForm = true;
+    this.buyStep.set('search');
+    this.buyAreaCode = '';
+    this.buyRegion = '';
+    this.buyContains = '';
+    this.selectedNumber.set(null);
+    this.setBuyCountry(this.buyCountry().isoCountry);
   }
 
-  cancelRequest(): void {
-    this.showRequestForm = false;
-    this.requestError = '';
+  closeBuyForm(): void {
+    if (this.purchasing) return;
+    this.searchSub?.unsubscribe();
+    this.showBuyForm = false;
   }
 
-  submitRequest(): void {
-    if (!this.requestCountryCode || !this.requestNumber.trim()) {
-      this.requestError = 'Country and mobile number are required';
+  setBuyCountry(isoCountry: string): void {
+    const country = BUY_COUNTRIES.find((c) => c.isoCountry === isoCountry) ?? BUY_COUNTRIES[0];
+    this.buyCountry.set(country);
+    this.buyType = country.numberTypes[0];
+    this.buyAreaCode = '';
+    this.buyRegion = '';
+    this.searchAvailable();
+  }
+
+  setBuyType(type: PhoneNumberType): void {
+    this.buyType = type;
+    this.searchAvailable();
+  }
+
+  /** Runs on country/type change and on Search/Enter — not per keystroke, to spare search rate limits. */
+  searchAvailable(): void {
+    const country = this.buyCountry();
+    const areaCode = this.buyAreaCode.trim();
+    const region = this.buyRegion.trim().toUpperCase();
+    const contains = this.buyContains.replace(/\D/g, '');
+
+    if (areaCode && !/^\d{3}$/.test(areaCode)) {
+      this.searchError.set('Area code must be 3 digits');
       return;
     }
-    if (!this.requestEnvironmentType) {
-      this.requestError = 'Environment is required';
+    if (region && !/^[A-Z]{2}$/.test(region)) {
+      this.searchError.set('Circle must be a 2-letter code, e.g. KA');
       return;
     }
-    this.requestError = '';
-    const input: RequestPhoneNumberInput = {
-      country_code: this.requestCountryCode,
-      phone_number: this.requestNumber.trim(),
-      label: this.requestLabel.trim() || this.requestNumber.trim(),
-      notes: this.requestNotes.trim() || undefined,
-      environmentType: this.requestEnvironmentType,
-    };
-    this.requesting = true;
-    this.phoneNumberService.requestPhoneNumber(input).subscribe({
-      next: (created) => {
-        this.requesting = false;
-        this.numbers.update((list) => [created, ...list]);
-        this.toast.success('Phone number requested');
-        this.showRequestForm = false;
+
+    this.searchSub?.unsubscribe();
+    this.searching.set(true);
+    this.searchError.set('');
+    this.searchSub = this.phoneNumberService
+      .searchAvailable({
+        country: country.isoCountry,
+        type: this.buyType,
+        areaCode: country.locationFilter === 'areaCode' ? areaCode || undefined : undefined,
+        region: country.locationFilter === 'region' ? region || undefined : undefined,
+        contains: contains || undefined,
+      })
+      .subscribe({
+        next: (result) => {
+          this.searching.set(false);
+          this.searchResults.set(result.numbers);
+        },
+        error: (err: unknown) => {
+          this.searching.set(false);
+          this.searchResults.set([]);
+          this.searchError.set(this.buyErrorMessage(err, 'Could not search numbers. Try again.'));
+        },
+      });
+  }
+
+  /** "San Francisco, CA" (Twilio) / "KA" (Exotel circle), else the country name. */
+  resultLocation(number: AvailablePhoneNumber): string {
+    return [number.locality, number.region].filter((part) => !!part).join(', ') || this.buyCountry().name;
+  }
+
+  selectNumber(number: AvailablePhoneNumber): void {
+    this.selectedNumber.set(number);
+    this.buyLabel = '';
+    this.buyNotes = '';
+    this.buyEnvironmentType = '';
+    this.buyError = '';
+    this.buyStep.set('confirm');
+  }
+
+  backToResults(): void {
+    if (this.purchasing) return;
+    this.buyStep.set('search');
+    this.buyError = '';
+  }
+
+  purchaseSelected(): void {
+    const number = this.selectedNumber();
+    if (!number || this.purchasing) return;
+    if (!this.buyEnvironmentType) {
+      this.buyError = 'Environment is required';
+      return;
+    }
+    this.buyError = '';
+    this.purchasing = true;
+    this.phoneNumberService
+      .purchase({
+        country: this.buyCountry().isoCountry,
+        number,
+        label: this.buyLabel,
+        notes: this.buyNotes,
+        environmentType: this.buyEnvironmentType,
+      })
+      .subscribe({
+        next: (purchased) => {
+          this.purchasing = false;
+          this.numbers.update((list) => [purchased, ...list]);
+          this.toast.success(`Bought ${phoneNumberE164(purchased)}`);
+          this.showBuyForm = false;
+        },
+        error: (err: unknown) => {
+          this.purchasing = false;
+          if (err instanceof HttpErrorResponse && err.status === 409) {
+            // Usually taken by someone else since the search — drop it from the results.
+            this.searchResults.update((list) => list.filter((n) => n.e164 !== number.e164));
+          }
+          this.buyError = this.buyErrorMessage(err, 'Purchase failed. You have not been charged.');
+          this.toast.error('Could not buy number');
+        },
+      });
+  }
+
+  private buyErrorMessage(err: unknown, fallback: string): string {
+    if (err instanceof HttpErrorResponse && err.status === 503) {
+      return `Buying ${this.buyCountry().name} numbers isn't available right now. Try again later.`;
+    }
+    if (err instanceof HttpErrorResponse && err.status === 403) {
+      return 'Only admins can buy numbers.';
+    }
+    return extractErrorMessage(err, fallback);
+  }
+
+  // ── Reconcile ───────────────────────────────────────────
+
+  /**
+   * Checks Provisioning numbers against the provider account: bought ones become Available,
+   * the rest are dropped. The server only touches rows older than 10 minutes.
+   */
+  reconcile(): void {
+    if (!this.isAdmin() || this.reconciling()) return;
+    this.reconciling.set(true);
+    this.phoneNumberService.reconcile().subscribe({
+      next: ({ recovered, removed, unresolved }) => {
+        this.reconciling.set(false);
+        if (recovered.length) this.toast.success(`Recovered ${recovered.join(', ')}`);
+        if (removed.length) this.toast.info(`Removed ${removed.length} purchase(s) that never went through`);
+        if (unresolved.length) {
+          this.toast.warning(`Couldn't verify ${unresolved.join(', ')} yet — try again later`);
+        }
+        if (!recovered.length && !removed.length && !unresolved.length) {
+          this.toast.info('Nothing to reconcile yet — purchases are checked 10 minutes after they start');
+        } else {
+          this.load();
+        }
       },
       error: (err: unknown) => {
-        this.requesting = false;
-        if (err instanceof HttpErrorResponse && err.status === 409) {
-          this.requestError = 'This country code + number already exists';
-          this.toast.error('Duplicate phone number');
-          return;
-        }
-        this.toast.error('Failed to request phone number');
+        this.reconciling.set(false);
+        this.toast.error(extractErrorMessage(err, 'Failed to reconcile numbers'));
       },
     });
   }
 
+  // ── Release ─────────────────────────────────────────────
+
+  releaseNumber(phoneNumber: PhoneNumber): void {
+    if (!this.isAdmin() || this.releasingId()) return;
+    if (phoneNumber.assigned_agent) {
+      this.toast.error('Unassign the agent from this number before releasing it');
+      return;
+    }
+    const e164 = phoneNumberE164(phoneNumber);
+    this.confirmDialog
+      .confirm({
+        title: `Release ${e164}?`,
+        // Legacy manually-entered numbers were never purchased.
+        message: phoneNumber.purchased_at
+          ? 'The number is released and billing stops. You may not be able to get the same number again.'
+          : 'This manually added number will be retired and can no longer be assigned.',
+        confirmLabel: 'Release number',
+        tone: 'danger',
+      })
+      .pipe(
+        filter(Boolean),
+        switchMap(() => {
+          this.releasingId.set(phoneNumber.id);
+          return this.phoneNumberService.release(phoneNumber.id);
+        }),
+      )
+      .subscribe({
+        next: (released) => {
+          this.releasingId.set(null);
+          this.numbers.update((list) => list.map((n) => (n.id === released.id ? released : n)));
+          this.toast.success(`Released ${e164}`);
+        },
+        error: (err: unknown) => {
+          this.releasingId.set(null);
+          this.toast.error(extractErrorMessage(err, 'Failed to release number'));
+        },
+      });
+  }
+
+  /** Released / in-flight numbers have no enable–disable toggle. */
+  isLocked(phoneNumber: PhoneNumber): boolean {
+    return phoneNumber.status === 'Released' || phoneNumber.status === 'Provisioning';
+  }
+
   toggleStatus(phoneNumber: PhoneNumber): void {
-    if (this.statusUpdatingId()) return;
+    if (this.statusUpdatingId() || this.isLocked(phoneNumber)) return;
     this.statusUpdatingId.set(phoneNumber.id);
     const request =
       phoneNumber.status === 'Available'
@@ -231,9 +428,9 @@ export class PhoneNumberListComponent implements OnInit {
         this.numbers.update((list) => list.map((n) => (n.id === updated.id ? updated : n)));
         this.toast.success(updated.status === 'Available' ? 'Number enabled' : 'Number disabled');
       },
-      error: () => {
+      error: (err: unknown) => {
         this.statusUpdatingId.set(null);
-        this.toast.error('Failed to update phone number status');
+        this.toast.error(extractErrorMessage(err, 'Failed to update phone number status'));
       },
     });
   }

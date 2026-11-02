@@ -374,6 +374,8 @@ CRITICAL RULES:
           audioConfig: {
             audioEncoding: 'LINEAR16',
             sampleRateHertz: 24000,
+            speakingRate: 1.0,
+            pitch: 0.0,
           },
         },
       });
@@ -456,6 +458,7 @@ CRITICAL RULES:
       phoneNumber: setupConfig.phoneNumber,
       agentNumber: setupConfig.agentNumber,
       agentId: setupConfig.agentId || 'unknown',
+      greeting: setupConfig.greeting || '',
     };
   }
 

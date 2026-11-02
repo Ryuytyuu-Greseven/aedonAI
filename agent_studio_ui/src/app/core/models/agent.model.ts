@@ -13,6 +13,31 @@ export const AGENT_MODE_LABELS: Record<AgentMode, string> = {
   both: 'Chat bot & Voice agent',
 };
 
+/**
+ * When the lead dialer may call for this agent (`PATCH /agents/:id/call-settings`). Saved on its
+ * own, so a staged/live agent keeps its status when these change.
+ */
+export interface CallSettings {
+  /** IANA zone, e.g. `Asia/Kolkata` — independent of the phone number's country. */
+  timezone: string;
+  /** `HH:mm` in `timezone`; automatic calls only start inside [start, end). */
+  calling_hours_start: string;
+  calling_hours_end: string;
+  /** Extra attempts after a missed call, 0–4. */
+  missed_call_retries: number;
+  missed_call_retry_gap_minutes: number;
+}
+
+export const DEFAULT_CALL_SETTINGS: CallSettings = {
+  timezone: 'Asia/Kolkata',
+  calling_hours_start: '09:00',
+  calling_hours_end: '18:00',
+  missed_call_retries: 0,
+  missed_call_retry_gap_minutes: 360,
+};
+
+export const MAX_MISSED_CALL_RETRIES = 4;
+
 export interface ReferralBonus {
   amount: number;
   currency: Currency;
@@ -91,6 +116,8 @@ export interface Agent {
   prompt?: string;
   behavior?: string;
   referral_bonus?: ReferralBonus;
+  /** Always set by the API mapper; optional so older fixtures still type-check. */
+  call_settings?: CallSettings;
   preview_hash?: string | null;
   /** Number of times this agent has been staged; gates History panel availability. */
   current_stage_version: number;
@@ -148,6 +175,7 @@ export function createEmptyAgent(id?: string): Agent {
     tools: [],
     mcp_servers: [],
     knowledge_base_ids: [],
+    call_settings: { ...DEFAULT_CALL_SETTINGS },
     created_at: now,
     updated_at: now,
     current_stage_version: 0,

@@ -20,18 +20,23 @@ export interface AgentLeadUpsertInput {
   source: string;
   fullName: string | null;
   phoneNumber: string;
+  email?: string | null;
   address: string | null;
   budgetMin: number | null;
   budgetMax: number | null;
   preferredLocation: string | null;
   preferredType: string | null;
   purchaseTimeline: string | null;
+  buyerType?: string | null;
   siteVisitInterested: boolean | null;
   siteVisitPreferredDate: string | null;
+  siteVisitTimeSlot?: string | null;
+  cabRequired?: boolean | null;
   interestedPropertyId: string | null;
   referralName: string | null;
   referralPhone: string | null;
   sessionId: string;
+  customFields?: Record<string, any>;
 }
 
 // One lead document per call session — upserted as more qualifying details

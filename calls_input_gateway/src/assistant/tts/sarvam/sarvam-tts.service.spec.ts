@@ -101,7 +101,7 @@ describe('SarvamTtsService', () => {
     const { done, out } = run(['Hi there! The Classic', ' 350 is in stock.']);
     await done;
     expect(nextSocket.convert.mock.calls.map((c) => c[0])).toEqual([
-      'Hi there!',
+      'Hi there.',
       'The Classic 350 is in stock.',
     ]);
     expect(nextSocket.flush).toHaveBeenCalledTimes(2);

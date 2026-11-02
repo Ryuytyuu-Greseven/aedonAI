@@ -16,6 +16,8 @@ import { CompaniesModule } from './companies/companies.module';
 import { CommandControlModule } from './command-control/command-control.module';
 import { UsersModule } from './users/users.module';
 import { IntegrationsModule } from './integrations/integrations.module';
+import { ManualLeadsModule } from './manual-leads/manual-leads.module';
+import { ScheduledCallsModule } from './scheduled-calls/scheduled-calls.module';
 
 @Module({
   imports: [
@@ -39,6 +41,8 @@ import { IntegrationsModule } from './integrations/integrations.module';
     CommandControlModule,
     UsersModule,
     IntegrationsModule,
+    ManualLeadsModule,
+    ScheduledCallsModule,
   ],
   controllers: [AppController],
 })

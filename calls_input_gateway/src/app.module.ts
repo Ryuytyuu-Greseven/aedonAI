@@ -3,6 +3,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { MongooseModule } from '@nestjs/mongoose';
 import { AssistantModule } from './assistant/assistant.module';
 import { TwilioModule } from './twilio/twilio.module';
+import { ExotelModule } from './exotel/exotel.module';
+import { OutboundCallsModule } from './telephony/outbound/outbound-calls.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { CommonModule } from './common/common.module';
 import { CallLogsModule } from './call-logs/call-logs.module';
@@ -21,6 +23,8 @@ import { CallLogsModule } from './call-logs/call-logs.module';
     FirebaseModule,
     AssistantModule,
     TwilioModule,
+    ExotelModule,
+    OutboundCallsModule,
     CallLogsModule,
   ],
 })
