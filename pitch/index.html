@@ -150,7 +150,7 @@
   <section class="slide">
     <div class="kicker">Solution</div>
     <h2>Lyre calls every lead within minutes, qualifies them, and hands your team the hot ones.</h2>
-    <div class="body steps">
+    <div class="body steps four">
       <div class="step">
         <div class="n">01</div>
         <div class="t">A lead comes in</div>
@@ -166,6 +166,11 @@
         <div class="t">Your team gets a qualified lead</div>
         <div class="d">Budget, need and timeline, plus the booked visit, sent to your CRM or WhatsApp.</div>
       </div>
+      <div class="step">
+        <div class="n">04</div>
+        <div class="t">Lyre follows up</div>
+        <div class="d">Calls back when the customer asked, picking up their interests and requests from the last call.</div>
+      </div>
     </div>
     <aside>Keep this short. The demo on the next slide does the convincing.</aside>
   </section>
@@ -174,6 +179,7 @@
   <section class="slide">
     <div class="kicker">Live demo</div>
     <h2>Watch Lyre call a real phone and sell a flat, switching between Telugu and English.</h2>
+    <p class="sub">Try it: <a href="https://demo.lyreai.life/" target="_blank" rel="noopener" style="color: var(--accent); font-weight: 700;">demo.lyreai.life</a> · <strong style="color: var(--ink);">clara@lyreai.com</strong> / <strong style="color: var(--ink);">admin123</strong></p>
     <div class="body">
       <ul class="points">
         <li>The caller switches language mid-sentence. The agent follows.</li>
@@ -295,15 +301,15 @@
   <!-- 10. What's next -->
   <section class="slide">
     <div class="kicker">What's next</div>
-    <h2>Next: put Lyre in front of real estate developers with live leads.</h2>
+    <h2>Launching in the coming weeks with real estate companies in India and Dubai.</h2>
     <div class="body">
       <ul class="points">
-        <li>Run free pilots with 2–3 businesses on their real Meta leads</li>
-        <li>Measure what matters: leads reached, site visits and test rides booked</li>
-        <li>Add more Indian languages and industries</li>
+        <li>Already demoed to real estate companies in India and Dubai, now in launch discussions</li>
+        <li>First launch: calling their real leads and booking site visits</li>
+        <li>Then: more languages and industries</li>
       </ul>
     </div>
-    <aside>End on the one-liner from the title slide, then thank the judges and take questions.</aside>
+    <aside>Say the exact number of companies you've demoed to and are talking with (e.g. "3 in Hyderabad, 1 in Dubai"). Name them only if they've agreed. End on the one-liner from the title slide, then thank the judges and take questions.</aside>
   </section>
 
 </div>
@@ -345,7 +351,10 @@
     else if (e.key === 'c' || e.key === 'C') document.body.classList.toggle('clean');
     else if (e.key === 'p' || e.key === 'P') print();
   });
-  document.querySelector('.deck').addEventListener('click', e => show(e.clientX > innerWidth / 2 ? i + 1 : i - 1));
+  document.querySelector('.deck').addEventListener('click', e => {
+    if (e.target.closest('a')) return;
+    show(e.clientX > innerWidth / 2 ? i + 1 : i - 1);
+  });
   addEventListener('resize', fit);
 
   fit();

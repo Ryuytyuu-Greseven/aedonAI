@@ -46,3 +46,28 @@
   align-self: flex-start;
   background: var(--info-bg);
 }
+
+.call-cost-lines {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 4px 16px;
+  margin: 8px 0 0;
+  font-size: 14px;
+}
+
+.call-cost-lines dt {
+  color: var(--text-secondary);
+}
+
+.call-cost-lines dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.call-cost-lines .call-cost-total {
+  padding-top: 4px;
+  border-top: 1px solid var(--border-color);
+  font-weight: 600;
+  color: inherit;
+}

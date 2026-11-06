@@ -1,5 +1,5 @@
 import { Component, EventEmitter, inject, Input, OnInit, Output, signal } from '@angular/core';
-import { CallDetail, CallRecord, CallSpeaker } from '../../../core/models/call-record.model';
+import { CallCost, CallDetail, CallRecord, CallSpeaker } from '../../../core/models/call-record.model';
 import { CallRecordService } from '../../../core/services/call-record.service';
 
 const SPEAKER_LABELS: Record<CallSpeaker, string> = {
@@ -65,6 +65,29 @@ export class CallDetailModalComponent implements OnInit {
 
   formatTime(iso: string): string {
     return new Date(iso).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit', second: '2-digit' });
+  }
+
+  costLines(cost: CallCost): { label: string; usd: number }[] {
+    return [
+      { label: 'Phone line', usd: cost.telephony },
+      { label: 'Speech-to-text', usd: cost.stt },
+      { label: 'Text-to-speech', usd: cost.tts },
+      { label: 'AI model', usd: cost.llm },
+      { label: 'Post-call analysis', usd: cost.analysis },
+    ];
+  }
+
+  /** The rupee rate the server priced with — so every line converts the same way. */
+  usdInr(cost: CallCost): number {
+    return cost.total > 0 ? cost.total_inr / cost.total : 0;
+  }
+
+  formatInr(rupees: number): string {
+    return `₹${rupees.toFixed(2)}`;
+  }
+
+  formatUsd(usd: number): string {
+    return `$${usd.toFixed(4)}`;
   }
 
   formatDuration(seconds: number | null): string {

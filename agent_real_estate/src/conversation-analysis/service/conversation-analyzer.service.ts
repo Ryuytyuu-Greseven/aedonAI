@@ -1,4 +1,5 @@
 import { SystemMessage, HumanMessage } from '@langchain/core/messages';
+import type { Callbacks } from '@langchain/core/callbacks/manager';
 import { z } from 'zod';
 import { getAnalysisLlm } from '../llm/analysis-llm.provider.js';
 import { ANALYSIS_SYSTEM_PROMPT } from '../prompt/analysis.prompt.js';
@@ -36,6 +37,7 @@ function formatCatalogue(catalogue: CatalogueProduct[]): string {
 export async function analyzeConversation(
   transcript: ConversationTurn[],
   catalogue: CatalogueProduct[] = [],
+  callbacks?: Callbacks,
 ): Promise<AnalysisResult> {
   const extractorLlm = getAnalysisLlm().withStructuredOutput(AnalysisResultSchema, {
     name: 'analyze_conversation',
@@ -44,7 +46,7 @@ export async function analyzeConversation(
   const result = await extractorLlm.invoke([
     new SystemMessage(ANALYSIS_SYSTEM_PROMPT),
     new HumanMessage(`${formatCatalogue(catalogue)}\n\nTranscript:\n\n${formatTranscript(transcript)}`),
-  ]);
+  ], { callbacks });
 
   // Drop anything that isn't a real catalogue id (hallucinated or mangled).
   const knownIds = new Set(catalogue.map((p) => p.id));

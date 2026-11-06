@@ -95,6 +95,10 @@ export class SharedAiService implements IAiService {
     return service.generateResponseStream(query, config);
   }
 
+  public getTtsProvider(): TtsProviderName {
+    return this.ttsProvider;
+  }
+
   public async textToSpeech(
     llmStream: any,
     voice: string,

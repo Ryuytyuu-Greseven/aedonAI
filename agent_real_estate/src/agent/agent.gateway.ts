@@ -13,6 +13,7 @@ import {
   resolveFillerLanguage,
 } from './graphs/sales/filler/filler-controller.js';
 import { LiveSession, recordCustomerTurn, syncSessionDetails } from './gateway.helpers.js';
+import type { ModelUsageTotal } from '../common/llm-usage/index.js';
 
 @WebSocketGateway({ path: '/agent', cors: true })
 export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
@@ -69,6 +70,7 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
         let routedAtMs: number | null = null;
         let firstReplyAtMs: number | null = null;
         let callEnded = false;
+        let usage: ModelUsageTotal[] = [];
         fillers.start();
 
         try {
@@ -81,6 +83,10 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
             }
             if (event.kind === 'end_call') {
               callEnded = true;
+              continue;
+            }
+            if (event.kind === 'usage') {
+              usage = event.usage;
               continue;
             }
             fillers.onReply();
@@ -100,7 +106,7 @@ export class AgentGateway implements OnGatewayConnection, OnGatewayDisconnect {
         }
 
         if (client.readyState === WebSocket.OPEN) {
-          client.send(JSON.stringify({ type: 'done', endCall: callEnded }));
+          client.send(JSON.stringify({ type: 'done', endCall: callEnded, usage }));
           if (callEnded) {
             client.send(JSON.stringify({ type: 'end_call' }));
           }

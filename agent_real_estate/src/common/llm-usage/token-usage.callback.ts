@@ -2,7 +2,7 @@ import { BaseCallbackHandler } from '@langchain/core/callbacks/base';
 import type { Serialized } from '@langchain/core/load/serializable';
 import type { LLMResult } from '@langchain/core/outputs';
 import { extractTokenUsage } from './extract-usage.js';
-import { LlmUsageContext, LlmUsageSink } from './types.js';
+import { LlmUsageContext, LlmUsageSink, ModelUsageTotal } from './types.js';
 
 interface RunInfo {
   nodeName?: string;
@@ -19,6 +19,8 @@ export class TokenUsageCallbackHandler extends BaseCallbackHandler {
   name = 'TokenUsageCallbackHandler';
 
   private readonly runs = new Map<string, RunInfo>();
+  // model → usage summed over this handler's run, read back via getTotals().
+  private readonly totals = new Map<string, ModelUsageTotal>();
 
   constructor(
     private readonly context: LlmUsageContext,
@@ -52,6 +54,13 @@ export class TokenUsageCallbackHandler extends BaseCallbackHandler {
     const usage = extractTokenUsage(output);
     if (!usage) return;
 
+    const model = info?.llmModel ?? 'unknown';
+    const total = this.totals.get(model) ?? { model, inputTokens: 0, outputTokens: 0, calls: 0 };
+    total.inputTokens += usage.inputTokens;
+    total.outputTokens += usage.outputTokens;
+    total.calls += 1;
+    this.totals.set(model, total);
+
     this.sink.recordExecution({
       ...this.context,
       ...usage,
@@ -67,5 +76,11 @@ export class TokenUsageCallbackHandler extends BaseCallbackHandler {
 
   async handleLLMError(_err: Error, runId: string): Promise<void> {
     this.runs.delete(runId);
+  }
+
+  // Callbacks may run in the background — `await awaitAllCallbacks()` from
+  // '@langchain/core/callbacks/promises' first so the last call is counted.
+  getTotals(): ModelUsageTotal[] {
+    return [...this.totals.values()].map((t) => ({ ...t }));
   }
 }

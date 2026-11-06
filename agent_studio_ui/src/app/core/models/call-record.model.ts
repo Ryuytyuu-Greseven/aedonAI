@@ -2,6 +2,21 @@ export type CallDirection = 'inbound' | 'outbound';
 export type CallProvider = 'twilio' | 'exotel' | 'webrtc';
 export type CallStatus = 'in_progress' | 'completed';
 
+/** Estimated cost in USD (studio server prices the call's recorded usage). */
+export interface CallCost {
+  currency: 'USD';
+  telephony: number;
+  stt: number;
+  tts: number;
+  llm: number;
+  analysis: number;
+  total: number;
+  total_inr: number;
+  per_minute: number | null;
+  /** Providers/models with no rate on file — counted as 0. */
+  unpriced: string[];
+}
+
 export interface CallRecord {
   id: string;
   agent_id: string;
@@ -17,6 +32,8 @@ export interface CallRecord {
   customer_name: string | null;
   message_count: number;
   summary: string | null;
+  /** Null while in progress, and for calls from before costs were recorded. */
+  cost: CallCost | null;
 }
 
 /** `human` is a person who joined the call; `agent` is the AI agent. */

@@ -15,6 +15,8 @@ export interface AudioDriverCallbacks {
   onTranscript: (text: string, language: string) => void;
   /** The caller started speaking; `transcript` is the first interim text when the STT provider has one. */
   onBargeIn: (transcript?: string) => void;
+  /** Seconds of audio just billed by an STT provider — for the call's cost. */
+  onSttAudio?: (provider: SttProviderName, seconds: number) => void;
 }
 
 export interface AudioSessionConfig {
@@ -93,6 +95,10 @@ const describeError = (err: unknown): string =>
   typeof (err as { message?: unknown })?.message === 'string'
     ? (err as { message: string }).message
     : String(err);
+
+// Deepgram streams every chunk to two connections (A: multi, B: the call
+// language), and each bills the audio.
+const DEEPGRAM_CONNECTIONS = 2;
 
 // Cap on audio held during a provider switch (~5 s of 16 kHz PCM) — Deepgram
 // normally connects in under a second.
@@ -251,6 +257,7 @@ export class AudioDriverService {
       return;
     }
 
+    this.reportAudio(session, session.sttProvider, (audio as Buffer).length);
     if (session.sttProvider === 'deepgram') {
       this.deepgramService.feedAudio(sessionId, audio, session);
     } else if (session.sttProvider === 'sarvam') {
@@ -351,6 +358,7 @@ export class AudioDriverService {
       return;
     }
     for (const chunk of held) {
+      this.reportAudio(session, 'deepgram', chunk.length);
       this.deepgramService.feedAudio(sessionId, chunk, session);
     }
     if (session.preferredLanguage) {
@@ -360,6 +368,18 @@ export class AudioDriverService {
         session,
       );
     }
+  }
+
+  private reportAudio(
+    session: AudioSession,
+    provider: SttProviderName,
+    bytes: number,
+  ): void {
+    if (!session.callbacks.onSttAudio) return;
+    const bytesPerSample = session.encoding === 'MULAW' ? 1 : 2;
+    const seconds = bytes / bytesPerSample / session.sampleRateHertz;
+    const connections = provider === 'deepgram' ? DEEPGRAM_CONNECTIONS : 1;
+    session.callbacks.onSttAudio(provider, seconds * connections);
   }
 
   // ─── Private stream lifecycle ─────────────────────────────────────────────

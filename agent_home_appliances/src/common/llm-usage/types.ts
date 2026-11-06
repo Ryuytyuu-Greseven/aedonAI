@@ -11,6 +11,14 @@ export interface TokenUsage {
   totalTokens: number;
 }
 
+// Usage summed per model — what a turn reports back to the gateway.
+export interface ModelUsageTotal {
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  calls: number;
+}
+
 export interface LlmExecutionRecord extends LlmUsageContext, TokenUsage {
   nodeName?: string;
   provider?: string;

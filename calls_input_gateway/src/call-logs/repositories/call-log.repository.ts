@@ -5,6 +5,7 @@ import { CallLog, CallLogDocument } from '../schemas/call-log.schema';
 import {
   CallLog as CallLogInterface,
   CallConversationEntry,
+  CallUsage,
   ConnectedHumanAgent,
   StartCallLogInput,
 } from '../interfaces/call-log.interface';
@@ -84,11 +85,29 @@ export class CallLogRepository {
     );
   }
 
-  async finalize(callId: string): Promise<void> {
+  /**
+   * Sets usage field by field, never the whole object, so analysis_llm (set
+   * by the agent's analysis worker, possibly earlier) survives.
+   */
+  async finalize(
+    callId: string,
+    usage?: Omit<CallUsage, 'analysis_llm'>,
+  ): Promise<void> {
     const now = new Date();
     await this.callLogModel.updateOne(
       { _id: callId },
-      { $set: { ending_time: now, status: 'completed', updated_at: now } },
+      {
+        $set: {
+          ending_time: now,
+          status: 'completed',
+          updated_at: now,
+          ...(usage && {
+            'usage.stt': usage.stt,
+            'usage.tts': usage.tts,
+            'usage.llm': usage.llm,
+          }),
+        },
+      },
     );
   }
 
@@ -106,6 +125,7 @@ export class CallLogRepository {
       call_summary: doc.call_summary,
       call_conversation: doc.call_conversation ?? [],
       connected_human_agents: doc.connected_human_agents ?? [],
+      usage: doc.usage ?? null,
       starting_time: doc.starting_time,
       ending_time: doc.ending_time ?? null,
       created_at: doc.created_at,

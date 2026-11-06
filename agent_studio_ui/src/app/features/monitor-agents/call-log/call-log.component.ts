@@ -141,6 +141,14 @@ export class CallLogComponent implements OnChanges {
     });
   }
 
+  formatInr(rupees: number): string {
+    return `₹${rupees.toFixed(2)}`;
+  }
+
+  formatUsd(usd: number): string {
+    return `$${usd.toFixed(4)}`;
+  }
+
   formatDuration(seconds: number | null): string {
     if (seconds === null) return '—';
     if (seconds < 60) return `${seconds}s`;

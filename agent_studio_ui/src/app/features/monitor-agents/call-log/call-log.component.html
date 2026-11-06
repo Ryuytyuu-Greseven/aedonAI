@@ -47,11 +47,15 @@
           <th scope="col">Status</th>
           <th scope="col">Duration</th>
           <th scope="col">Messages</th>
+          <th scope="col">Cost</th>
         </tr>
       </thead>
       <tbody>
         @for (i of [1, 2, 3, 4, 5, 6, 7, 8]; track i) {
         <tr>
+          <td>
+            <div class="skeleton skeleton-block call-log-skeleton-cell"></div>
+          </td>
           <td>
             <div class="skeleton skeleton-block call-log-skeleton-cell"></div>
           </td>
@@ -105,6 +109,7 @@
           <th scope="col">Status</th>
           <th scope="col" title="Total call length">Duration</th>
           <th scope="col" title="Customer and agent messages in this call">Messages</th>
+          <th scope="col" title="Estimated cost: phone line, speech, AI model">Cost</th>
         </tr>
       </thead>
       <tbody>
@@ -135,6 +140,9 @@
           </td>
           <td>{{ formatDuration(record.duration_seconds) }}</td>
           <td>{{ record.message_count }}</td>
+          <td [title]="record.cost ? formatUsd(record.cost.total) : 'Not available for this call'">
+            {{ record.cost ? formatInr(record.cost.total_inr) : '—' }}
+          </td>
         </tr>
         }
       </tbody>

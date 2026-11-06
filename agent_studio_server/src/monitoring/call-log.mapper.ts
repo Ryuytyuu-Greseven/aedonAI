@@ -4,6 +4,7 @@ import type {
 } from '../common/interfaces/call-logs.interface';
 import type { CallLog } from '../schemas/call-logs.schema';
 import type { CallLogListRow } from '../repos/call-records.repository';
+import { priceCall } from './call-cost';
 
 type CallLogFields = Omit<CallLog, 'call_conversation'>;
 
@@ -36,6 +37,7 @@ function summaryOf(log: CallLogFields, messageCount: number): CallSummary {
     customer_name: customerName(log),
     message_count: messageCount,
     summary: log.call_summary ?? null,
+    cost: priceCall(log),
   };
 }
 

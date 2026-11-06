@@ -1,6 +1,10 @@
 import WebSocket from 'ws';
 import { Injectable, Logger } from '@nestjs/common';
-import { AgentTextChunk, UserConfig } from '../types/assistant.types';
+import {
+  AgentModelUsage,
+  AgentTextChunk,
+  UserConfig,
+} from '../types/assistant.types';
 import { CallChannel } from '../../call-logs/interfaces/call-log.interface';
 import { getAgentUrl } from '../../common/config/business-agents.registry';
 import { CallLogService } from '../../call-logs/services/call-log.service';
@@ -12,6 +16,9 @@ interface SessionCacheEntry {
   agentDetails: CachedAgentDetails | null;
   phoneNumber?: string;
 }
+
+// How long an interrupted turn's socket stays open waiting for its usage.
+const USAGE_WAIT_MS = 15_000;
 
 @Injectable()
 export class AgentRouterService {
@@ -27,6 +34,7 @@ export class AgentRouterService {
    * Connects to the appropriate domain agent server, sends the user text,
    * and yields response tokens one-by-one as the agent streams them back.
    * Drop-in replacement for AgentService.runAgent() — same yield shape.
+   * `onUsage` gets the turn's LLM token usage from the agent's `done`.
    */
   public async *streamFromAgent(
     text: string,
@@ -34,6 +42,7 @@ export class AgentRouterService {
     sessionId: string,
     isActive: () => boolean = () => true,
     language: string = 'en',
+    onUsage?: (usage: AgentModelUsage[]) => void,
   ): AsyncGenerator<AgentTextChunk> {
     const baseUrl = getAgentUrl(config.business);
     const url = `${baseUrl}/agent`;
@@ -103,7 +112,12 @@ export class AgentRouterService {
       }),
     );
 
-    const queue: Array<{ type: string; text?: string; message?: string }> = [];
+    const queue: Array<{
+      type: string;
+      text?: string;
+      message?: string;
+      usage?: AgentModelUsage[];
+    }> = [];
     let notify: (() => void) | null = null;
     let closed = false;
 
@@ -133,6 +147,7 @@ export class AgentRouterService {
     });
 
     let agentResponse = '';
+    let usageReported = false;
 
     try {
       while (true) {
@@ -159,6 +174,8 @@ export class AgentRouterService {
           yield { text: '', endCall: true };
           break;
         } else if (item.type === 'done') {
+          if (Array.isArray(item.usage)) onUsage?.(item.usage);
+          usageReported = true;
           if ((item as any).endCall) {
             yield { text: '', endCall: true };
           }
@@ -174,8 +191,45 @@ export class AgentRouterService {
           speaker: 'ai_agent',
         });
       }
-      if (ws.readyState === WebSocket.OPEN) ws.close();
+      if (ws.readyState === WebSocket.OPEN) {
+        if (usageReported || !onUsage) ws.close();
+        else this.closeAfterUsage(ws, queue, onUsage);
+      }
     }
+  }
+
+  /**
+   * A barge-in stops reading mid-turn, but the agent still finishes the turn
+   * and spends its tokens — wait (bounded) in the background for its `done`
+   * so that usage is still counted, then close.
+   */
+  private closeAfterUsage(
+    ws: WebSocket,
+    queued: Array<{ type: string; usage?: AgentModelUsage[] }>,
+    onUsage: (usage: AgentModelUsage[]) => void,
+  ): void {
+    const report = (item: { type: string; usage?: AgentModelUsage[] }) => {
+      if (item.type !== 'done') return false;
+      if (Array.isArray(item.usage)) onUsage(item.usage);
+      return true;
+    };
+    if (queued.some(report)) {
+      ws.close();
+      return;
+    }
+    const timer = setTimeout(() => ws.close(), USAGE_WAIT_MS);
+    timer.unref();
+    ws.on('message', (data: Buffer) => {
+      try {
+        if (report(JSON.parse(data.toString()))) {
+          clearTimeout(timer);
+          ws.close();
+        }
+      } catch {
+        /* ignore malformed */
+      }
+    });
+    ws.once('close', () => clearTimeout(timer));
   }
 }
 

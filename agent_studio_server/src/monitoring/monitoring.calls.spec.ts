@@ -37,6 +37,7 @@ describe('call log mapper', () => {
       customer_name: 'Ravi',
       message_count: 4,
       summary: null,
+      cost: null,
     });
   });
 

@@ -1,4 +1,7 @@
+import { awaitAllCallbacks } from '@langchain/core/callbacks/promises';
 import * as QueueRepo from '../repository/analysis-queue.repository.js';
+import * as CallLogUsageRepo from '../repository/call-log-usage.repository.js';
+import { TokenUsageCallbackHandler } from '../../common/llm-usage/token-usage.callback.js';
 import * as SummaryRepo from '../repository/conversation-summary.repository.js';
 import { analyzeConversation } from '../service/conversation-analyzer.service.js';
 import * as CatalogueRepo from '../repository/product-catalogue.repository.js';
@@ -66,7 +69,19 @@ export class AnalysisWorker {
       const catalogue = job.agentId
         ? await CatalogueRepo.findProductsForAgent(job.agentId, job.companyId)
         : [];
-      const analysis = await analyzeConversation(job.transcript, catalogue);
+      // Counts the analysis call's tokens for the call's cost — nothing else
+      // is recorded, so the sink is a no-op.
+      const usage = new TokenUsageCallbackHandler(
+        { service: 'conversation-analysis', sessionId: job.conversationId, threadId: job.conversationId },
+        { recordExecution: () => {} },
+      );
+      const analysis = await analyzeConversation(job.transcript, catalogue, [usage]);
+      if (job.callId) {
+        await awaitAllCallbacks();
+        await CallLogUsageRepo.recordAnalysisUsage(job.callId, usage.getTotals()).catch((error) =>
+          console.error(`[ConversationAnalysis] Failed to record usage for call ${job.callId}:`, error),
+        );
+      }
       await SummaryRepo.saveSummary({
         conversationId: job.conversationId,
         agentId: job.agentId,

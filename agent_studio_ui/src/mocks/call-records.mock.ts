@@ -88,6 +88,7 @@ function generateCallRecords(): CallRecord[] {
           customer_name: customerName,
           message_count: 4 + Math.floor(rng() * 16),
           summary: null,
+          cost: null,
         });
       }
     }

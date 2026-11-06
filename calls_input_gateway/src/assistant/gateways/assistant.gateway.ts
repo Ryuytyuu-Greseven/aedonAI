@@ -86,6 +86,8 @@ export class AssistantGateway
           this.assistantService.onTranscriptReady(client, text, language),
         onBargeIn: (transcript) =>
           this.assistantService.handleBargeIn(client, transcript),
+        onSttAudio: (provider, seconds) =>
+          this.assistantService.recordSttAudio(client, provider, seconds),
       });
     }
   }

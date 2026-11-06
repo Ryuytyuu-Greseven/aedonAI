@@ -32,6 +32,37 @@ export interface ConnectedHumanAgent {
   connected_time: Date;
 }
 
+/** Seconds of caller audio streamed to one STT provider (per connection). */
+export interface SttUsage {
+  provider: string;
+  seconds: number;
+}
+
+/** Characters sent to one TTS provider — fillers included. */
+export interface TtsUsage {
+  provider: string;
+  characters: number;
+}
+
+export interface LlmUsage {
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  calls: number;
+}
+
+/**
+ * What a call consumed, for its cost (priced by agent_studio_server). The
+ * gateway sets stt/tts/llm when the call ends; the agent's post-call
+ * analysis sets analysis_llm separately.
+ */
+export interface CallUsage {
+  stt: SttUsage[];
+  tts: TtsUsage[];
+  llm: LlmUsage[];
+  analysis_llm?: LlmUsage[];
+}
+
 export interface CallLog {
   id: string;
   provider: CallProvider;
@@ -55,6 +86,8 @@ export interface CallLog {
   call_summary?: string;
   call_conversation: CallConversationEntry[];
   connected_human_agents: ConnectedHumanAgent[];
+
+  usage?: CallUsage | null;
 
   starting_time: Date;
   ending_time: Date | null;

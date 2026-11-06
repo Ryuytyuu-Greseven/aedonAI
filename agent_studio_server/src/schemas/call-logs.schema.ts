@@ -4,6 +4,7 @@ import type {
   CallDirection,
   CallProvider,
   CallStatus,
+  CallUsage,
   ConversationSpeaker,
 } from '../common/interfaces/call-logs.interface';
 
@@ -94,6 +95,9 @@ export class CallLog {
 
   @Prop({ type: [ConnectedHumanAgentSchema], default: [] })
   connected_human_agents: ConnectedHumanAgent[];
+
+  @Prop({ type: Object, default: null })
+  usage?: CallUsage | null;
 
   @Prop({ type: Date, required: true })
   starting_time: Date;

@@ -1,6 +1,7 @@
 import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { HumanMessage } from '@langchain/core/messages';
-import { LlmUsageService } from '../common/llm-usage/index.js';
+import { awaitAllCallbacks } from '@langchain/core/callbacks/promises';
+import { LlmUsageService, ModelUsageTotal } from '../common/llm-usage/index.js';
 import { salesGraph } from './graphs/sales/graph/sales.graph.js';
 import { IAgent } from '../common/interface/agent.interface.js';
 import { warmUpKnowledgeBaseRetrieval } from './graphs/sales/tool/knowledge-base.store.js';
@@ -25,12 +26,14 @@ interface AgentMessage {
 /**
  * What a turn produces, in order: which node the router picked (so the
  * gateway can play a filler while a slow node runs), the reply text,
- * and optionally an end_call event when the conversation is gracefully terminated.
+ * optionally an end_call event when the conversation is gracefully terminated,
+ * and last the turn's LLM token usage (for per-call cost logging).
  */
 export type AgentTurnEvent =
   | { kind: 'route'; node: string }
   | { kind: 'text'; text: string }
-  | { kind: 'end_call' };
+  | { kind: 'end_call' }
+  | { kind: 'usage'; usage: ModelUsageTotal[] };
 
 @Injectable()
 export class AgentService implements OnModuleInit {
@@ -102,5 +105,9 @@ export class AgentService implements OnModuleInit {
       this.logger.error('sales agent error:', err);
       yield { kind: 'text', text: `I encountered an error: ${err.message ?? err}` };
     }
+
+    // Token callbacks can still be in flight after the stream ends.
+    await awaitAllCallbacks();
+    yield { kind: 'usage', usage: tracker.getTotals() };
   }
 }

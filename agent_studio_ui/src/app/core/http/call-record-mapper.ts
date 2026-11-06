@@ -1,4 +1,4 @@
-import { CallDetail, CallMessage, CallRecord, CallSpeaker } from '../models/call-record.model';
+import { CallCost, CallDetail, CallMessage, CallRecord, CallSpeaker } from '../models/call-record.model';
 
 /** Wire shape of one entry in `GET /api/agents/:id/calls`. */
 export interface ApiCallRecord {
@@ -14,6 +14,7 @@ export interface ApiCallRecord {
   customer_name: string | null;
   message_count: number;
   summary: string | null;
+  cost?: CallCost | null;
 }
 
 /** Wire shape of `GET /api/agents/:id/calls/:callId`. */
@@ -41,6 +42,7 @@ export function fromApiCallRecord(raw: ApiCallRecord): CallRecord {
     customer_name: raw.customer_name ?? null,
     message_count: raw.message_count ?? 0,
     summary: raw.summary ?? null,
+    cost: raw.cost ?? null,
   };
 }
 

@@ -33,6 +33,15 @@
         <i class="fa-solid fa-comments" aria-hidden="true"></i>
         {{ record.message_count }} message{{ record.message_count === 1 ? '' : 's' }}
       </span>
+      @if (record.cost; as cost) {
+        <span class="stat-pill" title="Estimated cost of this call">
+          <i class="fa-solid fa-indian-rupee-sign" aria-hidden="true"></i>
+          {{ formatInr(cost.total_inr) }}
+          @if (cost.per_minute !== null) {
+            · {{ formatInr(cost.per_minute * usdInr(cost)) }}/min
+          }
+        </span>
+      }
       @if (record.status === 'in_progress') {
         <span class="stat-pill stat-pill-warning" title="This call hasn't ended yet">In progress</span>
       }
@@ -65,6 +74,22 @@
           <div class="call-summary">
             <strong class="text-sm">Summary</strong>
             <p>{{ callDetail.summary }}</p>
+          </div>
+        }
+        @if (callDetail.cost; as cost) {
+          <div class="call-summary">
+            <strong class="text-sm">Estimated cost</strong>
+            <dl class="call-cost-lines">
+              @for (line of costLines(cost); track line.label) {
+                <dt>{{ line.label }}</dt>
+                <dd>{{ formatInr(line.usd * usdInr(cost)) }} <span class="text-muted">{{ formatUsd(line.usd) }}</span></dd>
+              }
+              <dt class="call-cost-total">Total</dt>
+              <dd class="call-cost-total">{{ formatInr(cost.total_inr) }} <span class="text-muted">{{ formatUsd(cost.total) }}</span></dd>
+            </dl>
+            @if (cost.unpriced.length) {
+              <p class="text-sm">No rate on file for {{ cost.unpriced.join(', ') }} — counted as ₹0.</p>
+            }
           </div>
         }
         @if (callDetail.messages.length === 0) {

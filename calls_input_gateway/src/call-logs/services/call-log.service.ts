@@ -3,6 +3,7 @@ import { randomUUID } from 'crypto';
 import { CallLogRepository } from '../repositories/call-log.repository';
 import {
   CallLog,
+  CallUsage,
   ConnectHumanAgentInput,
   CustomerDetails,
   LogConversationEntryInput,
@@ -88,10 +89,15 @@ export class CallLogService {
   }
 
   /** Never rejects — fired-and-forgotten from session cleanup. */
-  async endCallLog(callId: string): Promise<void> {
+  async endCallLog(
+    callId: string,
+    usage?: Omit<CallUsage, 'analysis_llm'>,
+  ): Promise<void> {
     try {
-      await this.callLogRepository.finalize(callId);
-      this.logger.log(`[CallLog] Ended call ${callId}`);
+      await this.callLogRepository.finalize(callId, usage);
+      this.logger.log(
+        `[CallLog] Ended call ${callId}${usage ? ` — usage ${JSON.stringify(usage)}` : ''}`,
+      );
     } catch (err) {
       this.logger.error(`[CallLog] Failed to end call ${callId}: ${err}`);
     }

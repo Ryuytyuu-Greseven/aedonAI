@@ -1,7 +1,12 @@
 import WebSocket from 'ws';
 import { Injectable, Logger } from '@nestjs/common';
 import { SharedAiService } from './shared-ai.service';
-import { AgentTextChunk, SessionState } from '../types/assistant.types';
+import {
+  AgentModelUsage,
+  AgentTextChunk,
+  SessionState,
+} from '../types/assistant.types';
+import { CallUsage } from '../../call-logs/interfaces/call-log.interface';
 import { isBackchannel } from '../speech/backchannel';
 import { AgentRouterService } from './agent-router.service';
 import { AudioDriverService } from './audio-driver.service';
@@ -77,6 +82,7 @@ export class AssistantService {
       segmentIndex: 0,
       queryQueue: [],
       language: 'en',
+      usage: { sttSeconds: {}, ttsCharacters: {}, llm: {} },
     };
 
     this.sessions.set(client, session);
@@ -87,7 +93,10 @@ export class AssistantService {
     const session = this.sessions.get(client);
     if (session) {
       if (session.config.callId) {
-        void this.callLogService.endCallLog(session.config.callId);
+        void this.callLogService.endCallLog(
+          session.config.callId,
+          toCallUsage(session),
+        );
       }
       if (session.agentMongoId) {
         try {
@@ -124,6 +133,29 @@ export class AssistantService {
       agentDetails,
       phoneNumber: existing?.phoneNumber,
     });
+  }
+
+  // ─── Usage (per-call cost) ────────────────────────────────────────────────
+
+  /** Caller audio streamed to an STT provider — reported by AudioDriverService. */
+  public recordSttAudio(client: any, provider: string, seconds: number): void {
+    const usage = this.sessions.get(client)?.usage;
+    if (!usage) return;
+    usage.sttSeconds[provider] = (usage.sttSeconds[provider] ?? 0) + seconds;
+  }
+
+  private recordAgentUsage(session: SessionState, turn: AgentModelUsage[]): void {
+    for (const t of turn) {
+      const total = (session.usage.llm[t.model] ??= {
+        model: t.model,
+        input_tokens: 0,
+        output_tokens: 0,
+        calls: 0,
+      });
+      total.input_tokens += t.inputTokens;
+      total.output_tokens += t.outputTokens;
+      total.calls += t.calls;
+    }
   }
 
   /** Returns the sessionId for this client — used by AudioDriverService keying. */
@@ -493,6 +525,7 @@ export class AssistantService {
             session.sessionId,
             () => session.isGenerating,
             session.language,
+            (usage) => this.recordAgentUsage(session, usage),
           );
           let endCallOnComplete = false;
           const { stream: responseStream, getText } = this.captureTextStream(
@@ -507,12 +540,19 @@ export class AssistantService {
           );
 
           let turnAudioBytes = 0;
+          const ttsProvider = this.sharedAiService.getTtsProvider();
           await this.sharedAiService.textToSpeech(
             responseStream,
             session.config.voice,
             (base64Audio, text) => {
               if (base64Audio) {
                 turnAudioBytes += Math.floor((base64Audio.length * 3) / 4);
+              }
+              // TTS providers pass each piece of text here as they send it
+              // for synthesis — what they bill on.
+              if (text) {
+                session.usage.ttsCharacters[ttsProvider] =
+                  (session.usage.ttsCharacters[ttsProvider] ?? 0) + text.length;
               }
               this.onAudioChunk(base64Audio, text, client);
             },
@@ -624,4 +664,22 @@ export class AssistantService {
 
     this.sendServerContent(client, { modelTurn: { parts } });
   }
+}
+
+const round = (n: number, places: number) =>
+  Math.round(n * 10 ** places) / 10 ** places;
+
+function toCallUsage(session: SessionState): Omit<CallUsage, 'analysis_llm'> {
+  const { sttSeconds, ttsCharacters, llm } = session.usage;
+  return {
+    stt: Object.entries(sttSeconds).map(([provider, seconds]) => ({
+      provider,
+      seconds: round(seconds, 1),
+    })),
+    tts: Object.entries(ttsCharacters).map(([provider, characters]) => ({
+      provider,
+      characters,
+    })),
+    llm: Object.values(llm),
+  };
 }

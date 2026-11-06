@@ -27,6 +27,48 @@ export interface ConnectedHumanAgent {
   connected_time: Date;
 }
 
+/** Usage the gateway records on a call log when the call ends (see calls_input_gateway). */
+export interface SttUsage {
+  provider: string;
+  seconds: number;
+}
+
+export interface TtsUsage {
+  provider: string;
+  characters: number;
+}
+
+export interface LlmUsage {
+  model: string;
+  input_tokens: number;
+  output_tokens: number;
+  calls: number;
+}
+
+export interface CallUsage {
+  stt: SttUsage[];
+  tts: TtsUsage[];
+  llm: LlmUsage[];
+  /** Set separately by the agent's post-call analysis. */
+  analysis_llm?: LlmUsage[];
+}
+
+/** A call's estimated cost in USD, priced by monitoring/call-cost.ts. */
+export interface CallCost {
+  currency: 'USD';
+  telephony: number;
+  stt: number;
+  tts: number;
+  llm: number;
+  analysis: number;
+  total: number;
+  total_inr: number;
+  /** Null for zero-length calls. */
+  per_minute: number | null;
+  /** Providers/models with no rate on file — counted as 0. */
+  unpriced: string[];
+}
+
 export interface CallLog {
   id: string;
   provider: CallProvider;
@@ -42,6 +84,7 @@ export interface CallLog {
   call_summary?: string;
   call_conversation: CallConversationEntry[];
   connected_human_agents: ConnectedHumanAgent[];
+  usage?: CallUsage | null;
 
   starting_time: Date;
   ending_time: Date | null;
@@ -86,6 +129,8 @@ export interface CallSummary {
   customer_name: string | null;
   message_count: number;
   summary: string | null;
+  /** Null while in progress, and for calls from before usage was recorded. */
+  cost: CallCost | null;
 }
 
 export interface CallTranscriptMessage {

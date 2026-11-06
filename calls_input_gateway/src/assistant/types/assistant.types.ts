@@ -2,6 +2,7 @@ import {
   CallChannel,
   CallDirection,
   CallProvider,
+  LlmUsage,
 } from '../../call-logs/interfaces/call-log.interface';
 
 export interface UserConfig {
@@ -56,6 +57,21 @@ export interface AgentTextChunk {
   endCall?: boolean;
 }
 
+/** Running totals for a session's cost, keyed by provider / model. */
+export interface SessionUsage {
+  sttSeconds: Record<string, number>;
+  ttsCharacters: Record<string, number>;
+  llm: Record<string, LlmUsage>;
+}
+
+/** One model's tokens for a turn, as the domain agent reports them in `done`. */
+export interface AgentModelUsage {
+  model: string;
+  inputTokens: number;
+  outputTokens: number;
+  calls: number;
+}
+
 export interface SessionState {
   config: UserConfig;
   sessionId: string;
@@ -89,4 +105,6 @@ export interface SessionState {
    * edited agent). Undefined if no Agent doc resolved for this session.
    */
   agentMongoId?: string;
+  /** Written to the call log when the session is cleaned up. */
+  usage: SessionUsage;
 }
